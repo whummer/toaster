@@ -1,0 +1,16 @@
+==========================
+chef-solo-search Changelog
+==========================
+
+Version 0.4.0, March 8, 2013
+----------------------------
+* Added support for 'chef_environment:_default' to queries.
+* Special case for lucene "anything range" [* TO *]
+* Added support for ruby bundler
+* Added support for Berkshelf
+
+Version 0.3.0, July 27, 2011
+----------------------------
+First release of chef-solo-search as a self-contained project.
+Search functionality has been added to the original concept and the search
+extension as well as the data bags extension are shipped in libraries/

@@ -1,0 +1,133 @@
+body, html {
+	background: #f5f5ff;
+	font-size: 14px;
+	height: 100%;
+	width: 100%;
+	margin: 0px;
+}
+h1,h2,h3,h4,div,table,td,th,tr {
+	background: #ffffff;
+}
+h1 a {
+	color: black;
+	text-decoration: none;
+}
+h1 a:hover {
+	text-decoration: underline;
+}
+.center {
+	text-align: center;
+}
+.ui-tabs-panel a:link {
+	text-decoration: none;
+	border-bottom: 1px solid #777799;
+}
+.ui-tabs-panel a:visited {
+	border-bottom: 1px solid #9999AA;
+}
+.ui-tabs-panel a:hover {
+	border-bottom: 0px solid #555577;
+}
+div.stateFrame a:link, div.stateFrame a:hover, div.stateFrame a:visited {
+	text-decoration: none;
+	border-bottom: 0px;
+}
+
+div#outer {
+	width: 92%;
+	height: 99%;
+	margin: auto;
+	border: 1px solid #efefef;
+	/*overflow: auto;*/
+}
+div#inner {
+	margin: 7px;
+}
+div#inner pre {
+	margin: 10px;
+	padding: 6px;
+	background: #f5f5ff;
+	border: 1px solid #dddddd;
+	overflow: auto;
+}
+div#inner table {
+	border-spacing: 0px;
+	border-collapse: collapse;
+}
+div#inner table td, div#inner table th {
+	border: 1px solid #dddddd;
+	padding: 4px;
+}
+div#inner table tr.success td, div#inner table tr.success td a {
+	color: #447744;
+}
+div#inner table tr.error td, div#inner table tr.error td a {
+	color: #774444;
+}
+div#inner table tr.active td, div#inner table tr.active td a {
+	font-weight: bold;
+}
+div#inner table tr.unremarkable td, div#inner table tr.unremarkable td a {
+	opacity: 0.3;
+}
+div#inner table tr.warning td, div#inner table tr.warning td a {
+	color: #EE9A00;
+}
+div#inner table td span {
+	border: 1px solid #dddddd;
+	background: #eeffee;
+	padding: 2px;
+	margin-right: 5px;
+}
+div#preState, div#postState {
+	height: 300px;
+	overflow: auto;
+}
+div.stateFrame {
+	width: 47%; 
+	float: left;
+}
+div.error, div.info {
+	width: 80%;
+	margin: auto;
+	margin-bottom: 20px;
+	padding: 7px;
+}
+div.error {
+	background: #ffddee;
+	color: #330022;
+	border: 1px solid #993366;
+}
+div.error pre {
+	max-height: 200px;
+}
+div.info {
+	background: #ddffee;
+	color: #003322;
+	border: 1px solid #339966;
+}
+table.properties td {
+	text-align: center
+}
+.ui-tabs .ui-tabs-nav li a {
+	padding: 0.5em 0.7em;
+}
+#tabs .header a {
+	cursor: pointer;
+	font-weight: bold;
+}
+#tabs .header a:hover {
+	color: #444444;
+}
+#tab_conv, #tab_lxc {
+	margin-left: 15px;
+}
+#tab_tests a, #tab_auto a, #tab_runs a, #tab_tasks a, #tab_exec a {
+	color: #556677;
+}
+#tab_conv a, #tab_gen a, #tab_graph a {
+	color: #776655;
+}
+#tab_lxc a, #tab_chef a, #tab_db a, #tab_settings a {
+	color: #667755;
+}

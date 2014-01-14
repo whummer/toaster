@@ -1,0 +1,16 @@
+{
+    "name": "WireIt",
+    "description": "WireIt",
+    "version": "3.0.0pr2",
+    "url": "http://neyric.github.com/wireit",
+    "options": {
+        "linkNatives": "true",
+        "attributesEmit": "true",
+        "paths": [ "./src" ],
+        "outdir": "./api",
+        
+        "external": {
+             "data": "http://yuilibrary.com/yui/docs/api/data.json"
+         }
+    }
+}

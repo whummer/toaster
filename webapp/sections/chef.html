@@ -1,0 +1,53 @@
+<div style="width: 100%">
+<form action="<%= l({'p' => 'chef'}) %>" method="post">
+<input type="hidden" name="sessionID" value="<%= $session['session_id'] %>"/>
+<h2>Chef Cookbooks</h2>
+<style type="text/css">
+<%= 
+require "rubygems"
+require "diffy"
+require "toaster/chef/chef_util"
+Diffy::CSS 
+%>
+</style>
+<%
+
+cookb = nil
+if param("submitCompare") != ""
+	cookb = param("cookb")
+	v1 = param("v1")
+	v2 = param("v2")
+end
+%>
+<h3>Diff Tool</h3>
+<table>
+	<tr><td>Cookbook:</td><td><input type="text" name="cookb" value="<%= param('cookb', 'apache2') %>"/></td></tr>
+	<tr><td>Version 1:</td><td><input type="text" name="v1" value="<%= param('v1', '1.1.8') %>"/> (e.g., '1.3.2')</td></tr>
+	<tr><td>Version 2:</td><td><input type="text" name="v2" value="<%= param('v2', '1.1.12') %>"/> (e.g., '1.3.4')</td></tr>
+	<tr><td></td><td><input type="submit" value="Compare" name="submitCompare"/></td></tr>
+</table>
+<br/>
+<div>
+<% if cookb %>
+Click on file name to show differences. (Unchanged files are printed in grey.)
+<%= 
+	begin
+		ChefUtil.diff_cookbook_versions(cookb, v1, v2)
+	rescue => ex
+		ex
+	end
+%>
+<% end %>
+</div>
+<script type="text/javascript">
+function hideAllDetails(duration) {
+	if(!duration) duration = 500 
+    $(".file .content").each(function() {
+    	$(this).hide("blind", {}, duration);
+    });
+}
+hideAllDetails(10);
+</script>
+</form>
+<%= get_page_footer() %>
+</div>

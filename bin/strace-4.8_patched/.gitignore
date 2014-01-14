@@ -1,0 +1,7 @@
+*.o
+*.Po
+Makefile
+config.h
+config.status
+ioctlent.h
+strace

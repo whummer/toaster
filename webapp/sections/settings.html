@@ -1,0 +1,207 @@
+<div style="width: 100%">
+<%  
+require "toaster/db/db"
+require "toaster/model/automation"
+require "toaster/test/test_suite"
+
+message = nil
+backups = []
+testresult_collections = []
+
+if param('saveSettings') != ""
+	connection_changed = 	param('mongoHost') != $session['mongoHost'] ||
+							param('mongoPort') != $session['mongoPort'] ||
+							param('mongoDB') != $session['mongoDB'] ||
+							param('mongoColl') != $session['mongoColl']
+	$session['mongoHost'] = param('mongoHost')
+	$session['mongoPort'] = param('mongoPort')
+	$session['mongoDB'] = param('mongoDB')
+	$session['mongoColl'] = param('mongoColl')
+	message = "Database settings successfully applied."
+	if connection_changed
+		load_cache()
+		Toaster::Cache.clear()
+		message += " Cache has been cleaned due to changes in connection settings."
+	end
+end
+
+init_mongo() && begin
+
+	if param('clearCache') != ""
+		load_cache()
+		Toaster::Cache.clear()
+	end
+
+	if param('updateCache') != ""
+		$session['do_cache'] = param("doCache") == "" ? "0" : "1"
+		$session.update()
+	end
+
+	if param("clearDB") != "" || param("backupDB") != ""
+		Toaster::DB.instance.backup()
+		message = "Database backup created. "
+	end
+
+	if param("clearDB") != ""
+		$coll.remove
+		load_cache()
+		Toaster::Cache.clear()
+		message += "Database cleared. Cache cleaned."
+	end
+
+	if param('cleanDB') != ""
+		if param('doCleanEmptyAutos') != ""
+			autos = Toaster::Automation.find()
+			autos.each do |auto|
+				if auto.get_num_runs <= 0
+					auto.delete
+				end
+			end
+		end
+		if param('doCleanEmptySuites') != ""
+			suites = Toaster::TestSuite.find()
+			suites.each do |suite|
+				if suite.test_cases.size <= 0
+					suite.delete
+				end
+			end
+		end
+		if param('doCleanSuitesWithoutAuto') != ""
+			suites = Toaster::TestSuite.find()
+			suites.each do |suite|
+				if !suite.automation
+					suite.delete
+				end
+			end
+		end
+		cleanOrph = param('doCleanOrphanedRuns') != ""
+		cleanEmpty = param('doCleanEmptyRuns') != ""
+		if cleanOrph || cleanEmpty
+			require "toaster/model/automation_run"
+			runs = Toaster::AutomationRun.find()
+			runs.each do |run|
+				if cleanOrph
+					if !run.automation || !run.automation.name
+						run.delete
+					end
+				end
+				if cleanEmpty
+					if run.get_num_task_executions() <= 0
+						run.delete
+					end
+				end
+			end
+		end
+		message = "Database clean-up was successful."
+	end
+
+	backups = Toaster::DB.instance.get_backups
+	testresult_collections = Toaster::DB.instance.get_testresult_collections
+
+	# restore/delete backup
+	backups.dup.concat(testresult_collections).each do |b|
+		if param("restore_#{b['name']}") != ""
+			Toaster::DB.instance.restore_backup(b['name'])
+			backups = Toaster::DB.instance.get_backups
+			testresult_collections = Toaster::DB.instance.get_testresult_collections
+			message = "Successfully restored backup #{b['name']}"
+		elsif param("delete_#{b['name']}") != ""
+			Toaster::DB.instance.delete_backup(b['name'])
+			backups = Toaster::DB.instance.get_backups
+			testresult_collections = Toaster::DB.instance.get_testresult_collections
+			message = "Successfully deleted backup #{b['name']}"
+		end
+	end
+
+	if param('doTransferBackup') != ""
+		host = param('transferBackupHost')
+		port = param('transferBackupPort').to_i
+		Toaster::DB.instance.transfer_data_to(host, port)
+		message = "Successfully transferred current database state to #{host}:#{port}"
+	end
+
+rescue => ex 
+%>
+	Error:<%= ex %><br/><pre><%= esc_html(ex.backtrace.join("\n")) %></pre>
+<% 
+end
+%>
+<form action="<%= l({'p' => 'settings'}) %>" method="post">
+<input type="hidden" name="sessionID" value="<%= $session['session_id'] %>"/>
+<h2>Settings</h2>
+<h3>Database</h3>
+<% if message %>
+<div class="info"><%= message %></div>
+<% end %>
+MongoDB Host: <input name="mongoHost" value="<%= $session['mongoHost'] %>"/><br/>
+MongoDB Port: <input name="mongoPort" value="<%= $session['mongoPort'] %>"/><br/>
+MongoDB DB: <input name="mongoDB" value="<%= $session['mongoDB'] %>"/> (default is 'toaster')<br/>
+MongoDB Collection: <input name="mongoColl" value="<%= $session['mongoColl'] %>"/> (default is 'toaster')<br/>
+<input type="submit" value="Update" name="saveSettings"/>
+<input style="float: right" type="submit" value="Backup Database Snapshot" name="backupDB"/><br/>
+<input style="float: right" type="submit" value="Clear Entire Database (!)" name="clearDB"/>
+
+<h4>Clean Up Database</h4>
+<table>
+<tr><td><input type="checkbox" name="doCleanSuitesWithoutAuto" checked="checked"/></td>
+	<td>Clean test suites without automations associated to them.</td></tr>
+<tr><td><input type="checkbox" name="doCleanEmptySuites" checked="checked"/></td>
+	<td>Clean test suites which consist of zero test runs.</td></tr>
+<tr><td><input type="checkbox" name="doCleanEmptyAutos" checked="checked"/></td>
+	<td>Clean automations without runs associated to them.</td></tr>
+<tr><td><input type="checkbox" name="doCleanOrphanedRuns" checked="checked"/></td>
+	<td>Clean orphaned automation runs with no automation associated.</td></tr>
+<tr><td><input type="checkbox" name="doCleanEmptyRuns" checked="checked"/></td>
+	<td>Clean automation runs with zero task executions.</td></tr>
+<tr><td></td><td><input type="submit" value="Clean Up" name="cleanDB"/></td></tr>
+</table>
+
+<h4>Database Transfer</h4>
+Copy/transfer the current contents of the database to another database host.<br/>
+Target DB Host: <input type="text" name="transferBackupHost" value="localhost"/><br/>
+Target DB Port: <input type="text" name="transferBackupPort" value="<%= $session['mongoPort'] %>"/><br/>
+<input type="submit" name="doTransferBackup" value="Start Transfer"/>
+
+<h3>Cache</h3>
+
+<input type="checkbox" <%= $session["do_cache"] == "1" ? 'checked="checked"' : "" %> name="doCache"/> Use Server-Side Caching of Database Objects (experimental)<br/>
+<input type="submit" value="Update" name="updateCache"/><br/>
+<input style="float: right" type="submit" value="Clear Cache" name="clearCache"/><br/>
+
+<h3>Existing Backups</h3>
+<table class="tablesorter">
+	<thead><tr><th>#</th><th>Name</th><th>Time</th><th>Size</th><th>Actions</th></tr></thead>
+	<tbody>
+	<% 	i = 0
+		backups.each do |b| %>
+	<tr><td><%= i += 1 %></td><td><%= b['name'] %></td>
+	<td><%= format_time(b['time']) %></td><td><%= b['size'] %></td>
+	<td>
+		<input type="submit" name="delete_<%= b['name'] %>" value="Delete (!)"/>
+		<input type="submit" name="restore_<%= b['name'] %>" value="Restore"/>
+	</td>
+	</tr>
+	<% end %>
+	</tbody>
+</table>
+
+<h3>Test Result Databases</h3>
+<table class="tablesorter">
+	<thead><tr><th>#</th><th>Name</th><th>Time</th><th>Size</th><th>Actions</th></tr></thead>
+	<tbody>
+	<% 	i = 0
+		testresult_collections.each do |b| %>
+	<tr><td><%= i += 1 %></td><td><%= b['name'] %></td>
+	<td><%= format_time(b['time']) %></td><td><%= b['size'] %></td>
+	<td>
+		<input type="submit" name="delete_<%= b['name'] %>" value="Delete (!)"/>
+		<input type="submit" name="restore_<%= b['name'] %>" value="Restore"/>
+	</td>
+	</tr>
+	<% end %>
+	</tbody>
+</table>
+
+</form>
+<%= get_page_footer() %>
+</div>

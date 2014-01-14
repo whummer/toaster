@@ -1,0 +1,325 @@
+<div>
+<h2>Generate Test Automations</h2>
+<%
+
+require "toaster/test/test_suite"
+require "toaster/agent/agent"
+require "toaster/chef/chef_util"
+require "toaster/util/lxc"
+require "toaster/markup/markup_util"
+require "toaster/state/state_transition_graph"
+require "toaster/test/test_coverage"
+require "toaster/api"
+
+test_suites = []
+output = ""
+automation = nil
+available_cookbooks = []
+available_recipes = {}
+message = ""
+prototypes = []
+errors = ""
+test_coverage = nil
+test_suite = nil
+
+begin
+
+	# restore previously loaded data from session
+	if $session['gen.prototypes'] && $session['gen.prototypes'].to_s.strip != ""
+		prototypes = Toaster::MarkupUtil.parse_json($session['gen.prototypes'])
+	end
+	if $session['gen.available_cookbooks'] && $session['gen.available_cookbooks'].to_s.strip != ""
+		available_cookbooks = Toaster::MarkupUtil.parse_json($session['gen.available_cookbooks'])
+	end
+	if $session['gen.available_recipes'] && $session['gen.available_recipes'].to_s.strip != ""
+		available_recipes = Toaster::MarkupUtil.parse_json($session['gen.available_recipes'])
+	end
+	
+rescue => ex
+	errors += "\nError: #{ex} - #{ex.backtrace.join("\n")}"
+end
+
+init_mongo() && begin
+	
+	begin
+		
+		if param('submitGen') != ""
+	
+			test_suite_id = param('test_id') ? param('test_id') : $session['gen.test_suite_id']
+			test_suite = Toaster::TestSuite.load(test_suite_id)
+			errors += "Could not find test suite with ID '#{test_suite_id}'. Please reload." if !test_suite
+	
+			# set/update parameter values
+			(0..1000).each do |i|
+				param_name = "paramvalues_taskparam#{i}"
+				if param(param_name) != ""
+					param_id = param(param_name)
+					param_values = param("paramvalues_value#{i}")
+					test_suite.parameter_test_values[param_id] = param_values
+				else
+					break
+				end
+			end
+	
+			test_suite.save()
+	
+			cookbook = param("cookbook")
+			recipes = param("recipes")
+			prototype = param("prototype")
+
+			client = ToasterAppClient.new(param('server'))
+			output += client.runtests(test_suite.uuid.to_s)
+		end
+
+	rescue => ex
+		errors += "\nError: #{ex} - #{ex.backtrace.join("\n")}"
+	end
+
+	if param('createProto') != ""
+		name = param('protoName')
+		if !name.match(/^[a-zA-Z0-9_]+$/)
+			message += "The prototype name must match the pattern [a-zA-Z0-9_]+"
+		elsif prototypes.include?(name)
+			message += "A prototype with the same name already exists."
+		else
+			distro = param('protoOS')
+	        output = Toaster::LXC.new_prototype(param('server'), name, distro)
+			$session['gen.prototypes'] = ""
+		end
+	end
+
+	if param('initSuite') != ""
+		output = ""
+		prototype_name = param('prototype')
+		if prototype_name == ""
+			errors += "Please load the list of prototypes and select (or create) a prototype container."
+		else
+			recipes = param('recipe','default')
+			cookbook = param('cookbook')
+			destroy_lxc = param('destroyLXC') != "" ? true : false
+
+			client = ToasterAppClient.new(param('server'))
+
+			if param('download') != ""
+				output += client.download(cookbook, prototype_name, "latest", recipes)
+			end
+			output += client.testinit(cookbook, recipes, prototype_name, destroy_lxc)
+		end
+		# if we don't clear the cache here, the new test suite will not be loaded..
+		clear_cache(true)
+	end
+
+	if param('loadTest') != "" && param('test_id') != ""
+		test_suite = Toaster::TestSuite.load(param('test_id'))
+	elsif $session['gen.test_suite_id'] != ""
+		begin
+			test_suite = Toaster::TestSuite.load($session['gen.test_suite_id'])
+		rescue => ex
+			#errors += "#{ex}\n"
+			$session['gen.test_suite_id'] = ""
+		end
+	end
+
+	if test_suite
+		automation = test_suite.automation
+		if test_suite && test_suite.automation
+			set_param('cookbook', automation.get_short_name())
+		end
+		$session['gen.test_suite_id'] = test_suite.id.to_s
+	end
+
+	# retrieve list of available cookbooks from opscode
+	if param("loadOpsCode") != ""
+		books = ChefUtil.available_cookbooks_from_opscode()
+		if books
+			books.each do |b|
+				available_cookbooks << b["cookbook_name"]
+			end
+			$session['gen.available_cookbooks'] = Toaster::MarkupUtil.to_json(available_cookbooks)
+		end
+		message += "Loaded #{books.size} cookbooks from opscode. Try auto-completion in textfield." if !books.empty?
+	end
+	
+	# retrieve list of available recipes for a specific cookbook
+	if param("loadOpsCodeRecipes") != ""
+		recipes = ChefUtil.available_recipes_from_opscode(param('cookbook'))
+		if recipes
+			available_recipes[param('cookbook')] = []
+			recipes.each do |r|
+				available_recipes[param('cookbook')] << r["recipe_name"]
+			end
+			$session['gen.available_recipes'] = Toaster::MarkupUtil.to_json(available_recipes)
+		end
+		message += "Loaded #{recipes.size} recipes for cookbook '#{param('cookbook')}' from opscode. Try auto-completion in textfield." if !recipes.empty?
+	end
+
+	if param("loadProtos") != "" || $session['gen.prototypes'] == ""
+		prototypes = Toaster::LXC.get_prototypes_for_host(param('server'))
+		#puts "protos: #{prototypes}"
+		prototypes = prototypes.keys.collect { |name| Toaster::LXC.get_prototype_name(name) }
+		$session['gen.prototypes'] = Toaster::MarkupUtil.to_json(prototypes)
+	end
+
+	if test_suite && param('compCoverage') != ""
+		state_graph = StateTransitionGraph.build_graph_for_test_suite(test_suite)
+		test_coverage = TestCoverage.new(test_suite, state_graph)
+	end
+
+	test_suites = Toaster::TestSuite.find()
+	test_suites.sort! { |x,y| (!x.last_test || !y.last_test) ? 0 : x.last_test.start_time <=> y.last_test.start_time }
+rescue => ex
+	errors += "\nError: #{ex} - #{ex.backtrace.join("\n")}"
+end
+
+%>
+<% if output && output.to_s.strip != "" %>
+Script Output:
+<pre style="height: 400px; overflow: auto;"><%= esc_html(output) %></pre>
+<% end %>
+<% if errors && errors.to_s != "" %>
+<div class="error"><%= esc_html(errors).gsub("\n", "<br/>") %></div>
+<% end %>
+<% if message && message.to_s != "" %>
+<div class="info"><%= message %></div>
+<% end %>
+<form action="<%= l({'p' => 'gen'}) %>" method="post">
+<input type="hidden" name="sessionID" value="<%= $session['session_id'] %>" />
+
+<h3>Setup LXC Prototype</h3>
+
+<table>
+<tr><td><b>Host Server:</b></td><td><input type="text" name="server" 
+	value="<%= param('server', "#{Toaster::Config.host("toaster1")}:8385") %>"/></td></tr>
+<tr><td style="vertical-align: top"><b>Prototype Container:</b></td><td>
+	<div style="float: left; width: 49%">
+	<u>Use Prototype</u>:
+	<select name="prototype">
+	<% prototypes.each do |p| %>
+	<option value="<%= p %>"<%= option_selected('prototype', p) %>><%= p %></option>
+	<% end %>
+	</select>
+	<input type="submit" value="Load Prototypes" name="loadProtos"/><br/>
+	</div>
+	<div style="float: left; width: 49%">
+	<u>Create new Prototype</u>:<br/>
+	Name: <input type="text" name="protoName" value="<%= param('protoName', '') %>"/><br/>
+	Operating System:
+	<select name="protoOS">
+	<option value="fedora">Fedora</option>
+	<option value="ubuntu">Ubuntu</option>
+	</select><br/>
+	<!-- <input type="checkbox" name="downloadDEPS" <%= checkbox_checked('downloadDEPS') %>/> Include dependencies from DEPS_FILE_URL:  
+	<input type="text" name="depsURL" value="<%= param('depsURL', '') %>" style="width: 400px;"/><br/> -->
+	<input type="submit" value="Create New Prototype" name="createProto"/><br/>
+	</div>
+</td></tr>
+</table>
+
+<h3>Initialize</h3>
+
+<table>
+<tr><td style="vertical-align: top"><b>Automation Name:</b></td><td>
+	<input type="text" name="cookbook" id="cookbook" value="<%= param('cookbook', 'mysql') %>"/>
+	<input type="submit" value="Load Chef Cookbooks from OpsCode.com" name="loadOpsCode"/><br/>
+	<% if !available_cookbooks.empty? %>
+	<script type="text/javascript">
+	$(function() {
+	  var availables = <%= available_cookbooks.inspect %>;
+      $("#cookbook").autocomplete({source: availables});
+	});
+	</script>
+	<% end %> 
+	<input type="checkbox" name="download" checked="checked"/> Download latest version from opscode.com (copy files into prototype)<br/>
+</td></tr>
+<tr><td style="vertical-align: top"><b>Recipe Name(s):</b></td><td>
+	<input type="text" name="recipe" id="recipes" value="<%= param('recipe', '') %>"/>
+	<input type="submit" value="Load Chef Recipes from OpsCode.com" name="loadOpsCodeRecipes"/><br/>
+	<% if available_recipes[param('cookbook')] && !available_recipes[param('cookbook')].empty? %>
+	<script type="text/javascript">
+	$(function() {
+	  var availables = <%= available_recipes[param('cookbook')].inspect %>;
+      $("#recipes").autocomplete({source: availables});
+	});
+	</script>
+	<% end %> 
+	(Use space or comma as separator. If empty, <i>"&lt;cookbook_name&gt;::default"</i> is used.)<br/>
+</td></tr><tr><td style="vertical-align: top"><b>Chef Attributes:</b></td><td>
+	
+</td></tr>
+<tr>
+	<td></td><td>
+		<input type="checkbox" name="destroyLXC" checked="checked"/> Destroy container after test execution.<br/>
+		<input type="submit" value="Initialize Test Suite" name="initSuite"/>
+	</td>
+</tr>
+</table>
+
+<h3>Configure</h3>
+
+<table>
+<tr><td><b>Existing Test Suites:</b></td><td>
+		<select name="test_id">
+		<% test_suites.each do |s| %>
+		<option value="<%= s.id %>"<%= option_selected('test_id', s.id) %>>
+		<%= s.automation_name() %> -- <%= s.test_cases.size %> test case<%= s.test_cases.size != 1 ? "s" : "" %> -- last test: <%= format_time(s.last_test_time()) %></option>
+		<% end %>
+		</select>
+		<input type="submit" name="loadTest" value="Load Settings"/>
+	</td></tr>
+<% if automation 
+	executed_tasks = automation.get_globally_executed_tasks()
+%>
+<tr>
+	<td style="vertical-align: top;"><b>Automation Tasks</b></td>
+	<td><table>
+	<tr><th>Parameter</th><th>Default Value</th><th>Test Values</th></tr>
+	<% executed_tasks.each do |t| %>
+	<tr><td colspan="3"></td></tr>
+	<tr><td colspan="3" style="text-align: center">
+	Task '<a href="<%= l('task'=>t.id, 't'=>'tasks') %>"><%= t.name %></a>'
+	<span style="float: right">(<%= t.global_states_reduced().size %> distinct state(s))</span>
+	</td></tr>
+		<% t.parameters.each_with_index do |p,index| %>
+		<tr><td><%= p ? p.key : "n/a" %></td><td><%= p ? automation.get_default_value(p.key) : "n/a" %></td>
+		<td>
+		<input type="hidden" name="paramvalues_taskparam<%= index %>" value="<%= t.id %>"/>
+		<textarea name="paramvalues_value<%= index %>" style="width: 300px; height: 30px;"><%= p ? automation.get_default_value(p.key) : "" %></textarea></td>
+		</tr>
+		<% end %>
+	<% end %>
+	</table></td>
+</tr>
+<tr><td style="vertical-align: top"><b>Test Settings:</b></td><td>
+	<table>
+		<tr><td><b>Idempotence</b></td><td colspan="2">1 &#8804; N &#8804; <input type="text" name="idempotenceN" style="width: 40px" value="<%= param('idempotenceN','0') %>"/> (test idempotence of N consecutive tasks)</td></tr>
+		<tr><td><b>Combinations</b></td>
+			<td>skip-N:</td><td>N &#8712; {<input type="text" name="skipN" value="<%= param('skipN') %>"/>}</td></tr>
+			<tr><td></td><td>skip-N-successive:</td><td>N &#8712; {<input type="text" name="skipNsucc" value="<%= param('skipNsucc') %>"/>}</td></tr>
+			<tr><td></td><td>combine-N:</td><td>N &#8712; {<input type="text" name="combineN" value="<%= param('combineN') %>"/>}</td></tr>
+			<tr><td></td><td>combine-N-successive:</td><td>N &#8712; {<input type="text" name="combineNsucc" value="<%= param('combineNsucc') %>"/>}</td></tr>
+		<tr><td><b>Graph Coverage</b></td>
+			<td colspan="2"><select name="graphCoverage">
+				<option value="nodes">Cover all nodes</option>
+				<option value="trans">Cover all transitions</option>
+				<option value="transPairs">Cover all transition pairs</option>
+			</select></td></tr>
+	</table>
+</td></tr>
+<tr><td style="vertical-align: top"><b>Test Coverage So Far:</b></td><td>
+	<% if test_coverage && state_graph %>
+	Covered Transitions: <%= test_coverage.covered_transitions().size %> of <%= state_graph.edges().size %><br/>
+	Covered States: <%= test_coverage.covered_states().size %> of <%= state_graph.nodes().size %>
+	<% else %>
+	<input type="submit" name="compCoverage" value="Compute Coverage"/>
+		<% if executed_tasks.size > 10 %>
+		<% end %>
+	<% end %>
+</td></tr>
+<tr><td></td><td><input type="submit" name="submitGen" value="Generate/Execute Tests"/></td></tr>
+<% end %>
+</table>
+
+</form>
+
+<%= get_page_footer() %>
+</div>
