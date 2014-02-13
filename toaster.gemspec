@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.description = %q{A tool for automated testing and debugging of automation scripts (e.g., Chef).}
   s.email = [%q{hummer@infosys.tuwien.ac.at}]
   s.extra_rdoc_files = [
-    "LICENSE.txt",
+    "LICENSE",
     "README.md",
     "Rakefile",
     "VERSION"
