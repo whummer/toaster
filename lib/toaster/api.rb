@@ -31,9 +31,10 @@ module Toaster
 
     # create new prototype container
     desc "proto NAME [OS_DISTRO]", "Create a new prototype container with given NAME and OS_DISTRO."
-    #option :os, :default => "ubuntu", :desc => "Operating System", :banner => "(ubuntu|fedora)"
     long_desc "Example: #{CMD} proto ubuntu1 ubuntu"
     def proto(prototype_name, operating_system="ubuntu")
+
+      prototype_name = "prototype_#{prototype_name}" if !prototype_name.match(/^prototype_.*/)
 
       #operating_system = options[:os]
       write(CHEF_TMP_NODE_FILE, <<-EOF
