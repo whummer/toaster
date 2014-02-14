@@ -28,12 +28,12 @@ set['ruby']['install_script']['ubuntu'] = <<-EOH
 
   	# force non-interactive install mode
   	export DEBIAN_FRONTEND=noninteractive
-  
+
   	# install some dependencies
-  
+
     # The following line fails under Ubuntu quantal..
-  	apt-get -y --force-yes install libc6-dev-amd6 libeditline-dev
-    apt-get -y --force-yes install build-essential 
+    apt-get -y --force-yes install libc6-dev-amd6
+    apt-get -y --force-yes install libeditline-dev build-essential
 	  # removed from list: package rubygems (automatically installs Ruby 1.8, which is undesired)
   	apt-get -y --force-yes install bison git autoconf automake patch make bzip2 zlib1g-dev sed libtool
   	apt-get -y --force-yes install less screen whiptail tar lsof unzip curl wget patch apt-utils make vim
@@ -41,6 +41,7 @@ set['ruby']['install_script']['ubuntu'] = <<-EOH
   	# RVM wants us to install even more dependencies...
   	# removed package "openssl" from list 
   	apt-get -y --force-yes install libreadline-dev libedit-dev
+  	apt-get -y --force-yes install libssl-dev
   	apt-get -y --force-yes install git-core zlib1g zlib1g-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev curl 
   	apt-get -y --force-yes install libxslt-dev autoconf libc6-dev ncurses-dev automake bison subversion pkg-config
   	apt-get -y --force-yes install lib32z1-dev

@@ -19,29 +19,9 @@ if [ "$existing" == "" ]; then
 
 	echo "INFO: updating installation of Ruby using RVM"
 	if [ "$distribution" == "fedora" ]; then
-		# removed package from list: rubygem-rvm
-		yum -y install bison autoconf automake zlib git libyaml gcc-c++ patch readline readline-devel sed
-		yum -y install zlib-devel libyaml-devel libffi-devel openssl-devel make bzip2 libtool iconv-devel unzip
-
+		# code removed (see chef/cookbooks/lxc/attributes/install_ruby.rb)
 	elif [ "$distribution" == "ubuntu" ]; then
-
-		# force non-interactive install mode
-		export DEBIAN_FRONTEND=noninteractive
-
-		# The following line fails under Ubuntu quantal..
-		apt-get -y install build-essential libc6-dev-amd64 libtool
-
-		apt-get -y install bison git autoconf automake rubygems patch make bzip2 zlib1g-dev sed
-		apt-get -y install less screen whiptail tar lsof unzip curl wget patch apt-utils make vim
-
-		# RVM wants us to install even more dependencies...
-		# removed package "openssl" from list
-		apt-get -y install libreadline6 libreadline6-dev curl 
-		apt-get -y install git-core zlib1g zlib1g-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev 
-		apt-get -y install libxslt-dev autoconf libc6-dev ncurses-dev automake bison subversion pkg-config
-
-		apt-get -y install lib32z1-dev
-
+		# code removed (see chef/cookbooks/lxc/attributes/install_ruby.rb)
 	fi
 
 	curl -L https://get.rvm.io | bash -s stable
