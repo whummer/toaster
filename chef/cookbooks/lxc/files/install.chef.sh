@@ -18,11 +18,12 @@ existing=`which ruby`
 if [ "$existing" == "" ]; then
 
 	echo "INFO: updating installation of Ruby using RVM"
-	if [ "$distribution" == "fedora" ]; then
-		# code removed (see chef/cookbooks/lxc/attributes/install_ruby.rb)
-	elif [ "$distribution" == "ubuntu" ]; then
-		# code removed (see chef/cookbooks/lxc/attributes/install_ruby.rb)
-	fi
+	# code removed (see chef/cookbooks/lxc/attributes/install_ruby.rb)
+	#if [ "$distribution" == "fedora" ]; then
+	# ...
+	#elif [ "$distribution" == "ubuntu" ]; then
+	# ...
+	#fi
 
 	curl -L https://get.rvm.io | bash -s stable
 	source /usr/local/rvm/scripts/rvm
