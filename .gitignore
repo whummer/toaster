@@ -1,5 +1,4 @@
 *.log
-*.gem
 build/
 build.tmp
 test_output.txt
