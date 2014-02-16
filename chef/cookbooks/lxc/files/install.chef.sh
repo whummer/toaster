@@ -7,9 +7,9 @@ elif [ "`cat /etc/issue | grep Ubuntu`" != "" ]; then
 	distribution="ubuntu"
 fi
 
-RUBY_VERSION='<%= node["ruby"]["version"] %>'
-if [ "${RUBY_VERSION:0:1}" == "<" ]; then
-	RUBY_VERSION=ruby-2.0.0-p0
+INST_RUBY_VERSION='<%= node["ruby"]["version"] %>'
+if [ "${INST_RUBY_VERSION:0:1}" == "<" ]; then
+	INST_RUBY_VERSION=ruby-2.0.0-p0
 fi
 
 gem_opts="--no-ri --no-rdoc"
@@ -38,7 +38,7 @@ if [ "$existing" == "" ]; then
 	# enable "autolibs" feature in new RVM versions
 	rvm autolibs enable
 
-	rvm install $RUBY_VERSION
+	rvm install $INST_RUBY_VERSION
 
 	source /usr/local/rvm/scripts/rvm
 
@@ -47,7 +47,7 @@ if [ "$existing" == "" ]; then
 	# gem bundler required for Ruby 2.0.0
 	gem install bundler --pre
 
-	rvm use $RUBY_VERSION
+	rvm use $INST_RUBY_VERSION
 
 fi
 
@@ -57,7 +57,7 @@ if [ "$existing" == "" ]; then
 	# add two lines to the beginning (!) of /root/.bashrc
 	if [ "`cat /root/.bashrc | grep 'rvm use'`" == "" ]; then
 		sed -i "2isource /usr/local/rvm/scripts/rvm" /root/.bashrc
-		sed -i "3irvm use $RUBY_VERSION" /root/.bashrc
+		sed -i "3irvm use $INST_RUBY_VERSION" /root/.bashrc
 	fi
 
 	echo "INFO: You might have to run 'bash' to load required Ruby environment variables."
