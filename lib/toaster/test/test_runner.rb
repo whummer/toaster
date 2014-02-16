@@ -55,7 +55,6 @@ module Toaster
           running = true
           while running
             begin
-              #puts "INFO: Thread #{Thread.current} waiting for test case to arrive in the queue..."
               test_case = nil
               @local_semaphore.synchronize do
                 # terminate if no more requests are queued
@@ -71,7 +70,6 @@ module Toaster
                 end
               end
               if test_case
-                #puts "INFO: Thread #{Thread.current} got test case from queue, instructing test runner to run test.."
                 begin
                   automation_run = TestRunner.execute_test(test_case)
                   @result_map.put(test_case, automation_run)
@@ -115,12 +113,8 @@ module Toaster
 
       @test_suite.save()
 
-      # start learning phase
-      execute_tests(@test_generator.gen_test_each_task())
-      execute_tests(@test_generator.gen_test_exclude_each_task())
-
-      # start repetition phase
-      execute_tests(@test_generator.gen_test_each_transition())
+      # generate tests
+      execute_tests(@test_generator.gen_all_tests())
 
       @test_suite.save()
 
@@ -189,7 +183,7 @@ module Toaster
       start_worker_threads()
 
       if do_wait_until_finished
-        puts "INFO: Waiting until test cases are finished: #{test_cases}"
+        puts "INFO: Waiting until #{test_cases.size} test cases are finished."
         wait_until_finished(test_cases)
       end
     end
@@ -304,10 +298,8 @@ module Toaster
         automation_run_id = nil
         pattern = /.*Current automation run ID:\s*([a-z0-9_\-]+)/
         output.scan(pattern) { |id| automation_run_id = id[0].strip }
-        #puts "DEBUG: Extracted automation run ID: ->>>#{automation_run_id}<<<-"
 
         if !automation_run_id || !automation_run_id.match(/[a-zA-Z0-9_\-]+/)
-          #puts "Output: >>> #{output} <<<"
           puts "WARN: Could not extract automation run ID from output of previous test case run ('#{automation_run_id}')."
           # repeat the process
           (1..num_repeats).each do |iteration|

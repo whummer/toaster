@@ -104,9 +104,9 @@ module Toaster
     end
 
     # Run a Chef recipe within a container
-    desc "runchef NAME IP CHEF_RUNLIST CHEF_JSON", "Run Chef recipe in container with NAME and IP."
+    desc "runchef NAME IP CHEF_RUNLIST [CHEF_JSON]", "Run Chef recipe in container with NAME and IP."
     long_desc "Example: #{CMD} lxc1 192.168.100.2 recipe[java] \\\"foo1\\\":\\\"bar\\\",\\\"foo2\\\":\\\"bar\\\""
-    def runchef(lxc_name, lxc_ip, run_list, cfg)
+    def runchef(lxc_name, lxc_ip, run_list, cfg="")
 
       if cfg != ""
         cfg = ", #{cfg}"
@@ -115,11 +115,13 @@ module Toaster
       if Dir.exist?("/lxc/#{lxc_name}/rootfs/")
         tmpf = `mktemp`
         tmpf1 = `mktemp`
+        tmpf.strip!
+        tmpf1.strip!
         tmpfile = "/lxc/#{lxc_name}/rootfs/#{tmpf}"
         tmpfile1 = "/lxc/#{lxc_name}/rootfs/#{tmpf1}"
-        write("{\"run_list\": [\"#{run_list}\"] #{cfg}}", tmpfile)
+        write(tmpfile, "{\"run_list\": [\"#{run_list}\"] #{cfg}}")
         `cp #{CHEF_TMP_SOLO_FILE} #{tmpfile1}`
-        puts "INFO: Created config file #{tmpfile}: `cat #{tmpfile}`"
+        puts "INFO: Created config file #{tmpfile}: #{`cat #{tmpfile}`}"
         system("ssh root@#{lxc_ip} chef-solo -j #{tmpf} -c #{tmpf1}")
         `rm -f #{tmpfile} #{tmpfile1}`
       else
@@ -192,7 +194,10 @@ module Toaster
         test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::COMBINE_N] = combine_N if combine_N
         test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::COMBINE_N_SUCCESSIVE] = combine_N_succ if combine_N_succ
         test_suite.save()
-        Toaster::TestManager.run_tests(test_suite, true)
+        orch = Toaster::TestOrchestrator.new
+        orch.generate_tests_for_suite(test_suite)
+        orch.add_host("localhost") # TODO make configurable
+        orch.distribute_tests(test_suite)
       end
     end
 

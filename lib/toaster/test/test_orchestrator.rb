@@ -79,17 +79,21 @@ module Toaster
     def generate_tests(test_suite_uuid, coverage_goal)
       suite = TestSuite.find({"uuid" => test_suite_uuid})[0]
       suite.coverage_goal = coverage_goal
-      gen = TestGenerator.new(suite)
+      generate_tests_for_suite(suite)
+    end
+
+    def generate_tests_for_suite(test_suite)
+      gen = TestGenerator.new(test_suite)
       puts "INFO: Starting to generate tests..."
       tests = gen.gen_all_tests()
-      puts "INFO: Generated #{tests.size} test cases for test suite #{test_suite_uuid} (#{suite.test_cases.size} test cases so far)."
+      puts "INFO: Generated #{tests.size} test cases for test suite #{test_suite.uuid} (#{test_suite.test_cases.size} test cases so far)."
       tests.each do |test|
-        if !suite.contains_equal_test?(test)
-          suite.test_cases << test
+        if !test_suite.contains_equal_test?(test)
+          test_suite.test_cases << test
         end
       end
-      puts "INFO: Test suite #{test_suite_uuid} now contains #{suite.test_cases.size} test cases."
-      suite.save
+      puts "INFO: Test suite #{test_suite.uuid} now contains #{test_suite.test_cases.size} test cases."
+      test_suite.save
     end
 
     def distribute_test_cases(tests_to_run)
@@ -122,9 +126,11 @@ module Toaster
       end
     end
 
-    def distribute_tests(test_suite_uuid)
-      suite = TestSuite.find({"uuid" => test_suite_uuid})[0]
-      tests = suite.test_cases
+    def distribute_tests(test_suite)
+      if !test_suite.kind_of?(TestSuite) 
+        test_suite = TestSuite.find({"uuid" => test_suite})[0]
+      end
+      tests = test_suite.test_cases
       tests_to_run = []
       tests.each do |t|
         if !t.executed?()

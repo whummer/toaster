@@ -230,7 +230,6 @@ module Toaster
     end
 
     def self.run_tests(test_suite, blocking = true)
-      puts test_suite.class
       if !test_suite.kind_of?(TestSuite)
         test_suite = TestSuite.find({"uuid" => test_suite})
       end

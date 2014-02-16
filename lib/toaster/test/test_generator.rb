@@ -82,14 +82,14 @@ module Toaster
     end
 
     def gen_all_tests()
-      result = []
       cvg_goal = @test_suite.coverage_goal
       if cvg_goal.graph == StateGraphCoverage::STATES
         return gen_test_each_state()
       elsif cvg_goal.graph == StateGraphCoverage::TRANSITIONS
         return gen_test_each_transition()
       end
-      return result
+      puts "WARN: Coverage goal should be either STATES or TRANSITIONS."
+      return []
     end
 
     def gen_test_each_state(max_node_occurrences=2)
@@ -159,10 +159,8 @@ module Toaster
       puts "WARN: no outgoing edges for node #{current_node}!" if current_node.outgoing.empty?
       current_node.outgoing.each do |edge|
         if visited.count(edge.node_to) < max_node_occurrences
-          #visited << edge.node_to
           all_accessible = true
           nodes_to_include.each do |node|
-            #puts "reachable?"
             reachable = nil
             begin 
               reachable = edge.node_to.node_reachable?(node)
