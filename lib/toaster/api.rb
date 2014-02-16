@@ -166,7 +166,7 @@ module Toaster
 
       require "toaster/test/test_suite"
       require "toaster/test/test_coverage"
-      require "toaster/test_manager"
+      require "toaster/test/test_orchestrator"
 
       #idem_N = options[:idemN]
       #skip_N = options[:skipN]

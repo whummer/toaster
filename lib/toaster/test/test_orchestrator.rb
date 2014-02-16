@@ -8,6 +8,8 @@
 #
 
 require "toaster/test/test_case"
+require "toaster/test/test_generator"
+require "toaster/agent/agent"
 
 include Toaster
 
