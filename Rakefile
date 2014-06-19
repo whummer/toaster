@@ -13,11 +13,11 @@ require 'rake'
 
 require 'jeweler'
 Jeweler::Tasks.new do |gem|
-  gem.name = "toaster"
+  gem.name = "cloud-toaster"
   gem.license = "Apache"
   gem.authors     = ["Waldemar Hummer"]
   gem.email       = ["hummer@infosys.tuwien.ac.at"]
-  gem.homepage    = "https://github.com/research/toaster"
+  gem.homepage    = "https://github.com/whummer/toaster"
   gem.summary     = %q{Testing of infrastructure-as-code automations.}
   gem.description = %q{This gem provides tools for testing of infrastructure-as-code automations.}
   gem.files = FileList['lib/**/*.rb', '[A-Z]*', 'spec/**/*'].to_a
@@ -45,7 +45,7 @@ RDoc::Task.new do |rdoc|
   version = File.exist?('VERSION') ? File.read('VERSION') : ""
 
   rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = "toaster #{version}"
+  rdoc.title = "cloud-toaster #{version}"
   rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end

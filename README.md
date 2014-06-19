@@ -29,7 +29,7 @@ source /usr/local/rvm/scripts/rvm
 gem build toaster.gemspec
 gem install --no-ri --no-rdoc toaster-1.0.0.gem
 
-# (OR: install directly using rubygems.org: gem install toaster-tool)
+# (OR: install directly using rubygems.org: gem install cloud-toaster)
 
 # toaster setup:
 toaster setup					# (setup testing host / utility host. Enter 192.168.100.2 as "mongodb.host" parameter)
