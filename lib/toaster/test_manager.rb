@@ -8,9 +8,10 @@ require "toaster/state/system_state"
 require "toaster/state/syscall_tracer"
 require "toaster/markup/markup_util"
 require "toaster/model/task"
+require "toaster/model/state_change"
 require "toaster/model/task_execution"
+require "toaster/model/user"
 require "toaster/test/test_runner"
-require "toaster/db/db"
 require "toaster/util/config"
 require "toaster/test/test_suite"
 require "toaster/util/timestamp"
@@ -29,7 +30,11 @@ module Toaster
       @transfer_state_config = false
       host = "localhost"
       TestManager.init_db(config)
-      run = AutomationRun.new(nil, Util.get_machine_id())
+      user = User.find(config["user_id"])
+      User.set_current_user(user)
+      run = AutomationRun.new(
+        :machine_id => Util.get_machine_id(),
+        :user => user)
       AutomationRun.set_current(run)
 
       if config["task_execution_timeout"]
@@ -103,16 +108,23 @@ module Toaster
       add_automation_specific_state_config(@state_change_config)
 
       # determine which parameters the task code accesses:
-      task.parameters = ResourceInspector.get_accessed_parameters(task)
-      task = task.save
+      task.task_parameters.concat(ResourceInspector.get_accessed_parameters(task))
+      task.save
 
       if execution_uuid
         @state_change_config = ResourceInspector.get_config_for_potential_state_changes(
             task, @cookbook_paths, @state_change_config)
         state = SystemState.get_system_state(@state_change_config)
-        execution = TaskExecution.new(task, state, nil, nil, execution_uuid)
+        execution = TaskExecution.new(
+          :task => task, 
+          :state_before => state, 
+          :uuid => execution_uuid)
         execution.automation_run = AutomationRun.get_current()
-        execution.sourcecode = ChefUtil.runtime_resource_sourcecode(task.resource_obj)
+        sourcecode = ChefUtil.runtime_resource_sourcecode(task.resource_obj)
+        sourcecode.strip! if sourcecode
+        if sourcecode != task.sourcecode
+          execution.sourcecode = sourcecode
+        end
         @current_executions[execution_uuid] = execution
 
         # use the external ptrace-based program to monitor the Chef execution 
@@ -173,7 +185,7 @@ module Toaster
         MarkupUtil.rmerge!(execution.state_before, add_prestate, true)
 
         execution.end_time = TimeStamp.now().to_i
-        execution.script_output = script_output
+        execution.output = script_output
         execution.reduce_and_set_state_after(state)
         execution.success = error.nil?
         error = "#{error}\n" + "#{error.backtrace.join("\n")}" if error.respond_to?("backtrace")
@@ -183,7 +195,7 @@ module Toaster
         s_before = MarkupUtil.clone(execution.state_before)
         s_after = MarkupUtil.clone(execution.state_after)
 
-        puts "DEBUG: states before/after #{execution}: #{execution.state_before}\n/\n#{execution.state_after}"
+        #puts "DEBUG: states before/after #{execution}: #{execution.state_before}\n/\n#{execution.state_after}"
         # compute state changes
         prop_changes = SystemState.get_state_diff(s_before, s_after)
         execution.state_changes = prop_changes
@@ -216,7 +228,10 @@ module Toaster
       test_id = test_id || Util.generate_short_uid()
       suite = TestSuite.find({"uuid" => test_id})
       return suite if suite && suite.size > 0
-      suite = TestSuite.new(nil, recipes, test_id, prototype)
+      suite = TestSuite.new(
+        :recipes => recipes,
+        :uuid => test_id,
+        :lxc_prototype => prototype)
       suite.save
       automation = TestRunner.ensure_automation_exists_in_db(
         automation_name, recipes, suite, destroy_container, print_output)

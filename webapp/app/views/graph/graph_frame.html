@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+ <head>
+
+  <%= stylesheet_link_tag    "application", media: "all", "data-turbolinks-track" => true %>
+  <%= javascript_include_tag "application", "data-turbolinks-track" => true %>
+  <%= csrf_meta_tags %>
+
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+ </head>
+ <body>
+
+	<div id="loading" style="text-align: center;">
+		<img src="<%= image_url("loading.gif") %>" /><br/>
+		Loading, please wait...
+	</div>
+	<div id="graphContainer" class="container" 
+		style="background: #efefff;">
+	</div>
+
+	<script type="text/javascript">
+	// dummy graph (real graph should be output below...)
+	graph = {
+		 "nodes" : [ { "ID" : "n1", "name" : "N 1" },
+		 		{ "ID" : "n2", "name" : "N 2" } ],
+		 "edges" : [ { "from" : "n1", "to" : "n2" } ]
+	};
+
+	<%
+	require "toaster/model/automation"
+	require "toaster/state/state_transition_graph"
+	require "toaster/util/util"
+	require "toaster/util/timestamp"
+	require "toaster/test/test_coverage"
+	TimeStamp.do_output(false)
+	graph = nil
+
+	if param('auto') != ""
+		begin
+			automation = cur_auto
+			# define graph criteria
+			criteria = TestCoverageGoal.new
+			criteria.optimize_for_rendering = true
+			criteria.idempotence = param('idemN').split(/[ ,;]+/).collect { |i| i.to_i }
+			if param('skipN') != ""
+				criteria.combinations[CombinationCoverage::SKIP_N] = 
+					param('skipN').split(/[,;: ]+/).collect { |i| i.to_i } 
+			end
+			if param('skipNsucc') != ""
+				criteria.combinations[CombinationCoverage::SKIP_N_SUCCESSIVE] = 
+					param('skipNsucc').split(/[,;: ]+/).collect { |i| i.to_i } 
+		 	end
+		 	if param('combineN') != ""
+			 	criteria.combinations[CombinationCoverage::COMBINE_N] =
+					param('combineN').split(/[,;: ]+/).collect { |i| i.to_i } 
+			#puts "criteria.combinations[CombinationCoverage::SKIP_N] #{criteria.combinations[CombinationCoverage::SKIP_N].inspect}"
+		 	end
+		 	if param('combineNsucc') != ""
+			 	criteria.combinations[CombinationCoverage::COMBINE_N_SUCCESSIVE] =
+					param('combineNsucc').split(/[,;: ]+/).collect { |i| i.to_i } 
+		 	end
+		 	if param('repeatN') != ""
+			 	criteria.repeat_N = param('repeatN').to_i
+		 	end
+		 	if param('onlyStart') != ""
+			 	criteria.only_connect_to_start = param('onlyStart') == "true"
+		 	end
+		 	
+
+			# initialize graph
+			begin
+				Toaster::Util.exec_timeout(1*60, Timeout::ExitException) {
+					graph = Toaster::StateTransitionGraph.build_graph_for_automation(
+						automation, criteria)
+				}
+		 	rescue Timeout::ExitException => eexc
+		 		puts "WARN: Graph generation aborted due to timeout."
+		 		%>
+		 		alert("WARN: Graph generation aborted due to timeout.");
+		 		<% 
+		 	end
+		rescue => ex
+			puts "#{ex}: #{ex.backtrace.join("\n")}"
+		end
+	%>
+	graph = <%= graph ? graph.to_simple_json().html_safe : {} %>
+	<% end %>
+	</script>
+	<script type="text/javascript">
+	$(document).ready(function() {
+		try {
+			loadGraph(graph);
+		} catch(exc) {
+			alert("ERROR: " + exc);
+		}
+		$("#loading").hide();
+	});
+	</script>
+ </body>
+</html>

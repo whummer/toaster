@@ -1,0 +1,91 @@
+<%
+require "toaster/model/automation_run"
+
+runs = []
+auto = nil
+run = nil
+
+begin
+
+	auto = cur_auto()
+	runs = cur_runs()
+	run = cur_run()
+	puts "run #{run}"
+
+end
+
+%>
+<div>
+<h2>Automation Runs</h2>
+
+<ul><li>
+<% if auto %>
+	Displaying runs of automation <b>'<%= auto.name %>'</b>. 
+	(<a href="/execs">show all</a>)
+<% else %>
+	Displaying runs of all automations. Use the 'Automation' section to filter the list for a specific automation.
+<% end %>
+</li></ul>
+
+<table class="tablesorter">
+<thead>
+<tr><th>#</th><th>Automation</th><th>Start Time</th><!-- <th>Machine ID</th> -->
+<th>Task Executions</th><th>Duration</th><th>Success</th><th colspan="2">Actions</th></tr>
+</thead>
+<tbody>
+<% runs.each_with_index { |row,id| 
+clazz = row.success ? 'success' : 'error'
+active = row.id.to_s == param('run')
+clazz += ' active' if active
+param_run = active ? "" : row.id
+auto_name = row.automation ? row.automation.name : "n/a"
+param_hash = {"run" => param_run}.merge(row.automation ? {'auto' => row.automation.id} : {})
+%>
+<tr class="<%= clazz %>">
+	<td><%= id+1 %></td>
+	<td><% if row.automation %><a href="/scripts/<%= row.automation.id %>/details"><% end %><%= auto_name %></a></td>
+	<td><nobr><%= format_time(row.start_time) %></nobr></td>
+<!--   <td><%= row.machine_id %></td> -->
+	<td class="center"><%= row.get_num_task_executions() %></td>
+	<td class="center"><%= to_minutes(row.end_time.to_i - row.start_time.to_i) %></td>
+	<td class="center"><%= row.success ? "true" : "false" %></td>
+	<td><% if row.automation %><a href="/execs/<%= row.automation.id %>/<%= row.id %>">details</a><% end %></nobr></td>
+	<td><% if row.automation %><a href="/execs/<%= row.automation.id %>/<%= row.id %>/tasks">executed tasks</a><% end %></nobr></td>
+</tr>
+<% } %>
+</tbody>
+</table>
+
+<% if run %>
+	<h3>Details of Automation Run</h3>
+	<% if !run.automation %>
+	<div class="error"></div><ul><li>Attributes could not be parsed because the automation run is not associated with any automation in the database.</li></ul></div>
+	<% else %>
+	<ul><li>Attributes with no user-specified value are printed in low opacity.</li></ul>
+	<table class="tablesorter">
+	<thead>
+	<tr><th>#</th><th>Attribute</th><th>Default Value</th><th>Specified Value</th></tr>
+	</thead>
+	<tbody>
+	<% id = 0
+	default_attributes = run.automation.get_flat_attributes()
+	specific_attributes = run.get_flat_attributes()
+	attrs = default_attributes.dup.merge(specific_attributes)
+	attrs.each { |name,val| 
+		default_val = default_attributes[name]
+		clazz = val == default_val ? " class=\"unremarkable\"".html_safe : ""
+	%>
+	<tr<%= clazz %>>
+		<td><%= id=id+1 %></td>
+		<td><%= name %></td>
+		<td><%= default_val %></td>
+		<td><%= val %></td>
+	</tr>
+	<% } %>
+	</tbody>
+	</table>
+	<% end %>
+	
+<% end %>
+
+</div>

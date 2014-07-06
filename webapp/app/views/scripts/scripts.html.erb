@@ -1,0 +1,115 @@
+<h1>Automations</h1>
+
+<div>
+<%
+require "toaster/model/automation"
+require "toaster/markup/markup_util"
+
+autos = []
+auto = nil
+message = nil
+
+autos = Toaster::Automation.find()
+auto = cur_auto()
+
+if auto && param('saveIgnored') != ""
+	auto.ignore_properties = param('ignoredProps').split(/\s*\n\s*/)
+	auto.save
+	message = "Successfully saved ignore properties for automation."
+end
+
+if auto && param('saveAddit') != ""
+	auto.additional_state_configs = MarkupUtil.parse_json(param('additProps'))
+	auto.save
+	message = "Successfully saved additional state change properties for automation."
+end
+
+%>
+<form action="#" method="post">
+<% if message %>
+<div class="info"><%= message %></div>
+<% end %>
+<table class="tablesorter">
+<thead>
+<tr>
+	<th>#</th><th>Name</th><th>Type</th><th>Visibility</th><th>Tasks</th>
+	<th>Attributes</th><th>Runs</th><th colspan="6">Actions</th></tr>
+</thead>
+<tbody>
+<% autos.each_with_index { |row,id| 
+t = Time.now.to_i
+active = row.id.to_s == param('auto')
+param_auto = active ? "" : row.id
+param_hash = {"auto" => param_auto, "run" => "", "task" => "", "exe" => ""}
+num_runs = row.get_num_runs	
+globally_executed_tasks = row.get_globally_executed_tasks
+%>
+<tr<%= active ? " class=\"active\"" : "" %>>
+	<td><%= id+1 %></td>
+	<td><a href="scripts/<%= row.id %>"><%= row.name %></a></td>
+	<td><%= row.language %></td>
+	<td><%= row.visibility %></td>
+	<td><%= globally_executed_tasks.size %></td>
+	<td><%= row.automation_attributes.size %></td>
+	<td><%= num_runs %></td>
+	<td><a href="/scripts/<%= row.id %>/details">details</a></td>
+	<td><a href="/execs/<%= row.id %>">runs</a></td>
+	<td><a href="/scripts/<%= row.id %>/tasks">tasks</a></td>
+	<td><a href="/scripts/<%= row.id %>/graph">graph</a></td>
+	<td><%= link_to 'delete', "/scripts/#{row.id}",
+            :confirm => 'Are you sure you want to delete the entire automation, including all test suites and executions?', :method => :delete %></td>
+	<td><%= link_to 'edit', "/scripts/#{row.id}", :method => :get %></td>
+</tr>
+<% } %>
+</tbody>
+</table>
+
+<% if auto %>
+	<h3>Details of Automation '<%= auto.name %>'</h3>
+	<h4>Automation Parameters</h4>
+	<table class="tablesorter">
+	<thead>
+	<tr><th>#</th><th>Parameter</th><th>Default Value</th><th>Used Values</th></tr>
+	</thead>
+	<tbody>
+	<% id = 0
+	auto.get_flat_attributes().each { |name,val| 
+	seen_values = auto.get_seen_attribute_values()
+	%>
+	<tr>
+		<td><%= id=id+1 %></td>
+		<td><%= name %></td>
+		<td><%= val %></td>
+		<td><% 
+			if seen_values[name] 
+				seen_values[name].each do |seen_val| %>
+		<span><%= seen_val %></span>
+		<% 		end
+			end %>
+		</td>
+	</tr>
+	<% } %>
+	</tbody>
+	</table>
+
+	<h4>All Affected State Properties</h4>
+	<table class="tablesorter">
+		<thead>
+		<tr><th>Property Name</th></tr>
+		</thead>
+		<% 	begin
+				auto.all_affected_property_names.each do |p| %>
+		<tr><td><%= p %></td></tr>
+		<% 		end
+			rescue => ex %>
+		 <tr><td>[Error: <%= ex %> <%= ex.backtrace %>]</td></tr>
+		<% 	end %>
+	</table>
+	
+<% end %>
+
+<h2>Actions</h2>
+<p><a href="/scripts/0">Create new automation</a></p>
+<p><a href="/scripts/import/chef">Import from Chef script</a></p>
+</form>
+</div>

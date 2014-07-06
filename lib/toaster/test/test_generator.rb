@@ -26,7 +26,7 @@ module Toaster
     end
 
     def default_test_case()
-      c = TestCase.new(@test_suite)
+      c = TestCase.new(:test_suite => @test_suite)
       return c
     end
 
@@ -44,12 +44,12 @@ module Toaster
         puts "INFO: generated #{parameter_combinations.size} parameter combinations: #{parameter_combinations.inspect}"
 
         parameter_combinations.each do |params|
-          c = TestCase.new(@test_suite)
+          c = TestCase.new(:test_suite => @test_suite)
           skip_tasks = tasks.select{ |t1| exclude_self ? t1.uuid == t.uuid : t1.uuid != t.uuid }
           skip_task_uuids = skip_tasks.collect{ |t1| t1.uuid }
           c.skip_task_uuids.concat(skip_task_uuids)
-          c.attributes.merge(params)
-          if !test_executed?(c)
+          c.test_attributes.merge(params)
+          if !result.include?(c) && !test_executed?(c)
             result << c
           end
         end
@@ -116,7 +116,7 @@ module Toaster
         else
           covered_states.merge(path.collect { |e| e.node_to } )
           tasks = get_task_sequence(path)
-          c = TestCase.new(@test_suite)
+          c = TestCase.new(:test_suite => @test_suite)
           #puts "DEBUG: sequence of tasks for test case: #{tasks.collect {|t| t.uuid}}"
           c.repeat_task_uuids = gen_repeat_config(tasks)
           #puts "DEBUG: repeat tasks: #{c.repeat_task_uuids}"
@@ -125,8 +125,8 @@ module Toaster
             # TODO! add parameters!
             #params.merge!(edge.transition.parameters)
           end
-          c.attributes.merge(params)
-          if !test_executed?(c)
+          c.test_attributes.concat(RunAttribute.from_hash(params))
+          if !result.include?(c) && !test_executed?(c)
             result << c
           end
         end

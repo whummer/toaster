@@ -168,8 +168,8 @@ end
 # setup squid proxy on host
 include_recipe "lxc::setup_proxy"
 
-# setup mongodb server on host
-include_recipe "lxc::setup_mongodb"
+# setup DB server on host
+include_recipe "lxc::setup_database"
 
 # required gem for adding encoding headers to avoid "invalid multibyte char" errors
 gem_package "magic_encoding" do

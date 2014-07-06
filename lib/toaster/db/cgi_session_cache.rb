@@ -138,7 +138,11 @@ module Toaster
     def clear()
       @cache = nil
       @session[KEY_CACHE] = "{}"
-      @session.update()
+      begin
+        @session.update()
+      rescue
+        # fix for ruby on rails
+      end
       load_cache()
     end
 

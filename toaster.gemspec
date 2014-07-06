@@ -36,7 +36,8 @@ Gem::Specification.new do |s|
     "sinatra",					# License: MIT
     "sinatra-contrib",			# License: custom (MIT?) - https://raw.github.com/sinatra/sinatra-contrib/master/LICENSE
     "tidy",						# License: Ruby
-    "tidy-ext",					# License: Ruby
+    # tidy-ext installation fails on some systems
+    #"tidy-ext",					# License: Ruby
     "webrick"					# License: Ruby (?)
   ].each do |gem_dep|
     s.add_runtime_dependency gem_dep

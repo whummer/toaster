@@ -54,11 +54,11 @@ def create_diff_for_package(p1, p2, pkg)
   return nil if pkg1 && pkg2 && pkg1 == pkg2
   name = "packages['#{pkg}']"
   if pkg1 && !pkg2
-    return StatePropertyChange.new(name, StatePropertyChange::ACTION_DELETE, pkg1)
+    return StateChange.new(name, StateChange::ACTION_DELETE, pkg1)
   elsif !pkg1 && pkg2
-    return StatePropertyChange.new(name, StatePropertyChange::ACTION_INSERT, pkg2)
+    return StateChange.new(name, StateChange::ACTION_INSERT, pkg2)
   elsif pkg1 && pkg2 && pkg1 != pkg2
-    return StatePropertyChange.new(name, StatePropertyChange::ACTION_MODIFY, pkg2, pkg1)
+    return StateChange.new(name, StateChange::ACTION_MODIFY, pkg2, pkg1)
   end
 end
 

@@ -28,9 +28,11 @@ module Toaster
   # 
   # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
   class DefaultProcessorRecursive < Hash # :nodoc:
+    attr_accessor :swallow_calls_hash
     def initialize(node_values = {}, &error_reporting)
       @user_values = Hash.new.merge(node_values) if node_values
       @error_reporting = error_reporting
+      @swallow_calls_hash = nil
     end
     def default(arg = nil)
       if arg
@@ -56,18 +58,39 @@ module Toaster
     def attribute?(arg)
       return !@user_values[arg].nil?
     end
+    def respond_to?(method, include_private = false)
+      true
+    end
+    def to_str
+      ""
+    end
+    def to_s
+      ""
+    end
+    def to_ary
+      []
+    end
     def method_missing(sym, *arguments, &block)
-      if ["platform", "platform_version", "ipaddress", "fqdn", 
-        "macaddress", "hostname", "domain", "recipes", "roles", 
-        "ohai_time", "kernel", "cpu"].include?(sym.to_s)
-        value = @user_values[sym.to_s]
-        if !value && @error_reporting
+      predefined_syms = ["platform", "platform_version", "ipaddress", "fqdn", 
+          "macaddress", "hostname", "domain", "recipes", "roles", 
+          "ohai_time", "kernel", "cpu"]
+      value = @user_values[sym.to_s]
+      if !value
+        if @error_reporting
           @error_reporting.call(Logger::WARN, "No value for Chef node attribute '#{sym.to_s}'. Please provide a value in the chef_node_inspector configuration.")
         end
-        return value
-      else
-        raise "Missing method #{sym} when trying to parse Chef node attributes"
+        if !predefined_syms.include?(sym.to_s)
+          store(sym.to_s, self.class.new)
+          value = self[sym.to_s]
+          #raise "Missing method #{sym} when trying to parse Chef node attributes"
+        end
       end
+      if swallow_calls_hash
+        puts "INFO: swallowing/reporting method call #{sym}(#{arguments.size})"
+        swallow_calls_hash[sym] = [] if !swallow_calls_hash[sym]
+        swallow_calls_hash[sym] << arguments
+      end
+      return value
     end
   end
 

@@ -196,7 +196,11 @@ module Toaster
         test_suite.save()
         orch = Toaster::TestOrchestrator.new
         orch.generate_tests_for_suite(test_suite)
-        orch.add_host("localhost") # TODO make configurable
+        if Config.get("testing.test_hosts").kind_of?(Array)
+          Config.get("testing.test_hosts").each do |test_host|
+            orch.add_host(test_host)
+          end
+        end
         orch.distribute_tests(test_suite)
       end
     end
@@ -269,11 +273,11 @@ module Toaster
       end
     end
 
-    # start the test agent in the background
-    desc "agent", "Start the test agent process in the background."
+    # start the test service in the background
+    desc "agent", "Start the test service process in the background."
     def agent()
-      require "toaster/agent/agent"
-      Toaster::TestAgent.start_agent()
+      require "toaster/toaster_app_service"
+      ToasterAppService.start_service()
     end
 
     # Clean spawned containers
@@ -297,7 +301,7 @@ module Toaster
     #####################
     # NON-CLI FUNCTIONS #
     #####################
-    # (accessible from agent_service)
+    # (accessible from toaster_app_service)
 
     no_commands {
 
@@ -309,12 +313,23 @@ module Toaster
     def runtest(test_case_uuid, blocking=true, num_threads=nil)
 
       require "toaster/test/test_case"
-      Toaster::Config.init_db_connection()
+      init_db_connection()
       test_case_uuids = test_case_uuid.split(/[ ;,]+/)
       test_cases = TestCase.find("uuid" => test_case_uuids[0])
       if !test_cases || test_cases.empty?
-        puts "ERROR: Invalid test case id specified: '#{test_case_uuid}'"
+        puts "ERROR: Invalid test case id(s) specified: '#{test_case_uuid}'"
       else
+        
+        # set the start time of all test cases. This is important
+        # because it allows to indicate in the UI that the test cases 
+        # are currently running
+        time = Toaster::TimeStamp.now
+        test_case_uuids.each do |uuid|
+          tc = TestCase.find(:uuid => uuid)[0]
+          tc.start_time = time
+          tc.save
+        end
+
         test_case = test_cases[0]
         test_suite = test_case.test_suite
         test_suite_uuid = test_suite.uuid
@@ -418,14 +433,20 @@ module Toaster
   end
 
   class ToasterAppClient < XMLRPC::Client
+    attr_reader :host, :port
 
     def initialize(host, port=8385)
-      super(host.include?(":") ? host.gsub(/([^:]+):.*/, '\1') : host, 
-        "/", port)
+      @host = host.include?(":") ? host.gsub(/([^:]+):.*/, '\1') : host
+      @port = host.include?(":") ? host.gsub(/([^:]+):(.+)/, '\2') : port
+      @port = @port.to_i
+      super(@host, "/", @port)
       self.timeout = 60*60 # timeout of 1h for RPC calls
     end
     def method_missing(name, *args, &block)
       call(name, *args, &block)
+    end
+    def to_s
+      "ServiceProxy<#{host}:#{port}>"
     end
 
   end

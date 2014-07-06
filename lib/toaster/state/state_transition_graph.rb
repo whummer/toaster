@@ -97,7 +97,9 @@ module Toaster
         raise "Cannot build graph for nil automation."
       end
 
-      ignore_properties = automation.ignore_properties ? automation.ignore_properties : []
+      ignore_properties = []
+      # dup here to avoid updates of active record
+      ignore_properties.concat(automation.ignore_properties.to_a.dup)
       additional_ignores = SystemState.read_ignore_properties()
       additional_ignores = [] if !additional_ignores
       ignore_properties.concat(additional_ignores)
@@ -121,7 +123,7 @@ module Toaster
 
       TimeStamp.add(nil, "build_graph")
       graph = StateTransitionGraph.new()
-      graph.avoid_circles = coverage_goal.repeat_N >= 0
+      graph.avoid_circles = coverage_goal.repeat_N.to_i >= 0
       graph.ignore_properties.concat(ignore_properties)
       graph.tasks.concat(tasks)
       tasks.each do |t|
@@ -212,12 +214,19 @@ module Toaster
           t_next = tasks[count]
           execs_next = task_executions[t_next]
           transitions_next = t_next.global_state_transitions(execs_next, insert_nil_prestate_prop_for_insertions)
-          #trans_next_desired_pre_states = StateTransitionGraph.states_from_transitions(transitions_next)
+          # insert artificial transition, for automations which have not been executed before
+          if transitions_next.empty?
+            transitions_next << StateTransition.new
+          end
           trans_next_desired_pre_states = StateTransitionGraph.prestates_from_transitions(transitions_next)
         end
         #puts "trans_next_desired_pre_states size: #{trans_next_desired_pre_states.size}"
 
         transitions = t.global_state_transitions(execs, insert_nil_prestate_prop_for_insertions)
+        # insert artificial transition, for automations which have not been executed before
+        if transitions.empty?
+          transitions << StateTransition.new
+        end
         prestates = t.global_pre_states_reduced(transitions)
         desired_prestates_in_tests = prestates
 

@@ -18,12 +18,14 @@
 
     "testing": {
       "timeservice_url" : "http://www.infosys.tuwien.ac.at/staff/hummer/tmp/time.php",
-      "gem_url" : "https://raw.github.com/whummer/toaster/release/toaster-1.0.0.gem"
+      "test_hosts" : ["localhost"]
     },
-    "mongodb": {
-      "host": "192.168.100.2"
+    "db": {
+      "host": "localhost",
+      "port": 3306
 	},
-    "agent": {
+    "service": {
+      "host": "localhost",
       "port": 8385
 	}
 }

@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<div>
+<%
+require "toaster/model/task"
+
+tasks = []
+auto = nil
+detailed = param("details") == "1"
+show_toaster_tasks = param("show_wt") != ""
+
+begin
+
+auto = cur_auto()
+run = cur_run()
+
+if run
+	tasks = run.get_executed_tasks
+	task_executions = run.task_executions
+elsif auto
+	tasks = auto.tasks
+else
+	tasks = Toaster::Task.find()
+end
+
+task = cur_task()
+
+end
+%>
+<h2>Automation Tasks</h2>
+<ul>
+<li>
+<% if auto %>
+	Displaying tasks associated with automation <b>'<%= auto.name %>'</b> 
+	(<a href="/scripts/tasks">show all</a>).
+	<% if false && !run %>
+	<!-- TODO remove --> 
+	Note that, in addition to the tasks listed here, the dynamic evaluation of automation 
+	runs might yield more tasks related to this automation.
+	<% end %>
+<% else %>
+	Displaying tasks of all automations. Use the '<a href="/scripts">Automation</a>' section to filter the list for a specific automation.
+<% end %>
+</li><li>
+<% if run %>
+	Displaying tasks executed within the chosen automation run dated <b><%= format_time(run.start_time) %></b>. 
+	(<a href="<%= l('run' => '') %>" style="white-space: nowrap;">reset to show aggregated data</a>)
+<% else %>
+	Displaying runs of all automation runs. Use the '<a href="/execs">Runs</a>' section to filter the list for a specific automation run.
+<% end %>
+</li><li>
+<% if show_toaster_tasks %>
+	Toaster Testing specific tasks are included in the list. (<a href="<%= l('show_wt' => '') %>">hide</a>)
+<% else %>
+	Toaster Testing specific tasks are not displayed in the list. (<a href="<%= l('show_wt' => '1') %>">show</a>)
+<% end %>
+</li>
+</ul>
+<h3>Task List</h3>
+<% if !run %>
+<ul><li>
+<%= detailed ? "Displaying aggregated execution data" : "Execution details are currently not listed" %> (<a href="<%= detailed ? l('details' => '0') : l('details' => '1') %>"><%= detailed ? "hide details" : "load details" %></a>).
+</li></ul>
+<% end %>
+<table class="tablesorter" id="tablesorter">
+	<thead>
+	<tr><th>#</th><th>ID</th>
+		<% if run %><th>Start Time</th> <% end %>
+		<th>Resource</th><th>Action</th><th>File</th><th>Line</th>
+		<% if run %><th>Success</th>
+		<% else %><th>Success (%)</th> <% end %>
+		<% if !run && detailed %><th>Executions</th><th>State Changes</th><% end %>
+		<th colspan="2">Actions</th></tr>
+	</thead>
+	<tbody>
+	<% count = 0
+	tasks.each_with_index { |row,id|
+	if show_toaster_tasks || !row.toaster_testing_task?
+		active = row.id.to_s == param('task')
+		param_task = active ? "" : row.id
+		clazz = active ? "active " : ""
+		if !run && detailed
+			all_execs = row.global_executions()
+			all_changes = row.global_num_state_prop_changes(all_execs)
+			clazz += all_changes <= 0 ? "warning " : ""
+		end
+		if run
+			clazz += run.get_task_execution(row).success ? "success " : "error "
+		end
+		clazz.strip!
+		%>
+		<tr<%= clazz != '' ? " class=\"#{clazz}\"" : "" %>>
+			<td><%= count += 1 %></td>
+			<td><%= row.uuid %></td>
+			<% 	if run %>
+			<td><%= to_minutes(task_executions[id].start_time - run.start_time) %></td>
+			<% end %>
+			<td><%= row.resource %></td>
+			<td><%= row.action %></td>
+			<td><%= row.sourcefile %></td>
+			<td><%= row.sourceline %></td>
+			<% 	if run %>
+			<td><%= run.get_task_execution(row).success %></td>
+			<% else %>
+			<td><%= format_float(row.global_success_percentage) %> %</td>
+			<% end %>
+			<% 	if !run && detailed %>
+			<td><%= all_execs.size %></td>
+			<td><%= all_changes %><%= " (!)" if all_changes <= 0 %></td>
+			<%	end %>
+			<td><% if row.automation %>
+				<a href="/scripts/<%= row.automation.id %>/tasks/<%= row.id %>">details</a><% end %></td>
+			<td><% if row.automation %>
+				<a href="/execs/<%= row.automation.id %>/tasks/<%= row.id %>">executions</a><% end %></td>
+		</tr>
+	<% end
+	} %>
+	</tbody>
+</table>
+
+<% if task %>
+	<h3>Details of Task '<%= task.name %>'</h3>
+	<table>
+		<tr><td>Number of executions:</td><td><%= task.global_num_executions %></td></tr>
+	</table>
+	<h4>Source Code</h4>
+	<pre style="overflow: auto;"><%= task.sourcecode %></pre>
+	<h4>Used Parameters</h4>
+	<table class="tablesorter" id="tablesorter">
+	<thead><tr><th>#</th><th>Name</th></tr></thead>
+	<tbody>
+	<% task.task_parameters.each_with_index do |param,idx| %>
+	<tr><td><%= idx+1 %></td><td><%= param ? param.key : "n/a" %></td></tr>
+	<% end %>
+	</tbody>
+	</table>
+<% end %>
+
+</div>

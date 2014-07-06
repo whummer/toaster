@@ -1,0 +1,162 @@
+<div style="width: 100%">
+<form action="#" method="post">
+<input type="hidden" name="sessionID" value="<%= $session['session_id'] %>"/>
+<h2>LXC Containers</h2>
+<%
+require 'toaster/util/lxc'
+require 'toaster/agent/agent'
+require 'toaster/test/test_orchestrator'
+
+message = nil
+lxcs = {}
+prototypes = []
+
+if param('updateHosts') != "" && param('lxcHosts') != ""
+	$session['lxcHosts'] = param('lxcHosts')
+end
+
+if !$session['lxcHosts'] || $session['lxcHosts'] == ""
+	$session['lxcHosts'] = "localhost:8385"
+end
+
+def esc_quot(str)
+	str.gsub(/"/, '&quot;')
+end
+
+begin
+
+duration = 0
+if $session['lxcHosts']
+	before = Time.new.to_i
+	hosts = $session['lxcHosts'].split(/[\s,;]+/)
+	lxcs = Toaster::LXC.get_containers_for_hosts(hosts) || []
+	after = Time.new.to_i
+	duration = after - before
+	#puts lxcs.inspect
+end
+
+cmd_out = ""
+if param("submitShCmd") != ""
+	orch = TestOrchestrator.new
+	if param("execTarget") == "__all__"
+		lxcs.each do |host,lxc|
+			orch.add_host(host)
+		end
+	else
+		orch.add_host(param("execTarget"))
+	end
+	cmd_out = orch.exec_on_all_hosts(param("shCmd") + " 2>&1", false)
+end
+
+if param('createProto') != ""
+	name = param('protoName')
+	if !name.match(/^[a-zA-Z0-9_]+$/)
+		message += "The prototype name must match the pattern [a-zA-Z0-9_]+"
+	elsif prototypes.include?(name)
+		message += "A prototype with the same name already exists."
+	else
+		distro = param('protoOS')
+        output = Toaster::LXC.new_prototype(param('server'), name, distro)
+		$session['gen.prototypes'] = ""
+	end
+end
+
+if lxcs
+	count = 0
+	changed = false
+	lxcs.each do |ip,lxc|
+		client = Toaster::TestAgent.new(ip)
+		if param("destroy_#{count}") != ""
+			client.clean()
+			changed = true
+		end
+		count += 1
+	end
+	if changed
+		hosts = $session['lxcHosts'].split(/[\s,;]+/)
+		lxcs = Toaster::LXC.get_containers_for_hosts(hosts) || []
+	end
+end
+
+rescue => ex
+%>
+	<div class="error">Error:<br/><%= ex %><br/>
+	<!--<pre><%= ex.backtrace.join("\n").html_safe %></pre>-->
+	</div>
+<% 
+end
+
+lxcs ||= {}
+%>
+This page provides details about the available LXC containers 
+(light-weight VMs) which are used for testing purposes.
+<h3>Host Machines</h3>
+<% if message %>
+<div class="info"><%= message %></div>
+<% end %>
+Host Node(s):<br/>
+<textarea name="lxcHosts" style="width: 300px; height: 100px;"><%= $session['lxcHosts'] %></textarea><br/>
+<input type="submit" value="Update" name="updateHosts"/><br/>
+
+<% if lxcs %>
+<!--<h3>Execute Command</h3>
+Shell command to be executed on test host(s) (handle with care!):<br/>
+<input type="text" name="shCmd" style="width: 600px;" value="<%= esc_quot(param('shCmd')) %>"/> 
+<input type="submit" value="execute" name="submitShCmd"/>
+<select name="execTarget">
+<option value="__all__">on ALL hosts</option>
+<% lxcs.each do |ip,lxc| %>
+	<option value="<%= ip %>">on host <%= ip %></option>
+<% end %>
+</select>
+<br/>
+<%
+if param("submitShCmd") != ""
+	%>
+	Output:
+	<pre><%= cmd_out %></pre>
+	<%
+end
+%>
+-->
+
+<h3>Container Details</h3>
+Requesting information from hosts took <%= to_minutes(duration) %>.
+<% counter = -1
+lxcs.each do |ip,lxc| %>
+<h4>Host Machine '<%= ip %>':</h4>
+<input type="submit" name="destroy_<%= counter += 1 %>" value="Destroy all Containers (!)"/>
+<table class="tablesorter">
+	<thead><tr><th>#</th><th>Container Name</th><th>State</th><th>IP Address</th></tr></thead>
+	<tbody>
+	<% 	i = 0
+		lxc.each do |l,config| 
+	%>
+	<tr><td><%= (i=i+1) %></td><td><%= l %></td><td><%= config['state'] %></td><td><%= config['ip'] %></td></tr>
+	<% end %>
+	</tbody>
+</table>
+<% end %>
+<% end %>
+
+<h3>Setup LXC Prototype</h3>
+
+<table>
+<tr><td><b>Host Server:</b></td><td><input type="text" name="server" 
+	value="<%= param('server', "localhost:8385") %>"/></td></tr>
+<tr><td><b>Name:</b></td><td>
+	<input type="text" name="protoName" value="<%= param('protoName', '') %>"/>
+<tr></td><td><b>Operating System:</b></td><td>
+	<select name="protoOS">
+	<option value="fedora">Fedora</option>
+	<option value="ubuntu">Ubuntu</option>
+	</select><br/>
+</td></tr><tr><td></td><td>
+	<input type="submit" value="Create New Prototype" name="createProto"/><br/>
+</td></tr>
+</table>
+
+
+</form>
+
+</div>

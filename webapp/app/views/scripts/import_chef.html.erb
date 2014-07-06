@@ -1,0 +1,104 @@
+<h1>Chef Import</h1>
+<%
+$session = session
+if !$session['gen.available_recipes']
+	$session['gen.available_recipes'] = {}
+end
+if !$session['gen.available_cookbook_versions']
+	$session['gen.available_cookbook_versions'] = {}
+end
+if !$session['gen.available_cookbooks']
+	$session['gen.available_cookbooks'] = []
+end
+available_cookbooks = $session['gen.available_cookbooks']
+available_cookbook_versions = $session['gen.available_cookbook_versions']
+available_recipes = $session['gen.available_recipes']
+message = ""
+
+# retrieve list of available cookbooks from opscode
+if param("loadOpsCode") != ""
+	books = ChefUtil.available_cookbooks_from_opscode()
+	if books
+		books.each do |b|
+			available_cookbooks << b["cookbook_name"]
+		end
+		$session['gen.available_cookbooks'] = Toaster::MarkupUtil.to_json(available_cookbooks)
+	end
+	message += "Loaded #{books.size} cookbooks from opscode. Try auto-completion in textfield." if !books.empty?
+end
+
+# retrieve list of available cookbooks from opscode
+if param("cookbook") != ""
+	cb_name = param("cookbook")
+	if !available_cookbook_versions[cb_name] || available_cookbook_versions[cb_name].empty?
+		available_cookbook_versions[cb_name] = 
+			ChefUtil.available_cookbook_versions(cb_name)
+	end
+end
+
+# retrieve list of available recipes for a specific cookbook
+if param("loadOpsCodeRecipes") != ""
+	recipes = ChefUtil.available_recipes_from_opscode(param('cookbook'), param('cookbook_version'))
+	if recipes
+		available_recipes[param('cookbook')] = []
+		recipes.each do |r|
+			available_recipes[param('cookbook')] << r["recipe_name"]
+		end
+		#available_recipes[param('cookbook')] = Toaster::MarkupUtil.to_json(available_recipes)
+	end
+	message += "Loaded #{recipes.size} recipes for cookbook '#{param('cookbook')}' version '#{param('cookbook_version')}' from opscode. Try auto-completion in textfield." if !recipes.empty?
+end
+
+%>
+<% puts params
+if message && message.to_s != "" %>
+<div class="info"><%= message %></div>
+<% end %>
+<%= form_tag do %>
+<table>
+<tr><td><b>Automation Name:</b></td><td>
+	<%= text_field_tag :auto_name, param('auto_name', '') %>
+	</td><td>
+	</td></tr>
+<tr><td><b>Chef Cookbook:</b></td><td>
+	<%= text_field_tag :cookbook, param("cookbook", 'mysql'), :id => "cookbook" %>
+	</td><td>
+	<% if available_cookbooks.empty? %>
+	<input type="submit" value="Load from OpsCode.com" name="loadOpsCode"/><br/>
+	<% else %>
+	<script type="text/javascript">
+	$(function() {
+	  var availables = <%= available_cookbooks.inspect.html_safe %>;
+      $("#cookbook").autocomplete({source: availables});
+	});
+	</script>
+	<% end %> 
+</td></tr>
+<tr><td><b>Version:</b></td><td>
+	<%= select_tag(:cookbook_version, options_for_select(["latest"].concat(
+		available_cookbook_versions[param('cookbook')] || []))) %>
+	</td><td>
+	<input type="submit" value="Update" name="loadOpsCodeVersions"/>
+</td></tr>
+<tr><td style="vertical-align: top"><b>Recipe Name(s):</b></td><td>
+	<%= text_field_tag :recipes, param('recipes', ''), :id => "recipes" %><br/>
+	(Use space or comma as separator.)<br/>
+	</td><td>
+	<input type="submit" value="Load from OpsCode.com" name="loadOpsCodeRecipes"/><br/>
+	<% if available_recipes[param('cookbook')] && !available_recipes[param('cookbook')].empty? %>
+	<script type="text/javascript">
+	$(function() {
+	  var availables = <%= available_recipes[param('cookbook')].inspect.html_safe %>;
+      $("#recipes").autocomplete({source: availables});
+	});
+	</script>
+	<% end %> 
+</td></tr>
+<tr>
+	<td></td><td>
+		<%= submit_tag("Import Chef Script", :name => "submitImport") %>
+	</td><td>
+	</td>
+</tr>
+</table>
+<% end %>

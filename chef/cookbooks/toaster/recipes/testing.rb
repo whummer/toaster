@@ -63,7 +63,6 @@ all_gems_installed = true
 
 [
   "ohai",         # used as a framework to capture system state
-  "mongo",        # database support
   "activesupport",
   "bson",         # JSON like datastructures
   "bson_ext",     # native JSON extension
@@ -94,8 +93,9 @@ end
 bash "install_toaster_gem" do
   require 'toaster/util/config'
   code <<-EOH
-    wget #{Toaster::Config.get("testing.gem_url")} -O /tmp/toaster.gem
-    gem install --no-ri --no-rdoc /tmp/toaster.gem
+    #wget #{Toaster::Config.get("testing.gem_url")} -O /tmp/toaster.gem
+    #gem install --no-ri --no-rdoc /tmp/toaster.gem
+    gem install --no-ri --no-rdoc cloud-toaster
   EOH
   not_if "which toaster"
 end
@@ -149,26 +149,30 @@ ruby_block $last_toaster_resource_name do
       puts "Unable to refresh Gem package list: #{ex}"
     end
     require 'aquarium'
-    require 'mongo'
-    require 'toaster/db/mongodb'
     require 'toaster/test_manager'
-    require 'toaster/util/chef_listener'
+    require 'toaster/chef/chef_listener'
 
-    db_type = node['toaster']['db_type']
-    mgr = Toaster::TestManager.new(
-      {
-        "db_type" => db_type,
-        db_type => node['toaster'][db_type],
-        "cookbook_paths" => node['toaster']['cookbook_paths'],
-        "skip_tasks" => node['toaster']['skip_tasks'],
-        "repeat_tasks" => node['toaster']['repeat_tasks'],
-        "task_execution_timeout" => node['toaster']['task_execution_timeout'],
-        "transfer_state_config" => node['toaster']['transfer_state_config'],
-        "task_exec_timeout_repeated" => node['toaster']['task_exec_timeout_repeated'],
-        "rest_timeout" => node['toaster']['rest_timeout'] ? node['toaster']['rest_timeout'] : 5*60
-      }
-    )
-    Toaster::ChefListener.add_listener(mgr)
+    begin
+      db_type = node['toaster']['db_type']
+      mgr = Toaster::TestManager.new(
+        {
+          "db_type" => db_type,
+          db_type => node['toaster'][db_type],
+          "user_id" => node['user_id'],
+          "toaster_node_name" => node['toaster_node_name'],
+          "cookbook_paths" => node['toaster']['cookbook_paths'],
+          "skip_tasks" => node['toaster']['skip_tasks'],
+          "repeat_tasks" => node['toaster']['repeat_tasks'],
+          "task_execution_timeout" => node['toaster']['task_execution_timeout'],
+          "transfer_state_config" => node['toaster']['transfer_state_config'],
+          "task_exec_timeout_repeated" => node['toaster']['task_exec_timeout_repeated'],
+          "rest_timeout" => node['toaster']['rest_timeout'] ? node['toaster']['rest_timeout'] : 5*60
+        }
+      )
+      Toaster::ChefListener.add_listener(mgr)
+    rescue => ex
+      puts "ERROR: Unable to initialize ToASTER: #{ex} - #{ex.backtrace.join("\n")}"
+    end
     $chef_instrumented = true
   end
   not_if do (node['toaster']['testing_mode'] != true) || ($chef_instrumented) end

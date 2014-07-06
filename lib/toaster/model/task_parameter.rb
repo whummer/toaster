@@ -4,34 +4,41 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require 'toaster/db/mongodb_object'
+require "toaster/model/key_value_pair"
 
 module Toaster
-  class TaskParameter < MongoDBObject
+  class TaskParameter < KeyValuePair
 
-    attr_accessor :uuid, :task, :key, :value, :type, :constraints
+    #attr_accessor :uuid, :task, :key, :value, :type, :constraints
 
     @@id_attributes = ["task_id", "key", "value", "type"]
 
-    def initialize(task, key, value = nil, type = "string", constraints = [])
-      @uuid = uuid ? uuid : Util.generate_short_uid()
-      @task = task
-      @key = key
-      @value = value
-      @type = type
-      @constraints = constraints
-      @db_type = "task_parameter"
+    def initialize(attr_hash)
+      if !attr_hash[:uuid]
+        attr_hash[:uuid] = Util.generate_short_uid()
+      end
+      super(attr_hash)
     end
+  
+#    def initialize1(task, key, value = nil, type = "string", constraints = [])
+#      @uuid = uuid ? uuid : Util.generate_short_uid()
+#      @task = task
+#      @key = key
+#      @value = value
+#      @type = type
+#      @constraints = constraints
+#      @db_type = "task_parameter"
+#    end
 
-    def save
-      return super(@@id_attributes)
-    end
+#    def save
+#      return super(@@id_attributes)
+#    end
 
-    def task()
-      # lazily load task
-      @task = Task.load(@task) if !@task.kind_of?(Task)
-      @task
-    end
+#    def task()
+#      # lazily load task
+#      @task = Task.load(@task) if !@task.kind_of?(Task)
+#      @task
+#    end
 
     def self.find(criteria={}, preset_fields={})
       criteria["db_type"] = "task_parameter" if !criteria["db_type"]
@@ -62,11 +69,11 @@ module Toaster
       return param
     end
 
-    def to_hash(exclude_fields = [], additional_fields = {}, recursion_fields = [])
-      exclude_fields << "task" if !exclude_fields.include?("task")
-      additional_fields["task_id"] = task.id if !additional_fields["task_id"]
-      return super(exclude_fields, additional_fields, recursion_fields)
-    end
+#    def to_hash(exclude_fields = [], additional_fields = {}, recursion_fields = [])
+#      exclude_fields << "task" if !exclude_fields.include?("task")
+#      additional_fields["task_id"] = task.id if !additional_fields["task_id"]
+#      return super(exclude_fields, additional_fields, recursion_fields)
+#    end
 
     def hash
       h = @key.hash

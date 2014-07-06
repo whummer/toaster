@@ -39,8 +39,8 @@ module Toaster
     end
 
     def self.convergence_for_task(task, prop_value_percentage_threshold=0.7)
-      ch = task.global_state_prop_changes
-      ps = task.global_post_states
+      ch = task.global_state_prop_changes.to_a.dup
+      ps = task.global_post_states.to_a.dup
       # eliminate inserted map entries in post states
       ps.each do |p|
         MarkupUtil.eliminate_inserted_map_entries!(p)
@@ -59,7 +59,7 @@ module Toaster
     #
     # Args:
     #  - prop_changes: Should contain an array of 
-    #       Toaster::StatePropertyChange objects.
+    #       Toaster::StateChange objects.
     #  - post_states: Total collection of post-states
     #  - min_percentage: minimum occurrence percentage (over 
     #       all post-states) required for a property to be 
@@ -87,9 +87,9 @@ module Toaster
     def self.get_convergence_candidates(prop_changes)
       cands = Set.new
       prop_changes.each do |pc|
-        value = pc.action == StatePropertyChange::ACTION_DELETE ? nil : 
-                pc.action == StatePropertyChange::ACTION_INSERT ? pc.value :
-                pc.action == StatePropertyChange::ACTION_MODIFY ? pc.value : nil;
+        value = pc.action == StateChange::ACTION_DELETE ? nil : 
+                pc.action == StateChange::ACTION_INSERT ? pc.value :
+                pc.action == StateChange::ACTION_MODIFY ? pc.value : nil;
         cands << [pc.property, value, pc.task_execution.start_time]
       end
       return cands

@@ -10,7 +10,6 @@ require 'toaster/util/docker'
 require 'toaster/util/util'
 require 'toaster/util/config'
 require 'toaster/util/timestamp'
-require "toaster/agent/agent"
 
 module Toaster
 
@@ -269,8 +268,8 @@ module Toaster
       return lxcs
     end
     def self.get_prototypes_local()
-      agent_port = Config.get("agent.port")
-      return get_prototypes_for_host("localhost:#{agent_port}")
+      service_port = Config.get("service.port")
+      return get_prototypes_for_host("localhost:#{service_port}")
     end
 
     def self.new_prototype(host_machine_ip, name, os_distribution)
@@ -283,21 +282,21 @@ module Toaster
     def self.get_containers_for_host(host_machine_ip, include_prototypes=false)
       out = ""
       begin
-        # try connection using test agent
-        puts "DEBUG: Trying to connect to test agent at #{host_machine_ip}"
+        # try connection using test service
+        puts "DEBUG: Trying to connect to test service at #{host_machine_ip}"
         require "toaster/api"
         client = ToasterAppClient.new(host_machine_ip)
         out = client.lxc()
       rescue => ex
         # try connection using ssh
-        puts "Unable to obtain LXC information from remote host using test agent: #{ex}"
+        puts "Unable to obtain LXC information from remote host using test service: #{ex}"
 
         cmd = 'sh -c \'cat #{LXC_ROOT_DIR}/*/config\''
         cmd = "ssh -o BatchMode=yes #{host_machine_ip} \" lxc-ls -l; echo \\\"__--__ \\\"; #{cmd} \""
         out = `#{cmd}`
         if !out || out.strip == "" || out.match(/Permission denied/) || 
           out.match(/No route/) || out.match(/connect/)
-          raise "SSH connection to host #{host_machine_ip} failed: #{out}"
+          raise "Connection to host #{host_machine_ip} failed: #{out}"
         end
       end
 

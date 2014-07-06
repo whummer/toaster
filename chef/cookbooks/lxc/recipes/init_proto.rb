@@ -332,8 +332,9 @@ file "proto_setup_inside_script" do
 	fi
 
 	# install toaster gem
-  wget #{Toaster::Config.get("testing.gem_url")} -O /tmp/toaster.gem
-  gem install --no-ri --no-rdoc /tmp/toaster.gem
+  #wget #{Toaster::Config.get("testing.gem_url")} -O /tmp/toaster.gem
+  #gem install --no-ri --no-rdoc /tmp/toaster.gem
+  gem install --no-ri --no-rdoc cloud-toaster
 
 EOH
 end

@@ -8,6 +8,9 @@ require "toaster/db/cached_db"
 require "toaster/util/util"
 
 module Toaster
+
+  # TODO deprecated, remove?
+
   class DB
 
     class << self;
@@ -17,11 +20,13 @@ module Toaster
     @DEFAULT_HOST = "localhost"
     @DEFAULT_PORT = 27017
     @DEFAULT_DB = "toaster"
-    @DEFAULT_COLL = "toaster" 
-    @DEFAULT_TYPE = "mongodb"
+    @DEFAULT_TYPE = "mysql"
 
     @REQUIRE_PATH = "toaster/db/"
-    @IMPL_CLASSES = { "mongodb" => "Toaster::MongoDB" }
+    @IMPL_CLASSES = { 
+      "mongodb" => "Toaster::MongoDB",
+      "mysql" => "Toaster::MysqlDB"
+    }
     @USE_CACHE = false
 
     @@instance = nil
@@ -42,26 +47,27 @@ module Toaster
       init_instance(type, host, port, db, collection)
     end
 
-    def self.apply_values(object, hash)
-      return object if !hash
-      vars = object.instance_variables
-      hash.each do |k,v|
-        writer_method = "#{k}="
-        if object.respond_to?(writer_method.to_sym)
-          begin
-            #puts "Applying value object.#{k} = #{v}"
-            # object.send(..) is possibly a bit faster than eval(..)
-            object.send(writer_method.to_sym, v)
-            # eval("object.#{k} = v")
-          rescue => ex
-            puts "Unable to set variable: object.#{k} = 'v' : #{ex}"
-          end
-        end
+    def self.find_activerecord(clazz, criteria)
+      if criteria.kind_of?(String)
+        criteria = criteria.to_i
       end
-      return object
+      if numeric?(criteria)
+        return clazz.find_by(:id => criteria)
+      elsif !criteria || criteria.empty?
+        return clazz.all
+      else
+        return clazz.where(criteria)
+      end
     end
 
+    attr_accessor :db_host, :db_port, :db_name, :db_collection
+
     private
+
+    def self.numeric?(str)
+      return true if str =~ /^\d+$/
+      true if Float(str) rescue false
+    end
 
     def self.init_instance(type, host, port, db, collection)
       # setup default instance
@@ -75,8 +81,8 @@ module Toaster
       require "#{DB.REQUIRE_PATH}/#{type}"
 
       @@instances[key] = eval(clazz).new(host, port)
-      @@instances[key].set_db(db)
-      @@instances[key].set_collection(collection)
+      @@instances[key].db_name = db
+      @@instances[key].db_collection = collection
       if DB.USE_CACHE
         cache_config = DB.USE_CACHE
         @@instances[key] = CachedDB.new(@@instances[key], cache_config)

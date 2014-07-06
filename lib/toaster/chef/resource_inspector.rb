@@ -80,6 +80,173 @@ module Toaster
       return data[1]
     end
 
+    def self.get_resource_from_source(resource_src, attribute_src, cookbook_paths = [])
+      resource = nil
+    
+      # we are performing multiple parsing attempts. if parsing goes well, 
+      # the resource is returned. however, if a parsing error occurs, we 
+      # investigate the error message, and for missing variables we add a default 
+      # initializer to the beginning of the source code. Then, we re-attempt 
+      # to parse the code.
+      # The maximum number of such attempts is defined here.
+      max_attempts = 20
+
+      chef_client_json = { 
+        "platform" => "ubuntu", 
+        "platform_version" => "12.04",
+        "kernel" => { "machine" => "x86_64" },
+        "log_level" => :fatal,
+        "ipaddress" => ""
+      }
+
+      # define some inits in script source:
+      preamble = "
+            require 'toaster/chef/chef_node_inspector'
+            $old_node = node
+            $new_node = Toaster::DefaultProcessorRecursive.new(
+                #{chef_client_json.inspect})
+
+            require 'toaster/chef/failsafe_resource_parser'
+
+            $old_node.attributes_proxy = $new_node
+            node = $new_node
+            template = $new_node
+            self.attributes_proxy = $new_node
+            "
+
+      attribute_src = 
+        "#{preamble} #{attribute_src}"
+#      resource_src = 
+#        "#{preamble} #{resource_src}"
+
+      #puts "getting resource source: #{resource_src}\n---"
+
+      max_attempts.downto(1) do |attempt|
+    
+        Tempfile.open("chef.resource.rb") do |file|
+          file.write(resource_src)
+          file.flush
+    
+          Tempfile.open("chef.attributes.rb") do |file1|
+            file1.write(attribute_src)
+            file1.flush
+    
+            orig_log_level = ChefUtil.get_chef_log_level()
+    
+            begin
+    
+              ChefUtil.set_chef_log_level(:fatal)
+
+              if !@@initialized
+                chef_cfg = Chef::Config
+                chef_cfg[:solo] = true
+                chef_cfg[:node_name] = "foobar"
+                path_new = []
+                chef_cfg[:cookbook_path].each do |p|
+                  path_new << p if File.directory?(p)
+                end
+                chef_cfg[:cookbook_path] = path_new
+                chef_cfg[:cookbook_path] << File.expand_path(File.join(File.dirname(__FILE__), 'cookbooks'))
+                chef_cfg[:cookbook_path].concat(cookbook_paths)
+                chef_cfg[:log_level] = :fatal
+                chef_cfg[:verbose_logging] = false
+                Chef::Application::Solo.new # this initializes some important state variables
+
+                @@chef_client = Chef::Client.new(
+                  chef_client_json
+                )
+                begin
+                  @@node = @@chef_client.build_node
+                rescue
+                  # required to avoid exception in Chef 11.12.8
+                  @@node = @@chef_client.policy_builder.load_node
+                end
+                @@cookbook_collection = Chef::CookbookCollection.new(
+                Chef::CookbookLoader.new(chef_cfg[:cookbook_path]))
+    
+                @@initialized = true
+              end
+
+              if attribute_src && attribute_src.to_s.strip != ""
+                @@node.from_file(file1.path)
+              end
+
+              run_context = nil
+              begin
+                run_context = Chef::RunContext.new(@@node, @@cookbook_collection)
+              rescue
+                # required to avoid exception in Chef 11.12.8
+                run_context = Chef::RunContext.new(@@node, @@cookbook_collection, nil)
+              end
+              recipe = Chef::Recipe.new("apache2", "default", run_context)
+              recipe.from_file(file.path)
+
+              #puts "getting resource from recipe #{recipe}"
+              resource = recipe.run_context.resource_collection.all_resources[0]
+              #puts "returning resource: #{resource}"
+              #puts "--> #{recipe.run_context.resource_collection.all_resources}"
+    
+              return resource
+            rescue Object => ex
+              msg = ex.to_s
+              puts msg if attempt <= 1
+              puts ex.backtrace if attempt <= 1
+              #puts "----"
+              #puts resource_src
+              #puts "----"
+#              puts msg
+#              puts ex.backtrace
+
+              if msg.match(/Cannot find a resource for/)
+                pkg_name = msg.gsub(/.*for ([a-z0-9A-Z_]+) on.*/, '\1').to_s
+                resource_src = "#{pkg_name} = \"initializer_for_unknown_variable_#{pkg_name}\" \n #{resource_src}"
+              elsif msg.match(/undefined (local variable or )?method/)
+                var_name = msg.gsub(/.*method `([a-z0-9A-Z_]+).* for.*/, '\1').to_s
+                resource_src = "#{var_name} = \"initializer_for_unknown_variable_#{var_name}\" \n #{resource_src}"
+              elsif msg.match(/No resource or method named `([a-z0-9A-Z_]+)' for/)
+                res_name = msg.gsub(/.*No resource or method named `([a-z0-9A-Z_]+)' for.*/, '\1').to_s
+                tmp_class_name = "MyResource#{Util.generate_short_uid()}"
+                resource_src = 
+                "class #{tmp_class_name} < Chef::Resource
+                  def initialize(name = nil, run_context = nil)
+                    super
+                    @resource_name = :#{res_name}
+                    @enclosing_provider_fixed = DefaultProcessorRecursive.new
+                    @enclosing_provider_fixed.swallow_calls_hash = {}
+                  end
+                  def enclosing_provider
+                    @enclosing_provider_fixed
+                  end
+                  def action(arg=nil)
+                    self.allowed_actions << arg
+                    super
+                  end
+                end
+                #{tmp_class_name}.provides(:#{res_name})
+                #{resource_src}"
+              elsif msg.match(  /resource matching/)
+                regex = /.*resource matching (.*)\[(.*)\].*/
+                res_type = msg.gsub(regex, '\1').to_s
+                res_name = msg.gsub(regex, '\2').to_s
+                resource_src = "#{res_type} \"#{res_name}\" do \n end \n\n #{resource_src}"
+              else
+                puts "ERROR: Could not get Chef resource object from source code: #{msg}"
+                puts ex.backtrace.join("\n")
+                puts File.read(file.path)
+                puts "---------"
+                puts File.read(file1.path)
+                puts "---------"
+                return nil
+              end
+            ensure
+              ChefUtil.set_chef_log_level(orig_log_level)
+            end
+          end
+        end
+      end
+      return resource
+    end
+
     private
 
     def self.parse_data(task_or_sourcecode, cookbook_paths = [], state_change_config = {})
@@ -145,27 +312,31 @@ module Toaster
         # performing simple string pattern checks
         if code.match(/(^|#{b}+)mount\s+.*/)
           config[STATECHANGE_MOUNTS] = {} if !config[STATECHANGE_MOUNTS]
-          expected_state_changes << StatePropertyChange.new(
-                STATECHANGE_MOUNTS, StatePropertyChange::ACTION_INSERT, 
-                StatePropertyChange::VALUE_UNKNOWN)
+          expected_state_changes << StateChange.new(
+                :property => STATECHANGE_MOUNTS, 
+                :action => StateChange::ACTION_INSERT, 
+                :value => StateChange::VALUE_UNKNOWN)
         end
         if code.match(/(^|#{b}+)umount\s+.*/)
           config[STATECHANGE_MOUNTS] = {} if !config[STATECHANGE_MOUNTS]
-          expected_state_changes << StatePropertyChange.new(
-                STATECHANGE_MOUNTS, StatePropertyChange::ACTION_DELETE,
-                StatePropertyChange::VALUE_UNKNOWN)
+          expected_state_changes << StateChange.new(
+                :property => STATECHANGE_MOUNTS, 
+                :action => StateChange::ACTION_DELETE, 
+                :value => StateChange::VALUE_UNKNOWN)
         end
         if code.match(/(^|#{b}+)gem((\s+)|((\s+).*(\s+)))install.*/)
           config[STATECHANGE_GEMS] = {} if !config[STATECHANGE_GEMS]
-          expected_state_changes << StatePropertyChange.new(
-                STATECHANGE_GEMS, StatePropertyChange::ACTION_INSERT, 
-                StatePropertyChange::VALUE_UNKNOWN)
+          expected_state_changes << StateChange.new(
+                :property => STATECHANGE_GEMS, 
+                :action => StateChange::ACTION_INSERT, 
+                :value => StateChange::VALUE_UNKNOWN)
         end
         if code.match(/(^|#{b}+)gem((\s+)|((\s+).*(\s+)))uninstall.*/)
           config[STATECHANGE_GEMS] = {} if !config[STATECHANGE_GEMS]
-          expected_state_changes << StatePropertyChange.new(
-                STATECHANGE_GEMS, StatePropertyChange::ACTION_DELETE, 
-                StatePropertyChange::VALUE_UNKNOWN)
+          expected_state_changes << StateChange.new(
+                :property => STATECHANGE_GEMS, 
+                :action => StateChange::ACTION_DELETE, 
+                :value => StateChange::VALUE_UNKNOWN)
         end
         if  code.match(/(^|#{b}+)yum\s+.*/) ||
             code.match(/(^|#{b}+)apt-get\s+.*/) ||
@@ -246,12 +417,14 @@ module Toaster
       if resource.kind_of?(chef_resource_class::Package) && 
           !resource.kind_of?(chef_resource_class::GemPackage)
         config[STATECHANGE_PACKAGES] = {} if !config[STATECHANGE_PACKAGES]
-        action =  [:install].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:upgrade, :reconfig].include?(resource.action) ? StatePropertyChange::ACTION_MODIFY : 
-                  [:remove, :purge].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_PACKAGES, action, resource.package_name)
+        action =  [:install].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:upgrade, :reconfig].include?(resource.action) ? StateChange::ACTION_MODIFY : 
+                  [:remove, :purge].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+              :property => STATECHANGE_PACKAGES, 
+              :action => action, 
+              :value => resource.package_name)
       end
 
       if resource.kind_of?(chef_resource_class::YumPackage)
@@ -260,12 +433,14 @@ module Toaster
 
       if resource.kind_of?(chef_resource_class::GemPackage)
         config[STATECHANGE_GEMS] = {} if !config[STATECHANGE_GEMS]
-        action =  [:install].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:upgrade, :reconfig].include?(resource.action) ? StatePropertyChange::ACTION_MODIFY : 
-                  [:remove, :purge].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_GEMS, action, resource.package_name)
+        action =  [:install].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:upgrade, :reconfig].include?(resource.action) ? StateChange::ACTION_MODIFY : 
+                  [:remove, :purge].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+              :property => STATECHANGE_GEMS, 
+              :action => action, 
+              :value => resource.package_name)
       end
 
       if resource.kind_of?(chef_resource_class::File) ||
@@ -273,11 +448,13 @@ module Toaster
         config[STATECHANGE_FILES] = {} if !config[STATECHANGE_FILES]
         config[STATECHANGE_FILES]["paths"] = [] if !config[STATECHANGE_FILES]["paths"]
         config[STATECHANGE_FILES]["paths"] << resource.path
-        action =  [:create, :touch, :create_if_missing].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:delete].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_FILES, action, resource.path)
+        action =  [:create, :touch, :create_if_missing].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:delete].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+              :property => STATECHANGE_FILES,
+              :action => action, 
+              :value => resource.path)
       end
 
       if resource.kind_of?(chef_resource_class::RemoteFile)
@@ -288,11 +465,13 @@ module Toaster
         config[STATECHANGE_FILES] = {} if !config[STATECHANGE_FILES]
         config[STATECHANGE_FILES]["paths"] = [] if !config[STATECHANGE_FILES]["paths"]
         config[STATECHANGE_FILES]["paths"] << resource.target_file
-        action =  [:create].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:delete].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_FILES, action, resource.target_file)
+        action =  [:create].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:delete].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+            :property => STATECHANGE_FILES, 
+            :action => action, 
+            :value => resource.target_file)
       end
 
       if resource.kind_of?(chef_resource_class::User)
@@ -309,30 +488,36 @@ module Toaster
 
       if resource.kind_of?(chef_resource_class::Mount)
         config[STATECHANGE_MOUNTS] = {} if !config[STATECHANGE_MOUNTS]
-        action =  [:mount, :enable].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:umount, :disable].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_MOUNTS, action, resource.mount_point)
+        action =  [:mount, :enable].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:umount, :disable].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+              :property => STATECHANGE_MOUNTS, 
+              :action => action, 
+              :value => resource.mount_point)
       end
 
       if resource.kind_of?(chef_resource_class::Service)
         config[STATECHANGE_SERVICES] = {} if !config[STATECHANGE_SERVICES]
         config[STATECHANGE_PORTS] = {} if !config[STATECHANGE_PORTS]
-        action =  [:enable, :start, :restart, :reload].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:disable, :stop].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_SERVICES, action, resource.service_name)
+        action =  [:enable, :start, :restart, :reload].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:disable, :stop].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+              :property => STATECHANGE_SERVICES, 
+              :action => action, 
+              :value => resource.service_name)
       end
 
       if resource.kind_of?(chef_resource_class::Route)
         config[STATECHANGE_ROUTES] = {} if !config[STATECHANGE_ROUTES]
-        action =  [:add].include?(resource.action) ? StatePropertyChange::ACTION_INSERT : 
-                  [:delete].include?(resource.action) ? StatePropertyChange::ACTION_DELETE : 
-                  StatePropertyChange::ACTION_UNKNOWN
-        expected_state_changes << StatePropertyChange.new(
-              STATECHANGE_ROUTES, action, resource.target)
+        action =  [:add].include?(resource.action) ? StateChange::ACTION_INSERT : 
+                  [:delete].include?(resource.action) ? StateChange::ACTION_DELETE : 
+                  StateChange::ACTION_UNKNOWN
+        expected_state_changes << StateChange.new(
+              :property => STATECHANGE_ROUTES, 
+              :action => action, 
+              :value => resource.target)
       end
 
       if config.empty?
@@ -345,112 +530,6 @@ module Toaster
       #@@state_config_cache[resource_src] = entry #don't do caching..
 
       return entry
-    end
-
-    def self.get_resource_from_source(resource_src, attribute_src, cookbook_paths = [])
-      resource = nil
-
-      # we are performing multiple parsing attempts. if parsing goes well, 
-      # the resource is returned. however, if a parsing error occurs, we 
-      # investigate the error message, and for missing variables we add a default 
-      # initializer to the beginning of the source code. Then, we re-attempt 
-      # to parse the code.
-      # The maximum number of such attempts is defined here.
-      max_attempts = 20
-
-      # define variable 'template' in script source:
-      # TODO: doesn't work - fix!
-      resource_src = "template=node\n#{resource_src}"
-
-      max_attempts.downto(1) do |attempt|
-
-        Tempfile.open("chef.resource.rb") do |file|
-          file.write(resource_src)
-          file.flush
-
-          Tempfile.open("chef.attributes.rb") do |file1|
-            file1.write(attribute_src)
-            file1.flush
-
-            orig_log_level = ChefUtil.get_chef_log_level()
-
-            begin
-
-              ChefUtil.set_chef_log_level(:fatal)
-  
-              if !@@initialized
-                chef_cfg = Chef::Config
-                chef_cfg[:solo] = true
-                chef_cfg[:node_name] = "foobar"
-                path_new = []
-                chef_cfg[:cookbook_path].each do |p|
-                  path_new << p if File.directory?(p)
-                end
-                chef_cfg[:cookbook_path] = path_new
-                chef_cfg[:cookbook_path] << File.expand_path(File.join(File.dirname(__FILE__), 'cookbooks'))
-                chef_cfg[:cookbook_path].concat(cookbook_paths)
-                chef_cfg[:log_level] = :fatal
-                chef_cfg[:verbose_logging] = false
-                Chef::Application::Solo.new # this initializes some important state variables
-  
-                chef_client_json = { 
-                  "platform" => "ubuntu", 
-                  "platform_version" => "12.04",
-                  "kernel" => { "machine" => "x86_64" },
-                  "log_level" => :fatal,
-                  "ipaddress" => ""
-                }
-                @@chef_client = Chef::Client.new(
-                  chef_client_json
-                )
-                @@node = @@chef_client.build_node
-                @@cookbook_collection = Chef::CookbookCollection.new(
-                Chef::CookbookLoader.new(chef_cfg[:cookbook_path]))
-
-                @@initialized = true
-              end
-
-              if attribute_src && attribute_src.to_s.strip != ""
-                @@node.from_file(file1.path)
-              end
-
-              run_context = Chef::RunContext.new(@@node, @@cookbook_collection)
-              recipe = Chef::Recipe.new("apache2", "default", run_context)
-              recipe.from_file(file.path)
-
-              resource = recipe.run_context.resource_collection.all_resources[0]
-
-              return resource
-            rescue Exception => ex
-              msg = ex.to_s
-              puts msg if attempt <= 1
-              puts ex.backtrace if attempt <= 1
-              if msg.match(/Cannot find a resource for/)
-                pkg_name = msg.gsub(/.*for ([a-z0-9A-Z_]+) on.*/, '\1').to_s
-                resource_src = "#{pkg_name} = \"initializer_for_unknown_variable_#{pkg_name}\" \n #{resource_src}"
-              elsif msg.match(/undefined (local variable or )?method/)
-                var_name = msg.gsub(/.*method `([a-z0-9A-Z_]+).* for.*/, '\1').to_s
-                resource_src = "#{var_name} = \"initializer_for_unknown_variable_#{var_name}\" \n #{resource_src}"
-              elsif msg.match(  /resource matching/)
-                regex = /.*resource matching (.*)\[(.*)\].*/
-                res_type = msg.gsub(regex, '\1').to_s
-                res_name = msg.gsub(regex, '\2').to_s
-                resource_src = "#{res_type} \"#{res_name}\" do \n end \n\n #{resource_src}"
-              else
-                puts "ERROR: Could not get Chef resource object from source code: #{msg}"
-                puts File.read(file.path)
-                puts "---------"
-                puts File.read(file1.path)
-                puts "---------"
-                return nil
-              end
-            ensure
-              ChefUtil.set_chef_log_level(orig_log_level)
-            end
-          end
-        end
-      end
-      return resource
     end
 
   end

@@ -52,20 +52,24 @@ module Toaster
 
     def self.init_db_connection(config=nil)
       require "toaster/util/util"
-      require "toaster/db/db"
       if !config
-        config = {'mongodb' => {
-          'host' => Config.get('mongodb.host'),
-          'port' => "27017",
-          'db' => "toaster",
-          'collection' => "toaster"
-        }}
+        config = {
+          "db_type" => "mysql", 
+          'mysql' => {
+            'host' => Config.get('db.host'),
+            'db' => "toaster"
+          }
+        }
       end
-      if config["mongodb"]
-        DB.DEFAULT_HOST = config["mongodb"]["host"] if !Util.empty?(config["mongodb"]["host"])
-        DB.DEFAULT_PORT = config["mongodb"]["port"] if !Util.empty?(config["mongodb"]["port"])
-        DB.DEFAULT_DB = config["mongodb"]["db"] if !Util.empty?(config["mongodb"]["db"])
-        DB.DEFAULT_COLL = config["mongodb"]["collection"] if !Util.empty?(config["mongodb"]["collection"])
+      if config["db_type"] == "mysql" && config["mysql"]
+        require "active_record"
+        ActiveRecord::Base.establish_connection(
+          :adapter => 'mysql2',
+          :host => config["mysql"]["host"],
+          :database => config["mysql"]["db"]
+        )
+      else
+        puts "WARN: Incorrect database connection configuration"
       end
     end
 

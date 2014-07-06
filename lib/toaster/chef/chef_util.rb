@@ -593,50 +593,7 @@ module Toaster
             doc = Toaster::MarkupUtil.parse_xml(html, true)
           end
           result.each do |cbook|
-            url = "#{OPSCODE_API_URL}cookbooks/#{cbook["cookbook_name"]}/"
-            json = `curl '#{url}' 2> /dev/null`
-            details = MarkupUtil.parse_json(json.strip)
-            latest_version = details['latest_version'].gsub(/.*\/([^\/]+)/, '\1')
-            cbook['_latest_version'] = latest_version
-            versions = []
-            details['versions'].each do |ver|
-              versions << ver.gsub(/.*\/([^\/]+)/, '\1')
-            end
-            cbook["_versions"] = versions
-            if !details["average_rating"].nil?
-              cbook["_average_rating"] = details["average_rating"]
-            end
-            # load all recipe names for this cookbook
-            if !cbook["_recipes"]
-              cb_name = cbook["cookbook_name"]
-              recipes = Toaster::ChefUtil.available_recipes_from_opscode(
-                  cb_name, cbook["_latest_version"], overwrite_downloads)
-              cbook["_recipes"] = {} if !cbook["_recipes"]
-              recipe_names = []
-              recipes.each do |r|
-                rec_name = r["recipe_name"]
-                recipe_names << rec_name
-                cbook["_recipes"][rec_name] = {}
-                cbook["_recipes"][rec_name]["_resource_names"] = []
-                if resources[cb_name] && resources[cb_name][rec_name]
-                  if resources[cb_name][rec_name]["_possibly_non_idempotent"]
-                    cbook["_possibly_non_idempotent"] = true
-                  end
-                  resources[cb_name][rec_name]["resources"].each do |line,code|
-                    if code
-                      code = code.split("\n")[0]
-                      resrc_name = code.gsub(/^\s*([a-zA-Z0-9_\-]*)\s+(.*)\s+((do)|\{).*$/, '\1[\2]')
-                      resrc_name = resrc_name.strip
-                      #puts "TRACE: resource name: #{resrc_name}"
-                      cbook["_recipes"][rec_name]["_resource_names"] << resrc_name
-                    end
-                  end
-                else
-                  puts "WARN: Did not find detailed Chef resource information for '#{cb_name}'::'#{rec_name}'"
-                end
-              end
-              cbook["_recipe_names"] = recipe_names
-            end
+            fetch_cookbook_details(cbook["cookbook_name"], cbook, resources)
           end
         rescue Object => exc
           puts "WARN: Exception when querying cookbook details from #{OPSCODE_SEARCH_URL}?page=1: #{exc} - #{exc.backtrace}"
@@ -658,6 +615,58 @@ module Toaster
       return result
     end
 
+    def self.fetch_cookbook_details(cookbook_name, cbook={}, resources={}, overwrite_downloads=false)
+      url = "#{OPSCODE_API_URL}cookbooks/#{cookbook_name}/"
+      json = `curl '#{url}' 2> /dev/null`
+      details = MarkupUtil.parse_json(json.strip)
+      latest_version = details['latest_version'].gsub(/.*\/([^\/]+)/, '\1')
+      cbook['_latest_version'] = latest_version
+      versions = []
+      details['versions'].each do |ver|
+        versions << ver.gsub(/.*\/([^\/]+)/, '\1')
+      end
+      cbook["_versions"] = versions
+      if !details["average_rating"].nil?
+        cbook["_average_rating"] = details["average_rating"]
+      end
+      # load all recipe names for this cookbook
+      if !cbook["_recipes"]
+        cb_name = cookbook_name
+        recipes = Toaster::ChefUtil.available_recipes_from_opscode(
+            cb_name, cbook["_latest_version"], overwrite_downloads)
+        cbook["_recipes"] = {} if !cbook["_recipes"]
+        recipe_names = []
+        recipes.each do |r|
+          rec_name = r["recipe_name"]
+          recipe_names << rec_name
+          cbook["_recipes"][rec_name] = {}
+          cbook["_recipes"][rec_name]["_resource_names"] = []
+          if resources[cb_name] && resources[cb_name][rec_name]
+            if resources[cb_name][rec_name]["_possibly_non_idempotent"]
+              cbook["_possibly_non_idempotent"] = true
+            end
+            resources[cb_name][rec_name]["resources"].each do |line,code|
+              if code
+                code = code.split("\n")[0]
+                resrc_name = code.gsub(/^\s*([a-zA-Z0-9_\-]*)\s+(.*)\s+((do)|\{).*$/, '\1[\2]')
+                resrc_name = resrc_name.strip
+                #puts "TRACE: resource name: #{resrc_name}"
+                cbook["_recipes"][rec_name]["_resource_names"] << resrc_name
+              end
+            end
+          else
+            puts "WARN: Did not find detailed Chef resource information for '#{cb_name}'::'#{rec_name}'"
+          end
+        end
+        cbook["_recipe_names"] = recipe_names
+      end
+      return cbook
+    end
+
+    def self.available_cookbook_versions(cookbook_name)
+      fetch_cookbook_details(cookbook_name)["_versions"].uniq
+    end
+
     def self.download_all_from_opscode(target_dir="/tmp/opscode_cookbooks/", overwrite_downloads=false)
       target_dir = "/tmp/opscode_cookbooks/" if !target_dir
       if overwrite_downloads || !File.exist?(target_dir)
@@ -670,66 +679,81 @@ module Toaster
         end
       end
     end
+  
+    def self.parse_resources(cookbook, recipe_name, version="latest", result = {}, cookbook_dir="/tmp/opscode_cookbooks/")
+      recipe_file = "#{cookbook_dir}/#{cookbook}/recipes/#{recipe_name}.rb"
+      attributes_file = "#{cookbook_dir}/#{cookbook}/attributes/#{recipe_name}.rb"
+      recipe_file_relative = "#{cookbook}/recipes/#{recipe_name}.rb"
+      attributes_source = File.exist?(attributes_file) ? File.read(attributes_file) : ""
+
+      if !File.exist?(recipe_file)
+        download_cookbook_version(cookbook, version, cookbook_dir)
+      end
+
+      puts "TRACE: Scanning recipe file: #{recipe_file}"
+      resource_lines = []
+      script_resource_lines = []
+      result[cookbook] = {} if !result[cookbook]
+      result[cookbook][recipe_name] = {} if !result[cookbook][recipe_name]
+      result[cookbook][recipe_name]["file"] = recipe_file_relative
+      result[cookbook][recipe_name]["resources"] = {} if !result[cookbook][recipe_name]["resources"]
+      result[cookbook][recipe_name]["resource_objs"] = {} if !result[cookbook][recipe_name]["resource_objs"]
+
+      # resource names taken from 
+      # http://docs.opscode.com/resource.html
+      # http://wiki.opscode.com/display/chef/Resources
+      resource_names = ["apt_package", "bash", "chef_gem", "csh", "cron", "deploy", 
+        "directory", "dpkg_package", "easy_install_package", "env", "erlang_call", "erl_call", 
+        "execute", "file", "freebsd_package", "gem_package", "git", "group", "http_request", 
+        "ifconfig", "link", "log", "macports_package", "mdadm", "mount", "ohai", "package", "perl",
+        "portage_package", "powershell_script", "python", "remote_directory", "remote_file", "route",
+        "rpm_package", "ruby_block", "ruby", "scm", "script", "service", "solaris_package", 
+        "template", "user", "yum_package", "zypper_package",
+        "mysql_service" # additional resource types
+        ]
+      script_resource_names = ["execute", "bash", "script", "ruby_block", "csh"]
+
+      File.open(recipe_file) do |io|
+        io.each_with_index { |line,idx| 
+          #if line.match(/^\s*((#{resource_names.join(")|(")}))\s+.*((do)|(\{)).*$/)
+          if line.match(/^(\s*[0-9a-zA-Z_]+\s*=\s*)?\s*((#{resource_names.join(")|(")}))((\s+)|($)|(\s*\())/)
+            resource_lines << idx
+          elsif line.match(/execute.*do/) && !line.match(/^\s*#/)
+            puts "WARN: NO resource line: #{line}"
+          end
+        }
+        resource_lines.each do |line|
+          code = read_sourcecode_from_line(recipe_file, line + 1)
+          if !code
+            puts "WARN: Could not parse code file #{recipe_file} : #{line + 1}"
+          else
+            resource_obj = ResourceInspector.get_resource_from_source(code, attributes_source)
+            puts "received resource_obj: #{resource_obj}"
+            result[cookbook][recipe_name]["resources"][line] = code
+            result[cookbook][recipe_name]["resource_objs"][line] = resource_obj
+            if !code.match(/not_if\s*/) && !code.match(/only_if\s*/)
+              resource_type = code.split("\n")[0].gsub(/^\s*([a-zA-Z0-9_\-]*)\s+(.*)\s+((do)|\{).*$/, '\1')
+              if script_resource_names.include?(resource_type)
+                result[cookbook][recipe_name]["_possibly_non_idempotent"] = true
+              end
+            end
+          end
+        end
+      end
+      return result
+    end
 
     def self.parse_all_resources(recipe_pattern="default.rb", cookbook_dir="/tmp/opscode_cookbooks/")
       # cookbook_name -> recipe_file -> line_no -> resource_code
       result = {}
-      cookbooks_with_resources = Set.new
       scanned_files = 0
-      possibly_non_idempotent_cookbooks = Set.new
       Dir.entries(cookbook_dir).each do |cookbook|
         if cookbook.match(/^[a-zA-Z0-9_\-]+$/)
           recipe_dir = "#{cookbook_dir}/#{cookbook}/recipes"
           Dir["#{recipe_dir}/#{recipe_pattern}"].each do |recipe_file|
-            scanned_files += 1
-            #puts "TRACE: Scanning recipe file #{scanned_files}: #{recipe_file}"
-            resource_lines = []
-            script_resource_lines = []
-            result[cookbook] = {} if !result[cookbook]
             recipe_name = recipe_file.gsub(/.*\/([^\/]+)\.rb$/, '\1')
-            result[cookbook][recipe_name] = {} if !result[cookbook][recipe_name]
-            result[cookbook][recipe_name]["file"] = recipe_file
-            result[cookbook][recipe_name]["resources"] = {} if !result[cookbook][recipe_name]["resources"]
-
-            # resource names taken from 
-            # http://docs.opscode.com/resource.html
-            # http://wiki.opscode.com/display/chef/Resources
-            resource_names = ["apt_package", "bash", "chef_gem", "csh", "cron", "deploy", 
-              "directory", "dpkg_package", "easy_install_package", "env", "erlang_call", "erl_call", 
-              "execute", "file", "freebsd_package", "gem_package", "git", "group", "http_request", 
-              "ifconfig", "link", "log", "macports_package", "mdadm", "mount", "ohai", "package", "perl",
-              "portage_package", "powershell_script", "python", "remote_directory", "remote_file", "route",
-              "rpm_package", "ruby_block", "ruby", "scm", "script", "service", "solaris_package", 
-              "template", "user", "yum_package", "zypper_package"]
-            script_resource_names = ["execute", "bash", "script", "ruby_block", "csh"]
-
-            File.open(recipe_file) do |io|
-              io.each_with_index { |line,idx| 
-                #if line.match(/^\s*((#{resource_names.join(")|(")}))\s+.*((do)|(\{)).*$/)
-                if line.match(/^(\s*[0-9a-zA-Z_]+\s*=\s*)?\s*((#{resource_names.join(")|(")}))((\s+)|($)|(\s*\())/)
-                  resource_lines << idx
-                elsif line.match(/execute.*do/) && !line.match(/^\s*#/)
-                  puts "WARN: NO resource line: #{line}"
-                end
-              }
-              resource_lines.each do |line|
-                code = read_sourcecode_from_line(recipe_file, line + 1)
-                cookbooks_with_resources << cookbook
-                result[cookbook][recipe_name]["resources"][line] = code
-                if !code
-                  puts "WARN: Could not parse code file #{recipe_file} : #{line + 1}"
-                elsif !code.match(/not_if\s*/) && !code.match(/only_if\s*/)
-                  resource_type = code.split("\n")[0].gsub(/^\s*([a-zA-Z0-9_\-]*)\s+(.*)\s+((do)|\{).*$/, '\1')
-                  if script_resource_names.include?(resource_type)
-                    result[cookbook][recipe_name]["_possibly_non_idempotent"] = true
-                    possibly_non_idempotent_cookbooks << cookbook
-#                      puts "---------->"
-#                      puts code
-#                      puts "<----------"
-                  end
-                end
-              end
-            end
+            parse_resources(cookbook, recipe_name, "latest", result, cookbook_dir)
+            scanned_files += 1
           end
         end
       end
@@ -757,36 +781,3 @@ module Toaster
 
   end
 end
-
-# TODO remove!
-#cookbooks = Toaster::ChefUtil.available_cookbooks_from_opscode(true) 
-#cookbooks = Toaster::MarkupUtil.parse_json(File.read("test/coverage/opscode_cookbooks.json"))
-
-#all_resources = Toaster::ChefUtil.parse_all_resources()
-#all_resources.each do |cb,resources|
-#  resources.each do |res,res_details|
-#    if res_details["_possibly_non_idempotent"]
-#      res_details["resources"].each do |line,res_code|
-#        puts "-------------"
-#        puts "#{res_details["file"]} - line #{line} :"
-#        puts res_code
-#      end
-#      #puts "#{cb["_position"]} - #{cb["cookbook_name"]}"
-#    end
-#  end
-#end
-
-#cookbooks.each_with_index do |cb,idx|
-#  if cb["_possibly_non_idempotent"]
-#    puts cb["cookbook_name"]
-#    if cb["_platforms"] && !cb["_platforms"].empty? && !cb["_platforms"].include?("ubuntu")
-#      puts "--> #{cb["_platforms"]}"
-#    end
-#  end
-#end
-
-#cookbooks = Toaster::ChefUtil.available_cookbooks_from_opscode(true, false)
-#Toaster::Util.write("test/coverage/opscode_cookbooks_13-08-07.json", Toaster::MarkupUtil.to_json(cookbooks), true)
-
-#Toaster::ChefUtil.download_all_from_opscode()
-

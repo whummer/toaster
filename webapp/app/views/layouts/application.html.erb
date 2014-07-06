@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+        <title>ToASTER - Testing of Cloud Infrastructure Deployments</title>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+        <meta name="description" content="ToASTER Cloud Testing Tool" />
+        <meta name="keywords" content="ToASTER, Infrastructure as Code, Testing" />
+  <%= stylesheet_link_tag    "application", media: "all", "data-turbolinks-track" => true %>
+  <%= javascript_include_tag "application", "data-turbolinks-track" => true %>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+    <%
+    # init session variables
+    session['service.host'] = Toaster::Config.get("service.host") if "#{session['service.host']}".empty?
+    session['service.port'] = Toaster::Config.get("service.port") if "#{session['service.port']}".empty?
+    session['db.host'] = Toaster::Config.get("db.host") if "#{session['db.host']}".empty?
+    session['db.port'] = Toaster::Config.get("db.port") if "#{session['db.port']}".empty?
+    %>
+	<p class="notice"><%= notice %></p>
+    <p class="alert"><%= alert %></p>
+
+    <div class="container">
+		<div class="header">
+			<h1>ToASTER<sup>[beta]</sup></h1>
+            <% if user_signed_in? %>
+                <div class="userinfo">
+                    <div><b>User:</b> <%= current_user.email %></div>
+                    <div><%= link_to "Sign out", destroy_user_session_path, :method => :delete %></div>
+                </div>
+            <% end %>
+			<!--<h2>Testing of Cloud Infrastructure Deployments (Chef/Puppet)</h2>-->
+		</div>
+                <ul class="ca-menu">
+                    <li class="<%= request.path.match(/^\/scripts/) || request.path == "/" ? "active" : "inactive" %>">
+                        <a href="/scripts">
+                            <span class="ca-icon">e</span>
+                            <div class="ca-content">
+                                <h2 class="ca-main">Automations</h2>
+                                <h3 class="ca-sub">List Chef/Puppet scripts</h3>
+                            </div>
+                        </a>
+                        <ul><li><a href="/scripts">Automation Scripts</a></li>
+                        <li><a href="/scripts/tasks">Automation Tasks</a></li>
+                        <li><a href="/scripts/graph">State Transition Graph</a></li></ul>
+                    </li>
+                    <li class="<%= request.path.match(/^\/test/) ? "active" : "inactive" %>">
+                        <a href="/test/suites">
+                            <span class="ca-icon">C</span>
+                            <div class="ca-content">
+                                <h2 class="ca-main">Testing</h2>
+                                <h3 class="ca-sub">View/generate test cases</h3>
+                            </div>
+                        </a>
+                        <ul><li><a href="/test/suites">Test Suites</a></li>
+                        <li><a href="/test/gen">Generate Tests</a></li></ul>
+                    </li>
+                    <li class="<%= request.path.match(/^\/execs/) ? "active" : "inactive" %>">
+                        <a href="/execs">
+                            <span class="ca-icon">p</span>
+                            <div class="ca-content">
+                                <h2 class="ca-main">Executions</h2>
+                                <h3 class="ca-sub">Inspect automation runs</h3>
+                            </div>
+                        </a>
+                        <ul><li><a href="/execs">Automation Runs</a></li>
+                        <li><a href="/execs/0/tasks">Task Executions</a></li></ul>
+                    </li>
+                    <li class="<%= request.path.match(/^\/analysis/) ? "active" : "inactive" %>">
+                        <a href="/analysis/conv">
+                            <span class="ca-icon">L</span>
+                            <div class="ca-content">
+                                <h2 class="ca-main">Analysis</h2>
+                                <h3 class="ca-sub">Test coverage/results</h3>
+                            </div>
+                        </a>
+                        <ul><li><a href="/analysis/conv">Convergence</a></li>
+                        <li><a href="/analysis/idem">Idempotence</a></li></ul>
+                    </li>
+                    <li class="<%= request.path.match(/^\/util/) ? "active" : "inactive" %>">
+                        <a href="/util/chef">
+                            <span class="ca-icon">M</span>
+                            <div class="ca-content">
+                                <h2 class="ca-main">Utilities</h2>
+                                <h3 class="ca-sub">Miscellaneous tools</h3>
+                            </div>
+                        </a>
+                        <ul><li><a href="/util/chef">Chef</a></li></ul>
+                    </li>
+                    <li class="<%= request.path.match(/^\/settings/) ? "active" : "inactive" %>">
+                        <a href="/settings/index">
+                            <span class="ca-icon">K</span>
+                            <div class="ca-content">
+                                <h2 class="ca-main">Settings</h2>
+                                <h3 class="ca-sub">Adjust configurations</h3>
+                            </div>
+                        </a>
+                        <ul><li><a href="/settings/index">Configuration</a></li>
+                        <li><a href="/settings/containers">Containers</a></li></ul>
+                    </li>
+                </ul>
+
+		<div class="pages">
+			<div id="quickstart" class="panel">
+			<div class="content">
+				<%= yield %>
+			</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

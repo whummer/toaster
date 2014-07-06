@@ -25,12 +25,11 @@ default['toaster']['transfer_state_config'] = false
 # Use "ram" (Rational Asset Manager) or "web" (standard Web server) as server type
 default['toaster']['server_type'] = "web" 
 
-# MongoDB database settings
-default['toaster']['db_type'] = "mongodb"
-default['toaster']['mongodb']['host'] = ""
-default['toaster']['mongodb']['port'] = 27017
-default['toaster']['mongodb']['db'] = "toaster"
-default['toaster']['mongodb']['collection'] = "toaster"
+# Database settings
+default['toaster']['db_type'] = "mysql"
+default['toaster']['mysql']['host'] = ""
+default['toaster']['mysql']['db'] = "toaster"
+default['toaster']['mysql']['schema'] = File.join(__FILE__, "../../../../webapp/ror/toaster/db/schema.rb")
 
 # SOME BUG FIXES for Opscode.com recipes:
 

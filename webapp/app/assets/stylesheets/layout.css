@@ -1,0 +1,151 @@
+@import url('reset.css');
+/* General Style */
+body{
+	background: white;
+	color: #333;
+	font-family: 'Terminal Dosis', Arial, sans-serif;
+	font-size: 13px;
+}
+a{
+	color: #227788;
+	text-decoration: none;
+}
+.clr{
+	clear: both;
+}
+.content{
+	position:relative;
+}
+h1 {
+	color: #666;
+	margin-bottom: 10px;
+	margin-top: 10px;
+	margin-left: 0px;
+	text-shadow:1px 1px 1px rgba(255,255,255,0.9);
+	font-weight: bold;
+}
+/* Menu Style */
+.ca-menu h2, .ca-menu h3 {
+	font-weight: normal;
+}
+.ca-menu {
+	z-index: 200;
+}
+/* Header Style */
+.header {
+	background: black;
+	width: 100%;
+	color:#fff;
+}
+.header h1, .header h2 {
+	margin:0px;
+	font-size:32px;
+	line-height: 50px;
+	text-align:center;
+	font-weight:normal;
+	color: white;
+}
+.header h1 {
+	text-shadow:1px 1px 1px rgba(200,200,200,0.9);
+	font-weight: bold;
+}
+.header h2 {
+	font-size: 20px;
+	padding-bottom: 10px;
+	margin-top: -10px;
+	font-weight:normal;
+}
+.userinfo {
+	float: right;
+	position: absolute;
+	right: 20px;
+	top: 0px;
+	color: white;
+	//line-height: 40px;
+}
+.userinfo div {
+	margin-top: 5px;
+}
+/* Content Style*/
+.container {
+	-webkit-transform: translateZ(0);
+	-webkit-transform: translate3d(0,0,0);
+}
+.pages, .content, .panel {
+	z-index: 0;
+	min-width: 400px;
+}
+.content, .ca-menu {
+	float: left;
+}
+.content {
+	opacity: 0.9;
+	padding: 20px;
+	margin-left: 0px;
+	font-size: 16px;
+}
+.content ul {
+	margin-left: 20px;
+}
+.content p {
+	margin-top: 5px;
+	margin-bottom: 10px;
+}
+.content h1, .content h2, .content h3, .content h4 {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+.panel,
+.pages > :target ~ :last-child {
+	position: absolute;
+	opacity: 0.01;
+	-webkit-transform: translateZ(0);
+	-webkit-transform: translate3d(0,0,0);
+	left: -102%;
+	-webkit-transition: opacity 200ms ease-in;
+	-moz-transition: opacity 200ms ease-in;
+	-o-transition: opacity 200ms ease-in;
+	-ms-transition: opacity 200ms ease-in;
+	transition: opacity 200ms ease-in;
+}
+.panel:target, .pages > :last-child {
+	position: absolute;
+	left: 300px;
+	opacity: 1;
+	-webkit-transition: opacity 200ms ease-in;
+	-moz-transition: opacity 200ms ease-in;
+	-o-transition: opacity 200ms ease-in;
+	-ms-transition: opacity 200ms ease-in;
+	transition: opacity 200ms ease-in;
+}
+pre code {
+	background: #eee;
+	display: block;
+	font-size: 14px;
+	padding: 7px;
+	border: 1px solid #ccc;
+	margin: 10px;
+}
+/* Fork Banner */
+.forkBanner{
+	z-index: 9999;
+	position: fixed;
+	top: 0px;
+	right: 0px;
+	-webkit-animation: slideOut 0.5s ease-in-out 0.3s backwards;
+	-moz-animation: slideOut 0.5s ease-in-out 0.3s backwards;
+	-o-animation: slideOut 0.5s ease-in-out 0.3s backwards;
+	-ms-animation: slideOut 0.5s ease-in-out 0.3s backwards;
+	animation: slideOut 0.5s ease-in-out 0.3s backwards;
+}
+.forkBanner a{
+	opacity: 0.6;
+}
+.forkBanner a:hover{
+	opacity: 0.9;
+}
+/* Footer Style */
+.footer {
+	float: left; clear: both;
+	width: 350; padding: 7px;
+}

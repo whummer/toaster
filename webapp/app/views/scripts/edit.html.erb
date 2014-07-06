@@ -1,0 +1,58 @@
+<h1>Automation Details</h1>
+
+<%= form_for cur_auto, {:url => request.path, as: :auto} do |f| %>
+<table class="details">
+	<tr>
+		<td>Name</td><td><%= f.text_field(:name, value: cur_auto ? cur_auto.name : "") %></td>
+	</tr><tr>
+		<td>Type</td><td>
+			<%= f.select(:language, options_for_select(['Chef', 'Puppet'])) %>
+		</td>
+	</tr><tr>
+		<td>Script URL (gzip):</td><td><%= f.text_field(:script, value: cur_auto ? cur_auto.script : "") %></td>
+	</tr><tr>
+		<td>Parameters:</td><td><ul>
+			<% cur_auto.automation_attributes.each_with_index do |attr,index| %>
+	    	<%= f.fields_for "attr[#{index + 1}]", attr do |params_form| %>
+		      <li>
+		        <%= params_form.text_field :key %> = 
+		        <%= params_form.text_field :value %>
+				<%= submit_tag("remove", :name => "del_param[#{index + 1}]") %>
+		      </li>
+		    <% end end %>
+		  </ul>
+		  <%= submit_tag("Add Parameter", :name => "add_param") %>
+		</td>
+	</tr><tr>
+		<td>Ignored State Properties</td><td><ul>
+			<% cur_auto.ignore_properties.each_with_index do |attr,index| %>
+	    	<%= f.fields_for "ignoreprop[#{index + 1}]", attr do |params_form| %>
+		      <li>
+		        <%= params_form.text_field :key %>
+				<%= submit_tag("remove", :name => "del_ignoreprop[#{index + 1}]") %>
+		      </li>
+		    <% end end %>
+		  </ul>
+		  <%= submit_tag("Add Ignored Property", :name => "add_ignoreprop") %>
+		</td>
+	</tr><tr>
+		<td>Additional State Property Watch</td><td><ul>
+			<% cur_auto.additional_properties.each_with_index do |attr,index| %>
+	    	<%= f.fields_for "additionalprop[#{index + 1}]", attr do |params_form| %>
+		      <li>
+		        <%= params_form.text_field :key %>
+				<%= submit_tag("remove", :name => "del_additionalprop[#{index + 1}]") %>
+		      </li>
+		    <% end end %>
+		  </ul>
+		  <%= submit_tag("Add Property Watch", :name => "add_additionalprop") %>
+		</td>
+	</tr><tr>
+		<td>Visibility</td><td>
+			<%= f.select(:visibility, options_for_select(['Private', "Public"])) %>
+		</td>
+	</tr><tr>
+		<td>&nbsp;</td><td><%= f.submit("Save", :name => "save") %></td>
+	</tr>
+</table>
+<% end %>

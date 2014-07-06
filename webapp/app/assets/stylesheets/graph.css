@@ -1,0 +1,159 @@
+html, body {
+	padding: 0px;
+	margin: 0px;
+	height: 100%;
+}
+
+/* jsPlumb specific styles*/
+
+.jsPlumbNodeInitial, .jsPlumbNodeFinal {
+	position: absolute;
+	width: 18px;
+	height: 19px;
+}
+div.jsPlumbNode {
+	width: 80px;
+	height: 30px;
+	position: absolute;
+	border: 1px solid #4499aa;
+	background: #ffffff;
+	font-size: 10px;
+	overflow: hidden;
+	border-radius: 5px/5px;
+	box-shadow: 1px 1px 5px #AAAAAA;
+}
+div.jsPlumbNode div.nodeName {
+	position: absolute;
+	left: -5px;
+	text-align: center;
+	font-weight: bold;
+	width: 100%;
+	background: #77ccdd;
+	overflow: hidden;
+	padding: 4px;
+	z-index: 10;
+}
+div.jsPlumbNode div.nodeContent {
+	padding: 4px;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	position: absolute;
+	top: 0px;
+	padding-top: 25px;
+	margin-bottom: 30px;
+	z-index: 9;
+}
+._jsPlumb_connector {
+	z-index: 11;
+}
+div.edgeTooltip {
+    z-index: 999;
+	border: 1px solid #77ccdd;
+	background: #ffffff;
+	width: auto;
+	padding: 4px;
+	position: relative;
+	top: 10px;
+	left: 20px;
+}
+.edgeLabel {
+	color: #005566;
+	font-size: 11px;
+	font-weight: bold;
+	z-index: 15;
+}
+.edgeLabelText {
+	background: #ffffff;
+	width: 17px;
+	text-align: center;
+	padding: 1px;
+	opacity: 0.7;
+	/*position: absolute;*/
+}
+
+/* wireit specific styles */
+
+/*
+div.NodeTerminal {
+   width: 15px;
+   height: 15px;
+   cursor: pointer;   
+   position: absolute;
+   background: transparent no-repeat scroll 0 0;
+   background: #555555;
+   z-index: 6;
+}
+
+div.FixedMappingTerminal {
+   width: 7px;
+   height: 7px;
+   cursor: pointer;
+   position: absolute;
+   background: transparent url(./media/terminal.png) no-repeat scroll 0 0;
+   z-index: 6;
+}
+
+.graphNode,.graphNodeError {
+	border: 0 none;
+	font-size: 8pt;
+	font-weight: bold;
+	opacity: 0.8;
+	background: transparent;
+	width: 30px;
+	height: 30px;
+	position: absolute;
+	z-index: 5;
+}*/
+
+#graphContainer {
+	position: relative;
+	margin: 8px;
+}
+.yui3-widget-bd, #graphContainer img {
+	position: absolute;
+	top: 0px;
+}
+.yui3-container {
+	margin: -18px;
+}
+#graphContainer img {
+	//z-index: -10;
+}
+.yui3-widget-bd, .yui3-widget-hd {
+	padding: 5px;
+	text-align: center;
+	font-size: 10px;
+}
+.yui3-container-content {
+	height: 30px;
+	width: auto;
+	overflow: hidden;
+	position: relative;
+}
+.yui3-widget-bd {
+	position: relative;
+	overflow: auto;
+	height: 80%;
+	width: 98%;
+	margin-left: -3px;
+	overflow: scroll;
+}
+#graphContainer svg {
+	position: relative;
+	left: -100px;
+	top: -50px;
+}
+
+.graphNodeError span {
+	padding: 3px;
+	background: #FF0000;
+}
+
+.graphNode div.body {
+	background-color: #EEEE66;
+}
+
+.WireIt-Container-ddhandle, .WireIt-Container-ddhandle span {
+	background: none;
+}

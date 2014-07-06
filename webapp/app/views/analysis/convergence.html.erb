@@ -1,0 +1,156 @@
+<div>
+<%
+
+require 'toaster/state/convergence'
+require 'toaster/util/util'
+
+tasks = nil
+convs = {}
+
+begin
+
+show_all_link = false
+automation = nil
+if param('task') != ""
+	tasks = [get_task_for_param()]
+	show_all_link = true
+elsif param('auto') != ""
+	automation = get_automation_for_param()
+	tasks = automation.get_globally_executed_tasks() if automation
+end
+
+if tasks
+	tasks.each do |task|
+		if task
+			threshold = 1.0
+			convs[task] = Toaster::Convergence.convergence_for_task(task, threshold)
+		end
+	end
+end
+
+end
+
+%>
+<h2>Convergence of System State</h2>
+<form action="#" method="post">
+<% if tasks %>
+	<% if show_all_link %>
+		<ul>
+		<li>Currently only displaying convergence of a single task. <a href="<%= l('task' => '') %>">Show All Tasks</a>
+		</li>
+		</ul>
+	<% end %>
+	
+	<h3>Track State Properties</h3>
+	Enter state property name patterns (one per line):<br/>
+	<textarea rows="3" cols="40" name="trackProps"><%= 
+		param("trackProps") != "" ? param("trackProps") : ".*"
+	%></textarea><br/>
+	<input type="submit" name="submitTrack" value="Find"/>
+	<%
+	if param("trackProps") != ""
+		patterns = param("trackProps").split(/\n+/)
+
+		%>
+		<h4>Execution Traces</h4>
+		<% traces = Toaster::Convergence.execution_traces(automation, patterns) 
+		traces.each do |run,details|
+			props = []
+			traces[run].each do |prop,details1|
+				props << prop
+			end
+			exes = []
+			traces[run][props[0]].collect do |tuple| 
+				exes << tuple[0]
+			end
+			%>
+			<table class="tablesorter"><thead><tr>
+			<th>#</th><th>Task</th>
+			<%
+			props.each do |prop|
+				%>
+				<th><%= prop %></th>
+				<%
+			end
+			%>
+			</tr></thead><tbody>
+			<%
+			exes.each_with_index do |exe,idx|
+				%>
+				<tr>
+					<td><%= idx+1 %></td>
+					<td><%= exe ? exe.task.name : "(Start)" %></td>
+				<%
+				props.each do |prop|
+					%>
+					<td><%= traces[run][prop].select { |tuple|
+						tuple[0] == exe
+					} %></td>
+					<%
+				end
+				%></tr><%
+			end
+			%>
+			</tbody></table>
+			<%
+		end
+		%>
+		
+		<h4>Tracked Pre-States and Post-States</h4>
+		<table class="tablesorter"><thead>
+			<tr><th>Task</th><th>State Type</th><th>Property Name</th><th>Property Value</th></tr>
+		</thead><tbody>
+		<%
+		tasks.each do |task| 
+			pre_states = Set.new(task.global_pre_states_flat)
+			post_states = Set.new(task.global_post_states_flat)
+			%>
+			<tr><td colspan="4">Task 
+				<b><a href="<%= l('t'=>'tasks', 'task'=>task.id) %>"><%= task.name %></a></b>
+			</td></tr>
+			<%
+			{"PRE-state" => pre_states, 
+			"POST-state" => post_states}.each do |type,array|
+				array.each do |entry|
+					key,value = entry[0],entry[1]
+					if Toaster::Util.match_any(key,patterns)
+						%>
+						<tr>
+						<td> </td>
+						<td><b><%= type %></b></td>
+						<td><%= key %></td>
+						<td><%= value ? value : "*NULL*" %></td>
+						</tr>
+						<%
+					end
+				end
+			end
+			%>
+		<% end %>
+		</tbody></table>
+		<%
+	end
+	%>
+
+	<h3>State Convergence By Task</h3>
+	<% tasks.each do |task| %>
+		<h3>State Convergence of Task '<a href="<%= l('t'=>'tasks', 'task'=>task.id) %>"><%= task.name %></a>'</h3>
+		<% 	task_convs = convs[task] ? convs[task] : []
+			if task_convs.empty? %>
+				No convergent state property found for this task.
+		<% 	else %>
+		<table class="properties">
+			<tr><th>Property</th><th>Value(s)</th><th>Occurrences (%)</th></tr>
+			<% task_convs.each do |conv| %>
+			<tr><td><%= conv[0] %></td><td><%= conv[1] ? conv[1] : "*NULL*" %></td><td><%= conv[2] * 100.0 %></td></tr>
+			<% end %>
+		</table>
+		<% end %>
+	<% end %>
+	
+<% else %>
+	Please select an <b>automation</b> or a specific <b>task</b> from the list to perform state convergence analysis.
+<% end %>
+
+</form>
+</div>

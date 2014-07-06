@@ -65,6 +65,10 @@ module Toaster
       ohai = Ohai::System.new
       @@required_builtin_ohai_plugins.each do |plugin_file|
         begin
+          if !defined?(ohai.from_file(plugin_file))
+            # some ohai versions don't seem to mix-in "from_file"
+            Ohai::System.send(:include, Chef::Mixin::FromFile)
+          end
           ohai.from_file(plugin_file)
         rescue => ex
           puts "WARN: Unable to include ohai plugin file '#{plugin_file}': #{ex}: #{ex.backtrace.join("\n")}"
@@ -142,11 +146,11 @@ module Toaster
       state = initial_state
       state_change_seq.each do |change_set|
         change_set.each do |ch|
-          if ch.action == StatePropertyChange::ACTION_DELETE
+          if ch.action == StateChange::ACTION_DELETE
             #puts "==> delete property #{ch.property}"
             MarkupUtil.delete_value_by_path(state, ch.property)
-          elsif ch.action == StatePropertyChange::ACTION_INSERT ||
-              ch.action == StatePropertyChange::ACTION_MODIFY
+          elsif ch.action == StateChange::ACTION_INSERT ||
+              ch.action == StateChange::ACTION_MODIFY
             #puts "==> set property #{ch.property} = #{ch.value}"
             MarkupUtil.set_value_by_path(state, ch.property, ch.value)
           end
@@ -157,7 +161,7 @@ module Toaster
     end
 
     # Compute the difference between two system state snapshots.
-    # Returns an array of StatePropertyChange objects.
+    # Returns an array of StateChange objects.
     def self.get_state_diff(s_before, s_after)
       tmp = preprocess_state_diff(s_before, s_after)
       s_before = tmp[0]
@@ -209,6 +213,7 @@ module Toaster
     end
 
     def self.read_ignore_properties()
+      require "toaster/model/ignore_property"
       result = Set.new
       Dir["#{@@ohai_dir}/*"].each do |dir|
         file = File.join(dir, "_meta.rb")
@@ -220,7 +225,7 @@ module Toaster
             eval("tmp_result = ignore_properties__#{name}()")
             tmp_result = [tmp_result] if !tmp_result.kind_of?(Array)
             tmp_result.each do |r|
-              result << r
+              result << IgnoreProperty.new(:key => r.to_s)
             end
           rescue => ex
             puts "WARN: Unable to get ignore properties using code in file #{file}:"
@@ -240,8 +245,8 @@ module Toaster
         if props_hash.kind_of?(Array)
           props_hash.dup.each do |k|
 
-            # check if we have an array of StatePropertyChange
-            if k.kind_of?(StatePropertyChange)
+            # check if we have an array of StateChange
+            if k.kind_of?(StateChange)
               if k.property.eql?(key) ||
               Util.starts_with?(k.property, "#{key}.") ||
               k.property.match(key)
@@ -249,9 +254,9 @@ module Toaster
               end
 
             else
-              # this is not a StatePropertyChange, but an
+              # this is not a StateChange, but an
               # array of values or hashes --> to be implemented
-              puts "WARN: SystemState.remove_ignore_props(..) not implemented for non-StatePropertyChange arrays!"
+              puts "WARN: SystemState.remove_ignore_props(..) not implemented for non-StateChange arrays!"
             end
           end
 
@@ -262,8 +267,8 @@ module Toaster
             new_path << k
             long_key = "'#{new_path.join("'.'")}'"
             #puts "TRACE: long key #{long_key}"
-            if k == "#{key}" || Util.starts_with?(k, "#{key}.") || k.match(key) ||
-            long_key == "#{key}" || Util.starts_with?(long_key, "#{key}.") || long_key.match(key)
+            if k == "#{key}" || Util.starts_with?(k, "#{key}.") || k.match("#{key}") ||
+            long_key == "#{key}" || Util.starts_with?(long_key, "#{key}.") || long_key.match("#{key}")
               deleted = props_hash.delete(k)
             elsif props_hash[k].kind_of?(Hash)
               # --> recursion!
@@ -283,7 +288,7 @@ module Toaster
       if !current.kind_of?(Hash)
         name_so_far = name_so_far[1..-1] if name_so_far[0] == "."
         list_so_far[name_so_far] = current
-        return
+        return list_so_far
       end
       current.each do |name,value|
         name = "#{name_so_far}.'#{name}'"
@@ -342,23 +347,3 @@ module Toaster
 
   end
 end
-
-#Toaster::MarkupUtil.get_keys_path_from_expr("files['/etc/default/netkernel']")
-#Toaster::MarkupUtil.get_keys_path_from_expr("foo.bar['/etc/default/netkernel']")
-#Toaster::MarkupUtil.get_keys_path_from_expr("foo.bar.'abc'")
-
-
-#hash3 = {"zlib1g:amd64"=>"1:1.2.7.dfsg-13", "zlib1g-dev:amd64"=>"1:1.2.7.dfsg-13"}
-#hash4 = {"zlib1g:amd64"=>"1:1.2.7.dfsg-13", "zlib1g-dev:amd64"=>"1:1.2.7.dfsg-131"}
-#hash = {"files"=>{"/etc/chef/ohai_plugins/nginx.rb" => {"ctime" => 1}},
-#  "packages" => {"apt-utils"=>"0.9.7.5ubuntu5", "autotools-dev"=>"20120608.1", "cpp-4.6"=>"4.6.3-10ubuntu1", "cpp-4.7"=>"4.7.2-2ubuntu1"}
-#}
-#puts Toaster::MarkupUtil.hash_diff_as_prop_changes(hash3, hash4)
-#puts HashDiff.diff(hash3, hash4)
-#puts hash
-#puts Toaster::MarkupUtil.get_value_by_path(hash, "'files'.'/etc/chef/ohai_plugins/nginx.rb'")
-#puts hash
-#Toaster::MarkupUtil.rectify_keys(hash)
-#puts hash
-#Toaster::SystemState.remove_ignore_props!(hash)
-#puts hash

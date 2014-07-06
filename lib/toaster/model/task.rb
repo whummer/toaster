@@ -4,24 +4,36 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require "toaster/db/mongodb_object"
+require "active_record"
 require "toaster/util/util"
 require "toaster/model/task_execution"
+require "toaster/model/task_parameter"
 require "toaster/state/state_transition"
 require "toaster/state/system_state"
 require "toaster/chef/resource_inspector"
-require "toaster/model/task_parameter"
 
 module Toaster
-  class Task < MongoDBObject
+  class Task < ActiveRecord::Base
 
-    attr_accessor :uuid, :resource, :action, :parameters,
-      :sourcecode, :sourcehash, :sourcefile, :sourceline
-    attr_reader :resource_obj
+    has_many :task_parameters
+    has_many :task_executions
+    belongs_to :automation
 
-    @@id_attributes = ["resource", "action", "sourcehash", "sourcefile", "sourceline"]
+    #attr_accessor :uuid, :resource, :action, :parameters,
+    #  :sourcecode, :sourcehash, :sourcefile, :sourceline
 
-    def initialize(resource, action, sourcecode, uuid = nil)
+    attr_accessor :resource_obj
+
+    #@@id_attributes = ["resource", "action", "sourcehash", "sourcefile", "sourceline"]
+
+    def initialize(attr_hash)
+      if !attr_hash[:uuid]
+        attr_hash[:uuid] = Util.generate_short_uid()
+      end
+      super(attr_hash)
+    end
+  
+    def initialize1(resource, action, sourcecode, uuid = nil)
       @db_type = "automation_task"
       @resource = resource ? resource.to_s : nil
       @resource_obj = resource
@@ -38,25 +50,28 @@ module Toaster
     #
     # Return an array of TaskExecution instances for this task.
     #
-    def global_executions(success=nil)
+    def global_executions(criteria={})
       # TODO: make caching configurable!!
-      if @executions_cache.empty?
-        params = {"task_id" => id()}
-        @executions_cache = TaskExecution.find(params, {"task" => self})
-      end
-      result = []
-      @executions_cache.each do |exe|
-        if success.nil? || exe.success == success
-          result << exe
-        end
-      end
-      return result
+#      if @executions_cache.empty?
+#        params = {"task_id" => id()}
+#        @executions_cache = TaskExecution.find(params, {"task" => self})
+#      end
+#      result = []
+#      @executions_cache.each do |exe|
+#        if success.nil? || exe.success == success
+#          result << exe
+#        end
+#      end
+#      return result
+      criteria[:task] = self
+      return TaskExecution.find(criteria)
     end
+
     def global_num_executions()
       return global_executions().size
     end
     def global_successful_executions()
-      return global_executions(true)
+      return global_executions(:success => true)
     end
     def global_num_successful_executions()
       return global_successful_executions().size
@@ -73,29 +88,33 @@ module Toaster
     end
 
     #
-    # Return an array of lists of StatePropertyChange.
+    # Return an array of lists of StateChange.
     # Length of the array is the number of global executions of this task.
     # For each task execution, the array contains a list with all state
     # changes caused by this execution.
     # 
     def global_state_prop_changes(global_execs = nil)
-      changes  = []
-      global_execs = global_executions() if !global_execs
-      global_execs.each do |exe|
-        exe.state_changes.each do |sc|
-          sc.task_execution = exe
-        end
-        #puts "execution state changes: #{exe.state_changes.inspect}"
-        changes.concat(exe.state_changes)
-      end
-      return changes
+      return StateChange.joins(:task_execution => :task).where(
+        "task_executions.task_id" => self.id)
     end
+#    def global_state_prop_changes(global_execs = nil)
+#      changes  = []
+#      global_execs = global_executions() if !global_execs
+#      global_execs.each do |exe|
+#        exe.state_changes.each do |sc|
+#          sc.task_execution = exe
+#        end
+#        #puts "execution state changes: #{exe.state_changes.inspect}"
+#        changes.concat(exe.state_changes)
+#      end
+#      return changes
+#    end
     def global_num_state_prop_changes(global_executions = nil)
       return global_state_prop_changes(global_executions).size
     end
 
     #
-    # Return a map StatePropertyChange -> Integer .
+    # Return a map StateChange -> Integer .
     # This method maps each state property change to the number
     # of occurrences, summed up for all executions of this task.
     #
@@ -163,7 +182,7 @@ module Toaster
     #
     def global_states_reduced(state_transitions = nil, include_empty_states = true, 
           add_prestates = true, add_poststates = true)
-      ignore_props = automation ? automation.ignore_properties.dup : []
+      ignore_props = automation ? automation.ignore_properties.to_a.dup : []
       # add global ignore properties
       ignore_props.concat(SystemState.read_ignore_properties())
       puts "WARN: No automation found for task UUID #{@uuid}!" if !automation
@@ -196,7 +215,7 @@ module Toaster
       result = []
       global_execs = global_executions() if !global_execs
       # set list of ignored properties
-      ignore_props = automation ? automation.ignore_properties.dup : []
+      ignore_props = automation ? automation.ignore_properties.to_a.dup : []
       ignore_props.concat(SystemState.read_ignore_properties())
       global_execs.each do |exe|
         state = exe.state_before
@@ -212,7 +231,7 @@ module Toaster
       result = []
       global_execs = global_executions() if !global_execs
       # set list of ignored properties
-      ignore_props = automation ? automation.ignore_properties.dup : []
+      ignore_props = automation ? automation.ignore_properties.to_a.dup : []
       ignore_props.concat(SystemState.read_ignore_properties())
       global_execs.each do |exe|
         state = exe.state_after
@@ -269,83 +288,80 @@ module Toaster
       return ResourceInspector.guess_potential_state_changes(self)
     end
 
-    def automation 
-      # TODO refactor (avoid Automation.find)
-      automations = Automation.find("task_ids" => { "$all" => [@uuid] })
-      puts "WARN: Expected 1 automation for task '#{uuid}', got #{automations.size}" if automations.size > 1
-      return automations[0] if automations && !automations.empty?
-      execs = TaskExecution.find({"task_id" => self.id})
-      return nil if !execs || execs.empty?
-      return execs[0].automation_run.automation
-    end
-
-    def save
-      @parameters.each do |p|
-        if p.kind_of?(TaskParameter)
-          p.save
-        end
-      end
-      return super(@@id_attributes)
-    end
-
     def name
       return "#{resource}::#{action}"
     end
 
-    def parameters()
-      # lazily load parameters
-      if !@parameters.empty? && !@parameters[0].kind_of?(TaskParameter)
-        @parameters = @parameters.collect { |p| 
-          TaskParameter.find({"uuid" => p.to_s}, {"task" => self})[0]
-        }
-      end
-      @parameters
-    end
+#    def automation 
+#      # TODO refactor (avoid Automation.find)
+#      automations = Automation.find("task_ids" => { "$all" => [@uuid] })
+#      puts "WARN: Expected 1 automation for task '#{uuid}', got #{automations.size}" if automations.size > 1
+#      return automations[0] if automations && !automations.empty?
+#      execs = TaskExecution.find({"task_id" => self.id})
+#      return nil if !execs || execs.empty?
+#      return execs[0].automation_run.automation
+#    end
+
+#    def parameters()
+#      # lazily load parameters
+#      if !task_parameters.empty? && !task_parameters[0].kind_of?(TaskParameter)
+#        task_parameters = task_parameters.collect { |p| 
+#          TaskParameter.find({"uuid" => p.to_s}, {"task" => self})[0]
+#        }
+#      end
+#      task_parameters
+#    end
 
     def self.find(criteria={})
-      criteria["db_type"] = "automation_task" if !criteria["db_type"]
-      objs = []
-      DB.instance.find(criteria).each do |hash|
-        obj = Task.new(nil, nil, nil)
-        objs << DB.apply_values(obj, hash)
-      end
-      return objs
+      DB.find_activerecord(Task, criteria)
     end
+#    def self.find(criteria={})
+#      criteria["db_type"] = "automation_task" if !criteria["db_type"]
+#      objs = []
+#      DB.instance.find(criteria).each do |hash|
+#        obj = Task.new(nil, nil, nil)
+#        objs << DB.apply_values(obj, hash)
+#      end
+#      return objs
+#    end
+#    def save
+#      @parameters.each do |p|
+#        if p.kind_of?(TaskParameter)
+#          p.save
+#        end
+#      end
+#      return super(@@id_attributes)
+#    end
 
-    def self.load(id_or_resource, action = nil, sourcecode = nil, sourcefile = nil, sourceline = 0)
-      task = Task.new(nil, nil, nil)
-      hash = {}
-      if action == nil
-        id = id_or_resource
-        return nil if !id
-        id = DB.instance.wrap_db_id(id)
-        criteria = {"_id" => id, "db_type" => "automation_task"}
-        hash = DB.instance.find_one(criteria)
-        return nil if !hash
-        task = DB.apply_values(task, hash)
-      else
-        resource = id_or_resource
-        task = Task.new(resource, action, sourcecode)
-        task.sourcefile = sourcefile
-        task.sourceline = sourceline
-        hash = DB.instance.get_or_insert(task.to_hash(), @@id_attributes)
+
+    def self.load_from_chef_source(resource, action, sourcecode, sourcefile, sourceline)
+      sourcecode.strip! if sourcecode.kind_of?(String)
+      params = {
+        :resource => resource.to_s,
+        :action => action,
+        :sourcecode => sourcecode,
+        :sourcefile => sourcefile,
+        :sourceline => sourceline
+      }
+      task = find_by(params)
+      if !task
+        task = Task.new(params)
       end
-      DB.apply_values(task, hash)
-      task.parameters = hash["parameter_ids"]
+      task.resource_obj = resource
       return task
     end
 
-    def to_hash(exclude_fields = [], additional_fields = {}, recursion_fields = [])
-      exclude_fields << "parameters" if !exclude_fields.include?("parameters")
-      exclude_fields << "resource_obj" if !exclude_fields.include?("resource_obj")
-      additional_fields["name"] = "#{@resource} - #{@action}" if !additional_fields["name"]
-      additional_fields["parameter_ids"] = @parameters.collect { |p| p.uuid } if !additional_fields["parameter_ids"]
-      return super(exclude_fields, additional_fields, recursion_fields)
-    end
+#    def to_hash(exclude_fields = [], additional_fields = {}, recursion_fields = [])
+#      exclude_fields << "parameters" if !exclude_fields.include?("parameters")
+#      exclude_fields << "resource_obj" if !exclude_fields.include?("resource_obj")
+#      additional_fields["name"] = "#{@resource} - #{@action}" if !additional_fields["name"]
+#      additional_fields["parameter_ids"] = @parameters.collect { |p| p.uuid } if !additional_fields["parameter_ids"]
+#      return super(exclude_fields, additional_fields, recursion_fields)
+#    end
 
-    def hash()
-      return uuid ? uuid.hash() : 0
-    end
+#    def hash()
+#      return uuid ? uuid.hash() : 0
+#    end
 
     def eql?(other)
       return other.kind_of?(Task) && !uuid.nil? && uuid == other.uuid

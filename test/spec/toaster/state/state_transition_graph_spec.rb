@@ -7,7 +7,6 @@ require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
 require 'rubygems'
 require 'toaster/util/config'
 require 'toaster/state/state_transition_graph'
-require 'toaster/db/db'
 require 'toaster/test/test_suite'
 require 'toaster/test/test_coverage'
 require 'toaster/model/automation'
@@ -22,17 +21,15 @@ if $run_tests_involving_db
   describe StateTransitionGraph, "::build_graph_for_automation" do
   
     # database connection settings
-    DB.DEFAULT_HOST = Toaster::Config.get('mongodb.host')
+    DB.DEFAULT_HOST = Toaster::Config.get('db.host')
     DB.DEFAULT_PORT = 27017
     DB.DEFAULT_DB = "toaster"
-    DB.DEFAULT_COLL = "toaster"
   
     automation_name = "node[apache2]"
     test_coverage = nil
     automation = nil
     test_suite = nil
     begin
-      DB.instance
       begin
         automation = Automation.find("name" => automation_name)[0]
         raise "No automation found with name '#{automation_name}'" if !automation

@@ -1,0 +1,197 @@
+<div>
+<h1>Test Suites</h1>
+<%
+$session = session
+tests = []
+test_suite = cur_suite
+test_coverage = nil
+state_graph = nil
+message = nil
+
+begin
+
+	require 'toaster/test/test_suite'
+	require 'toaster/test/test_coverage'
+	require 'toaster/state/state_transition_graph'
+
+	tests = TestSuite.find()
+	if param('test') != ""
+		test_suite = TestSuite.load(param('test'))
+		if test_suite
+			test_suite.test_cases.each do |tc|
+				if param("reset_#{tc.uuid}") != ""
+					auto_run_uuid = tc.automation_run.uuid
+					tc.delete_test_result()
+					message = "Successfully dropped results of automation run '#{auto_run_uuid}' " +
+						"for test case '#{tc.uuid}' from the database."
+					test_suite = TestSuite.load(param('test'))
+				end
+			end
+		end
+	end
+	if test_suite && param('compCoverage') != ""
+		coverage_goal = TestCoverageGoal.new
+		coverage_goal.idempotence = param('testIdempotence') != ""
+		automation = test_suite.automation
+		state_graph = StateTransitionGraph.build_graph_for_automation(automation, coverage_goal)
+		test_coverage = TestCoverage.new(test_suite, state_graph)
+	end
+
+	set_param("action", nil)
+	set_param("confirmed", nil)
+	if test_suite && param('action') == "delete"
+	        if param('confirmed') == "1"
+	                test_suite.delete()
+	                load_cache()
+	                Toaster::Cache.clear()
+	                tests = TestSuite.find()
+	                set_param("action", "")
+	                set_param("confirmed", "")
+	        else
+	                message = "<a href='#{l("test" => test_suite.id.to_s, "confirmed" => "1", "action" => "delete")}'>Click here</a> 
+	                        to confirm deletion of test suite and all associated automation runs, 
+	                        or <a href='#{l("action" => "")}'>click here</a> to cancel."
+	        end
+	end
+
+rescue => ex
+	%>
+	<div class="error">ERROR: <%= ex %> : <%= ex.backtrace %></div>
+	<%
+end
+
+%>
+<% if message %>
+<div class="info"><%= message %></div>
+<% end %>
+<form action="#" method="post">
+<input type="hidden" name="sessionID" value="<%= $session['session_id'] %>" />
+<input type="hidden" name="test" value="<%= param('test') %>" />
+<table class="tablesorter">
+	<thead>
+		<tr><th>ID</th><th>Automation</th><th>Prototype</th>
+		<th>Test Cases</th><th>Executed</th>
+		<th>First Test Started</th><th>Last Test Ended</th>
+		<th>Passed</th><th>Failed</th>
+		<th>Net Duration</th>
+		<th>Avg. Net Duration</th>
+		<th colspan="3">Actions</th></tr>
+		</thead>
+	<tbody>
+	<% tests.each { |suite| 
+
+	num_cases = suite.test_cases.size
+	gross = suite.get_gross_duration()
+	avg_gross = gross.to_f / num_cases.to_f
+	net = suite.get_net_duration()
+	num_tests = suite.test_cases.size
+	num_tests_finished = suite.test_cases_finished.size
+	perc_tests_finished = num_tests_finished.to_f / num_tests.to_f * 100.0
+	avg_net = net.to_f / num_tests_finished.to_f
+	failed = suite.test_cases_failed
+	passed = suite.test_cases_succeeded
+	is_active = suite.id.to_s == param('test')
+	clazz = is_active ? "active" : ""
+
+	has_executed_cases = !suite.executed_test_cases.empty?
+	%>
+	<tr class="<%= clazz %>">
+		<td><a href="/test/suites/<%= suite.id %>"><%= suite.uuid %></a></td>
+		<td>
+			<% if suite.automation %>
+			<a href="/scripts/<%= suite.automation.id %>/details"><%= suite.automation.name %></a>
+			<% else %>
+			"n/a"
+			<% end %>
+		</td>
+		<td><%= suite.lxc_prototype %></td>
+		<td><%= num_tests %></td>
+		<td><%= num_tests_finished %> (<%= format_float(perc_tests_finished) %>%)</td>
+		<td><%= !has_executed_cases ? "n/a" : format_time(suite.first_test.start_time) %></td>
+		<td><%= !has_executed_cases ? "n/a" : format_time(suite.last_test.end_time) %></td>
+		<td><%= passed.size %></td>
+		<td><%= failed.size %></td>
+		<td><%= !has_executed_cases ? "n/a" : to_minutes(net) %></td>
+		<td><%= !has_executed_cases ? "n/a" : to_minutes(avg_net) %></td>
+		<td><a href="<%= is_active ? l('test' => '') : l('test' => suite.id.to_s)  %>">details</a></td>
+		<td><%= link_to 'delete', "/test/suites/#{suite.id}",
+            :data => { :confirm => 'Confirm: Delete the entire test suite, including all executed test cases?'}, :method => :delete %></td>
+        <td><%= link_to 'execute', "/test/exec/#{suite.id}",
+            :data => { :confirm => 'Confirm: Execute all test cases in this test suite?', :method => :post } %>
+		</td>
+	</tr>
+	<% } %>
+	</tbody>
+</table>
+
+<% if test_suite %>
+
+	<h2>Test Suite Details</h2>
+	Test Suite ID: <%= test_suite.uuid %>
+	<h3>Test Cases</h3>
+	<table class="tablesorter">
+	<thead>
+		<tr><th>ID</th><th>Executing Host</th><th>Repeated Tasks</th>
+		<th>Skipped Tasks</th><th>Success</th><th colspan="2">Actions</th></tr>
+	</thead>
+	<tbody>
+		<% test_suite.test_cases.each do |test| %>
+		<tr><td><%= test.uuid %></td>
+		<td><%= test.executing_host %></td>
+		<td><%= test.repeat_task_uuids %></td>
+		<td><%= test.skip_task_uuids%></td>
+		<td><%= test.running_or_scheduled? ? "scheduled/running" : test.success %></td>
+		<% if test.automation_run && test.automation_run.id %>
+		<td>
+			<%= link_to 'reset', "/test/suites/#{test.test_suite.id}/#{test.id}",
+            :data => { :confirm => 'Are you sure you want to delete/reset this test run?' }, :method => :delete %>
+        </td><td>
+			<%= link_to 'details', "/execs/#{test_suite.automation.id}/#{test.automation_run.id}/tasks" %>
+		<% else %>
+		<td>
+			<%= link_to 'execute', "/test/exec/#{test.test_suite.id}/#{test.id}",
+            :data => { :confirm => 'Are you sure you want to execute this test case?', :method => :post } %>
+        </td>
+		<% end %>
+		</tr>
+		<% end %>
+	</tbody>
+	</table>
+
+	<h3>Coverage Settings</h3>
+	<table>
+		<tr><td><b>Idempotence</b></td><td colspan="2">N &#8712; { <input type="text" name="idempotenceN" value="<%= param('idempotenceN',test_suite.coverage_goal.idempotence.to_a.join(',')) %>"/> }
+			(test idempotence of N consecutive tasks)</td></tr>
+		<tr><td><b>Combinations</b></td>
+			<td>skip-N:</td><td>N &#8712; {<input type="text" name="skipN" value="<%= param('skipN') %>"/>}</td></tr>
+			<tr><td></td><td>skip-N-successive:</td><td>N &#8712; {<input type="text" name="skipNsucc" value="<%= param('skipNsucc') %>"/>}</td></tr>
+			<tr><td></td><td>combine-N:</td><td>N &#8712; {<input type="text" name="combineN" value="<%= param('combineN') %>"/>}</td></tr>
+			<tr><td></td><td>skip-N-successive:</td><td>N &#8712; {<input type="text" name="combineNsucc" value="<%= param('combineNsucc') %>"/>}</td></tr>
+		<tr><td></td><td colspan="2"><input type="submit" name="compCoverage" value="Compute Coverage"/></td></tr>
+	</table>
+	<% if test_coverage && state_graph 
+		states = state_graph.nodes().size
+		states_cov = test_coverage.covered_states().size
+		states_perc = states_cov.to_f / states.to_f * 100
+		trans = state_graph.edges().size
+		trans_cov = test_coverage.covered_transitions().size
+		trans_perc = trans_cov.to_f / trans.to_f * 100
+	%>
+	<h3>Coverage Results</h3>
+	<table>
+		<thead>
+		<tr><th>Type</th><th>Total</th><th>Covered</th><th>Coverage</th></tr>
+		</thead><tbody>
+		<tr><td>States</td><td><%= states %></td><td><%= states_cov %></td><td><%= format_float(states_perc) %>%</td></tr>
+		<tr><td>Transitions</td><td><%= trans %></td><td><%= trans_cov %></td><td><%= format_float(trans_perc) %>%</td></tr>
+		</tbody>
+	</table>
+	<% end %>
+
+<% end %>
+
+<h2>Actions</h2>
+<p><a href="/test/gen">Create new test suite</a></p>
+
+</form>
+</div>

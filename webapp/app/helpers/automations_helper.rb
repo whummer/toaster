@@ -1,0 +1,2 @@
+module AutomationsHelper
+end

@@ -138,7 +138,7 @@ module Toaster
       test_cases = []
       test_case_uuids.each do |tc|
         if !tc.kind_of?(TestCase)
-          tc = TestCase.find({"uuid" => tc}, {"test_suite" => test_suite})[0]
+          tc = TestCase.find(:uuid => tc)[0]
         end
         test_cases << tc
       end
@@ -201,7 +201,7 @@ module Toaster
         test_suite = test_case.test_suite
         test_id = test_suite.uuid
         automation_name = test_suite.automation.get_short_name if !automation_name
-        recipes = test_suite.recipes
+        recipes = test_suite.automation.recipes
       end
 
       # generate automation attributes which represent this test case
@@ -244,10 +244,15 @@ module Toaster
       if !automation_run
         machine_id = Util.get_machine_id()
         automation = test_case.test_suite.automation
-        automation_run = AutomationRun.new(automation, machine_id)
+        automation_run = AutomationRun.new(
+          :automation => automation, 
+          :machine_id => machine_id,
+          :user => test_case.test_suite.user
+        )
         puts "WARN: Test case '#{test_case.uuid}' failed entirely, storing " +
             "an empty automation run '#{test_case.automation_run}' with success=false."
         automation_run.success = false
+        automation_run.end_time = TimeStamp.now
         automation_run.error_details = "Test case '#{test_case.uuid}' failed (no automation run created by test runner)."
         automation_run.save
         test_case.automation_run = automation_run
@@ -269,8 +274,10 @@ module Toaster
       config_file_cont = "#{lxc['rootdir']}/root/.toaster"
       `cp '#{config_file_host}' '#{config_file_cont}'`
 
-      `ssh #{lxc["ip"]} "wget #{Config.get("testing.gem_url")} -O /tmp/toaster.gem > /dev/null 2>&1"`
-      `ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc /tmp/toaster.gem > /dev/null 2>&1"`
+      #`ssh #{lxc["ip"]} "wget #{Config.get("testing.gem_url")} -O /tmp/toaster.gem > /dev/null 2>&1"`
+      #`ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc /tmp/toaster.gem > /dev/null 2>&1"`
+      `ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc cloud-toaster 2>&1"`
+
     end
 
     def self.do_execute_test(automation_name, recipes, chef_node_attrs,

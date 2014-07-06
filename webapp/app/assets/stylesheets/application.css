@@ -1,0 +1,49 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, vendor/assets/stylesheets,
+ * or vendor/assets/stylesheets of plugins, if any, can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the top of the
+ * compiled file, but it's generally better to create a new file per style scope.
+ *
+ *= require_self
+ *= require_tree .
+ */
+
+@font-face {
+  font-family: 'Terminal Dosis';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Dosis Regular'), local('Dosis-Regular'), url("/assets/font.woff") format('woff');
+}
+
+.content table {
+	border: 1px solid #bbc;
+}
+.content table thead tr {
+	background: #eeeeee;
+}
+.content table thead th {
+	font-weight: bold;
+}
+.content table td, .content table th {
+	padding: 2px;
+	font-size: 13px;
+	border: 1px solid #eeeeee;
+	border-collapse: collapse;
+}
+.content table.details td {
+	vertical-align: top;
+}
+.content table.details tr:nth-child(2n) td {
+	background: #dddddd;
+}
+.content table.details tr:nth-child(2n-1) td {
+	background: #eeeeee;
+}
+.content .unremarkable, .content .unremarkable td {
+	opacity: 0.7;
+	-moz-opacity: 0.7;
+}
