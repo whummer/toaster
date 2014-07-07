@@ -4,4 +4,4 @@
 #
 
 dir = File.join(File.dirname(__FILE__), "..", "..", "webapp")
-exec("cd \"#{dir}\" && rails server thin")
+exec("cd \"#{dir}\" && bundle install && rails server thin")

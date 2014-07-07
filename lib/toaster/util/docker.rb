@@ -56,6 +56,7 @@ module Toaster
       puts "DEBUG: Killing docker container ID '#{container_id}'"
       if container_id != ""
         `docker kill #{container_id} 2> /dev/null`
+        `docker rm #{container_id} 2> /dev/null`
       else
         puts "WARN: Could not find valid docker container ID in file /lxc/#{lxc_name}/docker.container.id"
       end

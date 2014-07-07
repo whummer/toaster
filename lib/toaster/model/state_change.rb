@@ -60,10 +60,6 @@ module Toaster
     end
 
     def eql?(obj)
-      #puts "property: #{obj.property} - #{@property}" if obj.property != @property
-      #puts "action: #{obj.action} - #{@action}" if obj.action != @action
-      #puts "old_value: #{obj.old_value} - #{@old_value}" if obj.old_value != @old_value
-      #puts "value: #{obj.value} - #{@value}" if obj.value != @value
       return obj.kind_of?(StateChange) && 
         obj.property == @property && obj.action == @action && 
         obj.value == @value && obj.old_value == @old_value

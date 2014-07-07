@@ -2,6 +2,7 @@
 require "thor"
 require "xmlrpc/client"
 require "toaster/util/util"
+require "toaster/util/docker"
 
 include Toaster
 
@@ -75,8 +76,7 @@ module Toaster
         ip_num += 2
       end
       if ip_num == ""
-        # TODO: migrate to docker.io
-        num_lxcs = `lxc-ls | sort | uniq | wc -l`
+        Docker.get_container_names().size() + 3
         ip_num = num_lxcs.to_i + 3
       end
       guest_ip = "192.168.100.#{ip_num}"
@@ -291,6 +291,7 @@ module Toaster
     desc "web", "Start the Web application. (params: --detached=false)"
     #option :detached, :type => :boolean, :aliases => ["-d"]
     def web(detached=false)
+      puts "INFO: Starting Web application on port 8080"
       if detached
         exec("screen -d -m ruby #{ROOT_DIR}/lib/toaster/web_ui.rb")
       else
@@ -315,9 +316,10 @@ module Toaster
       require "toaster/test/test_case"
       init_db_connection()
       test_case_uuids = test_case_uuid.split(/[ ;,]+/)
-      test_cases = TestCase.find("uuid" => test_case_uuids[0])
+      test_cases = TestCase.find(:uuid => test_case_uuids[0]).to_a
       if !test_cases || test_cases.empty?
         puts "ERROR: Invalid test case id(s) specified: '#{test_case_uuid}'"
+        puts "database: #{Toaster::Config.get("db.host")}"
       else
         
         # set the start time of all test cases. This is important

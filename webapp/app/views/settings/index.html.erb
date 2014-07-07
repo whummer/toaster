@@ -37,86 +37,15 @@ end
 <% if message %>
 <div class="info"><%= message %></div>
 <% end %>
-<!--<h3>Database</h3>
-<table>
-	<tr><td>DB Host:</td><td><input name="dbHost" value="<%= $session['db.host'] %>"/><td/></tr>
-	<tr><td>DB Port:</td><td><input name="dbPort" value="<%= $session['db.port'] %>"/><td/></tr>
-	<tr><td>DB Name:</td><td><input name="dbDB" value="<%= $session['db.name'] %>"/> (default is 'toaster')<td/></tr>
-	<tr><td></td><td><input type="submit" value="Update" name="saveSettings"/><td/></tr>
-</table>-->
+
+<% if !Toaster::Config.get("testing.hosted_mode") %>
 <h3>Test Agent Service</h3>
 <table>
 	<tr><td>Service Host:</td><td><input name="serviceHost" value="<%= $session['service.host'] %>"/><td/></tr>
 	<tr><td>Service Port:</td><td><input name="servicePort" value="<%= $session['service.port'] %>"/><td/></tr>
 	<tr><td></td><td><input type="submit" value="Update" name="saveSettings"/><td/></tr>
 </table>
-
-<!--
-
-<input style="float: right" type="submit" value="Backup Database Snapshot" name="backupDB"/><br/>
-<input style="float: right" type="submit" value="Clear Entire Database (!)" name="clearDB"/>
-
-<h4>Clean Up Database</h4>
-<table>
-<tr><td><input type="checkbox" name="doCleanSuitesWithoutAuto" checked="checked"/></td>
-	<td>Clean test suites without automations associated to them.</td></tr>
-<tr><td><input type="checkbox" name="doCleanEmptySuites" checked="checked"/></td>
-	<td>Clean test suites which consist of zero test runs.</td></tr>
-<tr><td><input type="checkbox" name="doCleanEmptyAutos" checked="checked"/></td>
-	<td>Clean automations without runs associated to them.</td></tr>
-<tr><td><input type="checkbox" name="doCleanOrphanedRuns" checked="checked"/></td>
-	<td>Clean orphaned automation runs with no automation associated.</td></tr>
-<tr><td><input type="checkbox" name="doCleanEmptyRuns" checked="checked"/></td>
-	<td>Clean automation runs with zero task executions.</td></tr>
-<tr><td></td><td><input type="submit" value="Clean Up" name="cleanDB"/></td></tr>
-</table>
-
-<h4>Database Transfer</h4>
-Copy/transfer the current contents of the database to another database host.<br/>
-Target DB Host: <input type="text" name="transferBackupHost" value="localhost"/><br/>
-Target DB Port: <input type="text" name="transferBackupPort" value="<%= $session['dbPort'] %>"/><br/>
-<input type="submit" name="doTransferBackup" value="Start Transfer"/>
-
-<h3>Cache</h3>
-
-<input type="checkbox" <%= $session["do_cache"] == "1" ? 'checked="checked"' : "" %> name="doCache"/> Use Server-Side Caching of Database Objects (experimental)<br/>
-<input type="submit" value="Update" name="updateCache"/><br/>
-<input style="float: right" type="submit" value="Clear Cache" name="clearCache"/><br/>
-
-<h3>Existing Backups</h3>
-<table class="tablesorter">
-	<thead><tr><th>#</th><th>Name</th><th>Time</th><th>Size</th><th>Actions</th></tr></thead>
-	<tbody>
-	<% 	i = 0
-		backups.each do |b| %>
-	<tr><td><%= i += 1 %></td><td><%= b['name'] %></td>
-	<td><%= format_time(b['time']) %></td><td><%= b['size'] %></td>
-	<td>
-		<input type="submit" name="delete_<%= b['name'] %>" value="Delete (!)"/>
-		<input type="submit" name="restore_<%= b['name'] %>" value="Restore"/>
-	</td>
-	</tr>
-	<% end %>
-	</tbody>
-</table>
-
-<h3>Test Result Databases</h3>
-<table class="tablesorter">
-	<thead><tr><th>#</th><th>Name</th><th>Time</th><th>Size</th><th>Actions</th></tr></thead>
-	<tbody>
-	<% 	i = 0
-		testresult_collections.each do |b| %>
-	<tr><td><%= i += 1 %></td><td><%= b['name'] %></td>
-	<td><%= format_time(b['time']) %></td><td><%= b['size'] %></td>
-	<td>
-		<input type="submit" name="delete_<%= b['name'] %>" value="Delete (!)"/>
-		<input type="submit" name="restore_<%= b['name'] %>" value="Restore"/>
-	</td>
-	</tr>
-	<% end %>
-	</tbody>
-</table>
--->
+<% end %>
 
 </form>
 </div>

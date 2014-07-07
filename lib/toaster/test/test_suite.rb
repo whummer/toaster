@@ -17,13 +17,11 @@ include Toaster
 module Toaster
   class TestSuite < ActiveRecord::Base
 
-#    attr_accessor :uuid, :automation, :test_cases, :recipes, 
-#      :lxc_prototype, :parameter_test_values, :coverage_goal, :name
-
     belongs_to :automation
     belongs_to :user
     belongs_to :test_coverage_goal
     has_many :test_cases, nil, {:autosave => true, :dependent => :delete_all}
+    serialize :parameter_test_values, JSON
 
     def initialize(attr_hash)
       if !attr_hash[:uuid]
@@ -34,19 +32,6 @@ module Toaster
       end
       super(attr_hash)
     end
-
-#    def initialize1(automation, recipes = [], uuid = nil, prototype="default")
-#      @db_type = "test_suite"
-#      @uuid = uuid ? uuid : Util.generate_short_uid()
-#      @automation = automation
-#      @recipes = recipes.kind_of?(Array) ? recipes : [recipes]
-#      @coverage_goal = TestCoverageGoal.new
-#      @lxc_prototype = prototype
-#      # mapping <parameterName> -> [<parameterValue> ...]
-#      @parameter_test_values = {}
-#      @test_cases = []
-#      @name = @uuid
-#    end
 
     # Returns the total gross duration of all test cases in this suite.
     # Gross duration includes times for 
@@ -161,62 +146,6 @@ module Toaster
         {"test_suite" => self}
       )
     end
-
-#    def load_test_cases_from_db()
-#      criteria = { "test_suite_id" => id }
-#      test_cases = TestCase.find(criteria, {"test_suite" => self})
-#    end
-
-#  def self.load(id, load_associations = true)
-#        id = DB.instance.wrap_db_id(id)
-#        criteria = {"_id" => id}
-#        objects = find(criteria, load_associations)
-#        return nil if objects.empty?
-#        o = objects[0]
-#        o.load_test_cases_from_db() if load_associations
-#        return o
-#      end
-#    def to_hash(exclude_fields = [], additional_fields = {}, recursion_fields = [])
-#      exclude_fields << "automation" if !exclude_fields.include?("automation")
-#      exclude_fields << "test_cases" if !exclude_fields.include?("test_cases")
-#      exclude_fields << "coverage_goal" if !exclude_fields.include?("coverage_goal")
-#      additional_fields["automation_id"] = @automation.nil? ? nil : @automation.id
-#      additional_fields["test_case_ids"] = test_cases.collect { |c| c.uuid } if test_cases
-#      additional_fields["coverage_goal_hash"] = coverage_goal.to_hash if coverage_goal
-#      return super(exclude_fields, additional_fields, recursion_fields)
-#    end
-#    def save()
-#      @test_cases.each do |test|
-#        if !test.id
-#          test.save
-#        end
-#      end
-#      return super(["uuid"])
-#    end
-#    def delete()
-#      if !id || id.to_s.strip == ""
-#        puts "WARN: Unable to delete DB object with empty id: #{self}"
-#        return false
-#      end
-#      @test_cases.each do |t|
-#        t.delete()
-#      end
-#      super
-#      return true
-#    end
-#    def self.find(criteria={}, load_associations = true)
-#      criteria["db_type"] = "test_suite" if !criteria["db_type"]
-#      suites = []
-#      DB.instance.find(criteria).each do |hash|
-#        s = TestSuite.new(nil)
-#        s.automation = Automation.load(hash["automation_id"]) if hash["automation_id"] && load_associations
-#        s.coverage_goal = TestCoverageGoal.from_hash(hash["coverage_goal_hash"]) if hash["coverage_goal_hash"]
-#        s = DB.apply_values(s, hash)
-#        s.load_test_cases_from_db() if load_associations
-#        suites << s
-#      end
-#      return suites
-#    end
 
   end
 end

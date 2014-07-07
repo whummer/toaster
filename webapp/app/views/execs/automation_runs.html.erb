@@ -16,7 +16,7 @@ end
 
 %>
 <div>
-<h2>Automation Runs</h2>
+<h1>Automation Runs</h1>
 
 <ul><li>
 <% if auto %>
@@ -29,7 +29,7 @@ end
 
 <table class="tablesorter">
 <thead>
-<tr><th>#</th><th>Automation</th><th>Start Time</th><!-- <th>Machine ID</th> -->
+<tr><th>#</th><th>UUID</th><th>Automation</th><th>Start Time</th><!-- <th>Machine ID</th> -->
 <th>Task Executions</th><th>Duration</th><th>Success</th><th colspan="2">Actions</th></tr>
 </thead>
 <tbody>
@@ -43,6 +43,7 @@ param_hash = {"run" => param_run}.merge(row.automation ? {'auto' => row.automati
 %>
 <tr class="<%= clazz %>">
 	<td><%= id+1 %></td>
+	<td><%= row.uuid %></td>
 	<td><% if row.automation %><a href="/scripts/<%= row.automation.id %>/details"><% end %><%= auto_name %></a></td>
 	<td><nobr><%= format_time(row.start_time) %></nobr></td>
 <!--   <td><%= row.machine_id %></td> -->
@@ -57,7 +58,8 @@ param_hash = {"run" => param_run}.merge(row.automation ? {'auto' => row.automati
 </table>
 
 <% if run %>
-	<h3>Details of Automation Run</h3>
+	<h2>Details of Automation Run <%= run.uuid %></h2>
+	<h3>Automation Attributes</h3>
 	<% if !run.automation %>
 	<div class="error"></div><ul><li>Attributes could not be parsed because the automation run is not associated with any automation in the database.</li></ul></div>
 	<% else %>
@@ -84,6 +86,11 @@ param_hash = {"run" => param_run}.merge(row.automation ? {'auto' => row.automati
 	<% } %>
 	</tbody>
 	</table>
+	<% end %>
+	
+	<% if run.error_details && !run.error_details.empty? && %>
+	<h3>Error Details</h3>
+	<pre><%= run.error_details %></pre>
 	<% end %>
 	
 <% end %>

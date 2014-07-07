@@ -14,11 +14,11 @@ class CreateAllTables < ActiveRecord::Migration
 
   def create_automations 
     create_table(:automations) do |t|
-      t.string :uuid,           null: false
-      t.string :user_id,        null: false
-      t.string :name,           null: false, default: ""
-      t.string :language,       null: false, default: "chef"
-      t.string :visibility,     null: false, default: "Private"
+      t.string :uuid,           :null => false
+      t.string :user_id,        :null => false
+      t.string :name,           :null => false, :default => ""
+      t.string :language,       :null => false, :default => "chef"
+      t.string :visibility,     :null => false, :default =>  "Private"
       t.string :cookbook
       t.string :cookbook_version
       t.string :recipes
@@ -26,20 +26,20 @@ class CreateAllTables < ActiveRecord::Migration
 
       t.timestamps
     end
-    add_index :automations, :uuid, unique: true
+    add_index :automations, :uuid, :unique => true
   end
 
   def create_automation_runs 
     create_table(:automation_runs) do |t|
-      t.string :uuid,           null: false
-      t.string :user_id,        null: false
-      t.string :machine_id,     null: false
+      t.string :uuid,           :null => false
+      t.string :user_id,        :null => false
+      t.string :machine_id,     :null => false
       t.string :automation_id
       t.text :run_attributes
       t.integer :start_time, :limit => 8 
       t.integer :end_time, :limit => 8 
       t.boolean :success
-      t.string :error_details
+      t.text :error_details
 
       t.timestamps
     end
@@ -47,8 +47,8 @@ class CreateAllTables < ActiveRecord::Migration
 
   def create_tasks 
     create_table(:tasks) do |t|
-      t.string :uuid,           null: false
-      t.string :automation_id,  null: false
+      t.string :uuid,           :null => false
+      t.string :automation_id,  :null => false
       t.string :resource
       t.string :action
       #t.string :parameters
@@ -63,12 +63,12 @@ class CreateAllTables < ActiveRecord::Migration
 
   def create_task_executions
     create_table(:task_executions) do |t|
-      t.string :uuid,           null: false
+      t.string :uuid,           :null => false
       t.string :task_id
       t.integer :automation_run_id
       t.integer :index_in_run
-      t.integer :start_time,    limit: 8 
-      t.integer :end_time,      limit: 8 
+      t.integer :start_time,    :limit => 8 
+      t.integer :end_time,      :limit => 8 
       t.text :state_before
       t.text :state_after 
       t.boolean :success
@@ -82,7 +82,7 @@ class CreateAllTables < ActiveRecord::Migration
 
   def create_key_value_pairs 
     create_table(:key_value_pairs) do |t|
-      t.string :key,              null: false
+      t.string :key,              :null => false
       t.string :type
       t.integer :automation_id
       t.integer :task_id
@@ -109,11 +109,11 @@ class CreateAllTables < ActiveRecord::Migration
 
   def create_test_suites
     create_table(:test_suites) do |t|
-      t.string :uuid,                null: false
-      t.string :user_id,             null: false
-      t.string :automation_id,       null: false
-      t.string :lxc_prototype,       null: false
-      t.text :test_coverage_goal_id, null: false
+      t.string :uuid,                :null => false
+      t.string :user_id,             :null => false
+      t.string :automation_id,       :null => false
+      t.string :lxc_prototype,       :null => false
+      t.text :test_coverage_goal_id, :null => false
       t.string :name
       t.text :parameter_test_values
 
@@ -123,13 +123,13 @@ class CreateAllTables < ActiveRecord::Migration
 
   def create_test_cases
     create_table(:test_cases) do |t|
-      t.string :uuid,            null: false
+      t.string :uuid,            :null => false
       t.string :test_suite_id
       t.string :automation_run_id
-      t.text :skip_task_uuids,   null: false
-      t.text :repeat_task_uuids, null: false
-      t.integer :start_time,     limit: 8 
-      t.integer :end_time,       limit: 8
+      t.text :skip_task_uuids,   :null => false
+      t.text :repeat_task_uuids, :null => false
+      t.integer :start_time,     :limit => 8
+      t.integer :end_time,       :limit => 8
       t.string :executing_host
 
       t.timestamps

@@ -37,7 +37,6 @@ module Toaster
     end
 
     def get_globally_executed_tasks()
-      # TODO fix
       exec_tasks = Task.
           joins(:task_executions => {:automation_run => :automation}).
           where("automation_runs.automation_id = #{self.id}").

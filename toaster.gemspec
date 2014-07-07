@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name = %q{cloud-toaster}
-  s.version = File.exist?('VERSION') ? File.read('VERSION') : ""
+  s.version = File.exist?('VERSION') ? File.read('VERSION').strip : ""
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [	%q{Waldemar Hummer} ]
-  s.date = %q{2013-10-05}
+  s.date = DateTime.now.strftime("%Y-%m-%d")
   s.description = %q{A tool for automated testing and debugging of automation scripts (e.g., Chef).}
   s.email = [%q{hummer@infosys.tuwien.ac.at}]
   s.extra_rdoc_files = [
@@ -19,35 +19,14 @@ Gem::Specification.new do |s|
 		Dir.glob("chef/**/*") + Dir.glob("webapp/**/*") + 
 		Dir.glob("config.json")
 
-  [
-    "bson",						# License: Apache v2.0
-    "bson_ext",					# License: Apache v2.0
-    "chef",						# License: Apache v2.0
-    "diffy",					# License: MIT
-    "hashdiff",					# License: MIT
-    "json",						# License: Ruby - https://www.ruby-lang.org/en/about/license.txt
-    "jsonpath",					# ?
-    #"mongo",					# License: Apache v2.0
-    "mysql2",					# License: MIT
-    "ohai",						# License: Apache v2.0
-    "open4",					# License: Ruby
-    "rails",					# License: MIT
-    "rspec",					# License: MIT
-    "ruby_parser",				# License: MIT
-    "sexp_processor",			# License: MIT
-    "sinatra",					# License: MIT
-    "sinatra-contrib",			# License: custom (MIT?) - https://raw.github.com/sinatra/sinatra-contrib/master/LICENSE
-    "therubyracer",				# License: MIT
-    "tidy",						# License: Ruby
-    # tidy-ext installation fails on some systems
-    #"tidy-ext",					# License: Ruby
-    "webrick"					# License: Ruby (?)
-  ].each do |gem_dep|
-    s.add_runtime_dependency gem_dep
+  deps = File.read('Gemfile').scan(/^\s*gem\s*['"]([^'"]+)['"]/).uniq
+  deps.each do |matched_dep|
+  	dep = matched_dep[0]
+    s.add_runtime_dependency dep
   end
 
   # further project dependencies:
-  # * MongoDB server		# License: GNU AGPL v3.0
+  # * MySQL server
   # * Squid proxy server	# License: GNU GPL v2.0
   # * docker.io				# License: Apache v2.0
   # * strace				# License: BSD

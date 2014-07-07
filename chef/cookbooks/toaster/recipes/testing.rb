@@ -62,6 +62,7 @@ $installed_gems = `gem list --local`.strip
 all_gems_installed = true
 
 [
+  "aquarium",     # Ruby AOP
   "ohai",         # used as a framework to capture system state
   "activesupport",
   "bson",         # JSON like datastructures
@@ -70,8 +71,6 @@ all_gems_installed = true
   "ruby_parser",
   "rails",        # provides some utility methods
   "rspec",        # unit tests
-  "sinatra",      # REST Web server
-  "sinatra-contrib", # auto code-reloading for sinatra
   "open4",        # allows to read stdout from a forked process, line by line
   "jsonpath",     # select sub-parts of a state property JSON document
   "hashdiff",     # compute state property changes
@@ -93,8 +92,6 @@ end
 bash "install_toaster_gem" do
   require 'toaster/util/config'
   code <<-EOH
-    #wget #{Toaster::Config.get("testing.gem_url")} -O /tmp/toaster.gem
-    #gem install --no-ri --no-rdoc /tmp/toaster.gem
     gem install --no-ri --no-rdoc cloud-toaster
   EOH
   not_if "which toaster"
@@ -122,17 +119,18 @@ if !File.directory?("#{node['toaster']['tmp_dir']}")
   `mkdir "#{node['toaster']['tmp_dir']}"`
 end
 
-if !$installed_gems.match("aquarium")
-  `wget -O "#{node['toaster']['tmp_dir']}/aquarium-0.5.1.gem" "http://files.rubyforge.vm.bytemark.co.uk/aquarium/aquarium-0.5.1.gem"`
-  `gem install #{node['toaster']['tmp_dir']}/aquarium-0.5.1.gem`
-  begin
-    # the following two commands are used to load gems that were just installed 
-    Gem.clear_paths
-    Gem.refresh
-  rescue => ex
-    puts "Unable to refresh Gem package list: #{ex}"
-  end
-end
+# TODO: remove
+#if !$installed_gems.match("aquarium")
+#  `wget -O "#{node['toaster']['tmp_dir']}/aquarium-0.5.1.gem" "http://files.rubyforge.vm.bytemark.co.uk/aquarium/aquarium-0.5.1.gem"`
+#  `gem install #{node['toaster']['tmp_dir']}/aquarium-0.5.1.gem`
+#  begin
+#    # the following two commands are used to load gems that were just installed 
+#    Gem.clear_paths
+#    Gem.refresh
+#  rescue => ex
+#    puts "Unable to refresh Gem package list: #{ex}"
+#  end
+#end
 
 
 $last_toaster_resource_name = "toaster_init_chef_listener"

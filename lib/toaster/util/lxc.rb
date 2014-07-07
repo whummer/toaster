@@ -237,7 +237,7 @@ module Toaster
     end
     def self.get_container_names()
     	result = []
-      containers = `lxc-ls | sort | uniq`.strip.split("\n")
+    	containers = []
       containers.concat(Toaster::Docker.get_container_names())
       containers.each do |c|
         if !is_prototype?(c)

@@ -4,22 +4,29 @@ bash "lxc_docker_commit" do
   code <<-EOH
   cont_name=#{node["lxc"]["cont"]["name"]}
   ip_address=#{node["lxc"]["cont"]["ip_address"]}
-  imgID=`cat /lxc/$cont_name/docker.image.id`
-  instID=`cat /lxc/$cont_name/docker.container.id`
+  root_path=#{node["lxc"]["root_path"]}
+
+  imgID=`cat $root_path/$cont_name/docker.image.id`
+  instID=`cat $root_path/$cont_name/docker.container.id`
   if [ "$imgID" == "" ] || [ "$instID" == "" ]; then
     echo "WARN: Invalid image ID or instance ID for prototype '$cont_name': '$imgID', '$instID'"
     exit 1
   fi
-  cp /var/lib/docker/containers/$instID/config.lxc /lxc/$cont_name/config
-  echo "lxc.network.ipv4 = $ip_address/16" >> /lxc/$cont_name/config
-  newImgID=`docker commit $instID prototypes $cont_name`
+  # TODO config.lxc now renamed to config.json in new docker versions!
+  cp /var/lib/docker/containers/$instID/config.lxc $root_path/$cont_name/config
+  echo "lxc.network.ipv4 = $ip_address/16" >> $root_path/$cont_name/config
+  newImgID=`docker commit $instID prototypes "$cont_name"` # old syntax
+  if [ "$newImgID" == "" ]; then
+    newImgID=`docker commit $instID prototypes:$cont_name` # new syntax
+  fi
   if [ "$newImgID" != "" ]; then
     # remove old docker image
     docker rmi $imgID
     # update new image id
-    echo $newImgID > /lxc/$cont_name/docker.image.id
+    echo $newImgID > $root_path/$cont_name/docker.image.id
   else
     echo "WARN: Unable to save/commit prototype with docker (invalid new image ID received)"
+    exit 1
   fi
 EOH
   # only execute if we use docker.io tools
@@ -32,8 +39,9 @@ bash "lxc_stop" do
   if node["lxc"]["use_docker.io"] 
   code <<-EOH
 	name=#{node["lxc"]["cont"]["name"]}
-	contID=`cat /lxc/$name/docker.container.id`
-	docker kill $contID
+	contID=`cat #{node["lxc"]["root_path"]}/$name/docker.container.id`
+  docker kill $contID
+  docker rm $contID
 EOH
   else
   code <<-EOH
@@ -44,18 +52,19 @@ EOH
 		lxc-destroy -n #{node["lxc"]["cont"]["name"]}
 	else
 		# WARN: starting with LXC 0.8.0, lxc-destroy deletes the rootfs!
+	  root_path=#{node["lxc"]["root_path"]}
 
 		if [ #{node["lxc"]["use_copy_on_write"] ? 1 : 0} ]; then
-			mv /lxc/$name /lxc/$name.copy
-			#/sbin/btrfs subvolume snapshot /lxc/$name /lxc/$name.copy
+			mv $root_path/$name $root_path/$name.copy
+			#/sbin/btrfs subvolume snapshot $root_path/$name $root_path/$name.copy
 			lxc-destroy -n $name
-			#/sbin/btrfs subvolume delete /lxc/$name
+			#/sbin/btrfs subvolume delete $root_path/$name
 		else
-			cp -r /lxc/$name /lxc/$name.copy
+			cp -r $root_path/$name $root_path/$name.copy
 			lxc-destroy -n $name
-			rm -r /lxc/$name
+			rm -r $root_path/$name
 		fi
-		mv /lxc/$name.copy /lxc/$name
+		mv $root_path/$name.copy $root_path/$name
 	fi
 EOH
   end

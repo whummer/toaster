@@ -146,7 +146,9 @@ Script Output:
 <table>
 	<tr><td>Select Automation:</td>
 		<td><%= select_tag(:automation, 
-			options_for_select(Automation.find().to_a.collect{|a| [a.name,a.id]})) %></td></tr>
+			options_for_select(Automation.find().to_a.collect{|a| 
+				["\"#{a.name}\" (ID: #{a.id})",a.id]
+			})) %></td></tr>
 	<tr><td></td><td><input type="submit" value="Continue" name="selectAuto"/></td></tr>
 </table>
 

@@ -116,7 +116,7 @@ class ToasterAppService < XMLRPC::Server
         "#!/bin/bash\n " +
         "cd #{dir}\n " +
         "while [ 1 ]; do\n " +
-        "ruby toaster_app_service.rb do_start_service\n " +
+        "ruby toaster_app_service.rb do_start_service -v\n " +
         "done",
       true)
       `chmod +x /tmp/toaster.service.loop.sh`
@@ -130,7 +130,8 @@ class ToasterAppService < XMLRPC::Server
 end
 
 
-if ARGV[0] == "do_start_service"
+if ARGV.include?("do_start_service")
+  puts "Starting service on port #{$service_port}"
   Toaster::Config.init_db_connection()
   server = ToasterAppService.new($service_port, "0.0.0.0")
 #  client = ToasterApp.new()

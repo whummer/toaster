@@ -41,7 +41,7 @@ class TestController < ApplicationController
         params[:combineN].split(/[\s,;]+/).collect{|a| a.to_i}, 
         params[:combineNsucc].split(/[\s,;]+/).collect{|a| a.to_i},
         params[:graphCoverage] == "transisions" ? 
-            StateGraphCoverage::TRANSITIONS : StateGraphCoverage::STATES,
+            StateGraphCoverage::TRANSITIONS : StateGraphCoverage::STATES
       )
       gen = TestGenerator.new(suite)
       tests = gen.gen_all_tests()
@@ -71,7 +71,7 @@ class TestController < ApplicationController
     client = service_client
     session[:suite_cur] = nil
     blocking = false
-    client.runtest(test_case.uuid, blocking)
+    session[:exec_output] = client.runtest(test_case.uuid, blocking)
     redirect_to "/test/suites/#{params["suite_id"]}"
   end
 

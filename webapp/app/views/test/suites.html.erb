@@ -62,8 +62,14 @@ end
 
 %>
 <% if message %>
+<h2>Information</h2>
 <div class="info"><%= message %></div>
 <% end %>
+<% if $session[:exec_output] %>
+<h2>Information</h2>
+<div class="info">Test execution has been started. Service Output: <pre><%= $session[:exec_output] %></pre></div>
+<% 	$session[:exec_output] = nil
+	end %>
 <form action="#" method="post">
 <input type="hidden" name="sessionID" value="<%= $session['session_id'] %>" />
 <input type="hidden" name="test" value="<%= param('test') %>" />
@@ -143,7 +149,7 @@ end
 		<td><%= test.running_or_scheduled? ? "scheduled/running" : test.success %></td>
 		<td>
 		<% if test.automation_run && test.automation_run.id %>
-			<%= link_to 'details', "/execs/#{test_suite.automation.id}/#{test.automation_run.id}/tasks" %>
+			<%= link_to 'details', "/execs/#{test_suite.automation.id}/#{test.automation_run.id}" %>
 		<% end %>
 		</td><td>
 		<% if !test.running_or_scheduled? %>

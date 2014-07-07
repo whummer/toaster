@@ -19,12 +19,7 @@ module Toaster
     has_many :task_executions
     belongs_to :automation
 
-    #attr_accessor :uuid, :resource, :action, :parameters,
-    #  :sourcecode, :sourcehash, :sourcefile, :sourceline
-
     attr_accessor :resource_obj
-
-    #@@id_attributes = ["resource", "action", "sourcehash", "sourcefile", "sourceline"]
 
     def initialize(attr_hash)
       if !attr_hash[:uuid]
@@ -51,18 +46,6 @@ module Toaster
     # Return an array of TaskExecution instances for this task.
     #
     def global_executions(criteria={})
-      # TODO: make caching configurable!!
-#      if @executions_cache.empty?
-#        params = {"task_id" => id()}
-#        @executions_cache = TaskExecution.find(params, {"task" => self})
-#      end
-#      result = []
-#      @executions_cache.each do |exe|
-#        if success.nil? || exe.success == success
-#          result << exe
-#        end
-#      end
-#      return result
       criteria[:task] = self
       return TaskExecution.find(criteria)
     end
@@ -97,18 +80,6 @@ module Toaster
       return StateChange.joins(:task_execution => :task).where(
         "task_executions.task_id" => self.id)
     end
-#    def global_state_prop_changes(global_execs = nil)
-#      changes  = []
-#      global_execs = global_executions() if !global_execs
-#      global_execs.each do |exe|
-#        exe.state_changes.each do |sc|
-#          sc.task_execution = exe
-#        end
-#        #puts "execution state changes: #{exe.state_changes.inspect}"
-#        changes.concat(exe.state_changes)
-#      end
-#      return changes
-#    end
     def global_num_state_prop_changes(global_executions = nil)
       return global_state_prop_changes(global_executions).size
     end
@@ -292,47 +263,9 @@ module Toaster
       return "#{resource}::#{action}"
     end
 
-#    def automation 
-#      # TODO refactor (avoid Automation.find)
-#      automations = Automation.find("task_ids" => { "$all" => [@uuid] })
-#      puts "WARN: Expected 1 automation for task '#{uuid}', got #{automations.size}" if automations.size > 1
-#      return automations[0] if automations && !automations.empty?
-#      execs = TaskExecution.find({"task_id" => self.id})
-#      return nil if !execs || execs.empty?
-#      return execs[0].automation_run.automation
-#    end
-
-#    def parameters()
-#      # lazily load parameters
-#      if !task_parameters.empty? && !task_parameters[0].kind_of?(TaskParameter)
-#        task_parameters = task_parameters.collect { |p| 
-#          TaskParameter.find({"uuid" => p.to_s}, {"task" => self})[0]
-#        }
-#      end
-#      task_parameters
-#    end
-
     def self.find(criteria={})
       DB.find_activerecord(Task, criteria)
     end
-#    def self.find(criteria={})
-#      criteria["db_type"] = "automation_task" if !criteria["db_type"]
-#      objs = []
-#      DB.instance.find(criteria).each do |hash|
-#        obj = Task.new(nil, nil, nil)
-#        objs << DB.apply_values(obj, hash)
-#      end
-#      return objs
-#    end
-#    def save
-#      @parameters.each do |p|
-#        if p.kind_of?(TaskParameter)
-#          p.save
-#        end
-#      end
-#      return super(@@id_attributes)
-#    end
-
 
     def self.load_from_chef_source(resource, action, sourcecode, sourcefile, sourceline)
       sourcecode.strip! if sourcecode.kind_of?(String)
@@ -350,18 +283,6 @@ module Toaster
       task.resource_obj = resource
       return task
     end
-
-#    def to_hash(exclude_fields = [], additional_fields = {}, recursion_fields = [])
-#      exclude_fields << "parameters" if !exclude_fields.include?("parameters")
-#      exclude_fields << "resource_obj" if !exclude_fields.include?("resource_obj")
-#      additional_fields["name"] = "#{@resource} - #{@action}" if !additional_fields["name"]
-#      additional_fields["parameter_ids"] = @parameters.collect { |p| p.uuid } if !additional_fields["parameter_ids"]
-#      return super(exclude_fields, additional_fields, recursion_fields)
-#    end
-
-#    def hash()
-#      return uuid ? uuid.hash() : 0
-#    end
 
     def eql?(other)
       return other.kind_of?(Task) && !uuid.nil? && uuid == other.uuid

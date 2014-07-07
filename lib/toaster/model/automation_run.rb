@@ -15,9 +15,6 @@ require "toaster/util/util"
 module Toaster
   class AutomationRun < ActiveRecord::Base
 
-    #attr_accessor :uuid, :machine_id, :automation, :start_time, 
-   #  :end_time, :success, :error_details, :attributes
-
     @@current_run = nil
 
     belongs_to :user

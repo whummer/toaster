@@ -38,7 +38,8 @@ module Toaster
     @@chef_classes = {}
     @@create_backups = false
 
-    OPSCODE_API_URL = "http://cookbooks.opscode.com/api/v1/"
+    #OPSCODE_API_URL = "http://cookbooks.opscode.com/api/v1/"
+    OPSCODE_API_URL = "https://supermarket.getchef.com/api/v1/"
     OPSCODE_SEARCH_URL = "http://community.opscode.com/search"
 
     @@DEFAULT_CHEF_DIR = "/tmp/toaster_cookbooks/"
@@ -204,10 +205,7 @@ module Toaster
       return l[1].to_i
     end
 
-
-    def self.download_cookbook_version(name, version="latest", 
-          target_dir=@@DEFAULT_COOKBOOKS_DIR, quiet=false, num_attempts=2)
-
+    def self.get_cookbook_download_link(name, version="latest")
       url = "#{OPSCODE_API_URL}cookbooks/#{name}/versions/#{version}"
       puts "DEBUG: Getting Chef cookbook metadata from URL: '#{url}'"
       json = `curl #{url} 2> /dev/null`
@@ -216,7 +214,13 @@ module Toaster
       rescue => ex
         raise "Unable to parse string as JSON (received from URL #{url}): #{json}"
       end
-      link = json["file"]
+      return json["file"]
+    end
+
+    def self.download_cookbook_version(name, version="latest", 
+          target_dir=@@DEFAULT_COOKBOOKS_DIR, quiet=false, num_attempts=2)
+
+      link = get_cookbook_download_link(name, version)
 
       `mkdir -p '#{target_dir}'` if !File.exist?(target_dir)
       tgz_file = File.join(target_dir, "#{name}.tgz")

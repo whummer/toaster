@@ -24,36 +24,38 @@ if node["lxc"]["use_docker.io"]
 	proto_name=#{node["lxc"]["proto"]["name"]}
 	echo "$proto_name" >> /tmp/tmp.lxc.protos
 	if [ "$proto_name" == "" ]; then
-		proto_name=`cat /lxc/$name/container.prototype.name`
+		proto_name=`cat #{node["lxc"]["root_path"]}/$name/container.prototype.name`
 	fi
 	echo "$proto_name" >> /tmp/tmp.lxc.protos
 	if [ "$proto_name" == "" ]; then
 		proto_name=#{node["lxc"]["cont"]["name"]}
 	fi
-	screen -m -d docker run --privileged prototypes:$proto_name bash -c "ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]} && /usr/sbin/sshd -D"
+	cidfile=#{node["lxc"]["root_path"]}/$name/docker.container.id
+	rm -f $cidfile
+	screen -m -d docker run --cidfile=$cidfile --privileged prototypes:$proto_name bash -c "ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]} && /usr/sbin/sshd -D"
 	echo "INFO: LXC container '#{node["lxc"]["cont"]["name"]}' started in the background using 'screen'."
 	sleep 2
-	contID=`docker ps | grep -v IMAGE | head -n 1 | awk '{print $1}'`
+	#contID=`docker ps | grep -v IMAGE | head -n 1 | awk '{print $1}'`
+  contID=`cat "$cidfile"`
 	if [ "$contID" == "" ]; then
 		echo "WARN: Container could not be started. Name '$name', prototype '$proto_name', IP '$ip_addr'"
 		exit 1
 	fi
-	contID=`ls /var/lib/docker/containers/ | grep "$contID"`
-	echo "$contID" >> /tmp/tmp.lxc.cont.ids
-	rm -f /lxc/$name/rootfs
-	
+	#contID=`ls /var/lib/docker/containers/ | grep "$contID"`
+  echo "$contID" >> /tmp/tmp.lxc.cont.ids
+	rm -f #{node["lxc"]["root_path"]}/$name/rootfs
+
 	# create a symlink to the rootfs folder. This 
-	# differs in different versions of toaster.. :/
+	# differs in different versions of docker.. :/
 	if [ -d /var/lib/docker/aufs/mnt/$contID ]; then
-    ln -s /var/lib/docker/aufs/mnt/$contID /lxc/$name/rootfs
+    ln -s /var/lib/docker/aufs/mnt/$contID #{node["lxc"]["root_path"]}/$name/rootfs
 	elif [ -d /var/lib/docker/containers/$contID/rootfs ]; then
-    ln -s /var/lib/docker/containers/$contID/rootfs /lxc/$name/rootfs
+    ln -s /var/lib/docker/containers/$contID/rootfs #{node["lxc"]["root_path"]}/$name/rootfs
 	else
 	  echo "ERROR: Unable to determine container root directory."
 	  exit 1
 	fi
 
-	echo "$contID" > /lxc/$name/docker.container.id
 EOH
   end
 else

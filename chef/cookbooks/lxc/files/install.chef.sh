@@ -72,5 +72,7 @@ fi
 # update gem system to avoid incompatibilities later on, e.g.:
 # http://efreedom.net/Question/1-15266444/Unable-Install-Bson-Ext-182-Gem
 gem update --system
+gem update
+gem clean
 
 

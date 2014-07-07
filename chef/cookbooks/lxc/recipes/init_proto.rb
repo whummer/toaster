@@ -7,7 +7,7 @@ lxc_config = "#{node["lxc"]["proto"]["config_file"]}"
 cache="#{node["lxc"]["bare_os"]["cachedir"]}"
 
 # include code in Ruby LOAD_PATH
-code_dir = File.join(__FILE__, "..","..","..","..", "lib")
+code_dir = File.join(File.dirname(__FILE__), "..","..","..","..", "lib")
 $:.unshift(code_dir)
 require 'toaster/util/config'
 
@@ -24,10 +24,10 @@ end
 
 bash "proto_init_cow" do
   code <<-EOH
-	btrfs subvolume create /lxc/#{node["lxc"]["proto"]["name"]}
+	btrfs subvolume create #{node["lxc"]["root_path"]}/#{node["lxc"]["proto"]["name"]}
 EOH
   only_if do node["lxc"]["use_copy_on_write"] end
-  not_if "test -f /lxc/#{node["lxc"]["proto"]["name"]}"
+  not_if "test -f #{node["lxc"]["root_path"]}/#{node["lxc"]["proto"]["name"]}"
 end
 
 bash "proto_copy_os" do
@@ -165,30 +165,28 @@ EOH
   not_if do node["lxc"]["use_docker.io"] end
 end
 
-
 bash "proto_docker_create" do
   if node["lxc"]["bare_os"]["distribution"] == "ubuntu"
     code <<-EOH
 	proto_name=#{node["lxc"]["proto"]["name"]}
+  root_path=#{node["lxc"]["root_path"]}
 
 	mkdir -p #{node["lxc"]["proto"]["root_path"]}
 	cat <<EOF > #{node["lxc"]["proto"]["root_path"]}/Dockerfile
 	FROM ubuntu
 	RUN mkdir /var/run/sshd
-	RUN grep -v rootfs /proc/mounts > /etc/mtab
-	#RUN ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0
-	#RUN bash -c 'echo "iface eth0 inet static" >> /etc/network/interfaces'
-	#RUN bash -c 'echo "address #{node["lxc"]["proto"]["ip_address"]}" >> /etc/network/interfaces'
-	#RUN bash -c 'echo "gateway #{node["network"]["gateway"]}" >> /etc/network/interfaces'
-	#RUN bash -c 'echo "netmask 255.255.255.0" >> /etc/network/interfaces'
-	RUN bash -c "ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0; ip route del default; ip route add default via #{node["network"]["gateway"]}; apt-get install -y net-tools openssh-server iptables dnsutils iputils-ping vim"
-	# (auto-)start ssh daemon
-	RUN update-rc.d ssh defaults
-	ADD dockerfiles/.ssh/ /root/
+	#RUN grep -v rootfs /proc/mounts > /etc/mtab
+	#RUN bash -c "ip addr flush dev eth0; ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0; ip route del default; ip route add default via #{node["network"]["gateway"]}; apt-get install -y net-tools openssh-server iptables dnsutils iputils-ping vim"
+  # add ssh dir
+  RUN mkdir -p /root/.ssh
 EOF
 	proto_name=#{node["lxc"]["proto"]["name"]}
-	mkdir -p /lxc/$proto_name/dockerfiles/.ssh/
-	cp $HOME/.ssh/id_rsa.pub /lxc/$proto_name/dockerfiles/.ssh/authorized_keys
+	mkdir -p #{node["lxc"]["root_path"]}/$proto_name/dockerfiles/.ssh/
+	if [ ! -f $HOME/.ssh/id_rsa.pub ]; then
+    ssh-keygen -f $HOME/.ssh/id_rsa.pub -P ""
+	end
+	fi
+	cp $HOME/.ssh/id_rsa.pub #{node["lxc"]["root_path"]}/$proto_name/dockerfiles/.ssh/authorized_keys
 	imgID=`docker build -t prototypes:$proto_name #{node["lxc"]["proto"]["root_path"]} | grep "Successfully built" | tail -n 1 | sed "s/Successfully built //g"`
 	echo "INFO: new docker image ID: '$imgID'"
 	if [ "$imgID" == "" ]; then
@@ -196,7 +194,12 @@ EOF
 		docker build #{node["lxc"]["proto"]["root_path"]}
 		exit 1
 	fi
-	echo "$imgID" > /lxc/$proto_name/docker.image.id
+	echo "$imgID" > #{node["lxc"]["root_path"]}/$proto_name/docker.image.id
+
+  cidfile=$root_path/$proto_name/docker.container.id
+  rm -f $cidfile
+  # the following commands can only be run in "privileged" docker mode:
+	docker run --privileged --cidfile=$cidfile $imgID bash -c "ip addr flush dev eth0; ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0; ip route del default; ip route add default via #{node["network"]["gateway"]}; apt-get update; apt-get install -y net-tools openssh-server iptables dnsutils iputils-ping vim; update-rc.d ssh defaults"
 EOH
   else
     code <<-EOH
@@ -207,6 +210,15 @@ EOH
   # only execute if we use docker.io tools
   only_if do node["lxc"]["use_docker.io"] end
 end
+
+# terminate prototype container 
+# (lxc::stop_lxc also saves/commits the changes made to the prototype container)
+node.set["lxc"]["cont"]["name"] = node["lxc"]["proto"]["name"]
+node.set["lxc"]["cont"]["ip_address"] = node["lxc"]["proto"]["ip_address"]
+node.set["lxc"]["cont"]["root_path"] = "#{node["lxc"]["root_path"]}/#{node["lxc"]["cont"]["name"]}"
+node.set["lxc"]["cont"]["config_file"] = "#{node["lxc"]["cont"]["root_path"]}/config"
+node.set["lxc"]["cont"]["root_fs"] = node["lxc"]["proto"]["root_fs"]
+include_recipe "lxc::stop_lxc"
 
 bash "proto_cp_resolv_conf" do
   code <<-EOH
@@ -252,12 +264,6 @@ EOH
 end
 
 # start prototype container
-node.set["lxc"]["cont"]["name"] = node["lxc"]["proto"]["name"]
-node.set["lxc"]["cont"]["ip_address"] = node["lxc"]["proto"]["ip_address"]
-node.set["lxc"]["cont"]["root_path"] = "#{node["lxc"]["root_path"]}/#{node["lxc"]["cont"]["name"]}"
-node.set["lxc"]["cont"]["config_file"] = "#{node["lxc"]["cont"]["root_path"]}/config"
-node.set["lxc"]["cont"]["root_fs"] = node["lxc"]["proto"]["root_fs"]
-
 include_recipe "lxc::start_lxc"
 
 # make sure /tmp directory is preserved over time (365 days) and not flushed on every boot
@@ -284,7 +290,9 @@ file "proto_setup_inside_script" do
 #!/bin/bash
 
 	# make sure we have a default route
-	route add default gw #{node["network"]["gateway"]}
+  ip route del default
+  ip route add default via #{node["network"]["gateway"]}
+	#route add default gw #{node["network"]["gateway"]}
 
 	# sometimes the DNS is not immediately available and lookup of google.com fails
 	for i in {1..10}; do
@@ -331,9 +339,10 @@ file "proto_setup_inside_script" do
 		gem install --no-ri --no-rdoc chef
 	fi
 
+	# install prerequisite for gem mysql2, needed by cloud-toaster
+  sudo apt-get install -y libmysqlclient-dev
+
 	# install toaster gem
-  #wget #{Toaster::Config.get("testing.gem_url")} -O /tmp/toaster.gem
-  #gem install --no-ri --no-rdoc /tmp/toaster.gem
   gem install --no-ri --no-rdoc cloud-toaster
 
 EOH
@@ -400,4 +409,9 @@ end
 
 # terminate prototype container 
 # (lxc::stop_lxc also saves/commits the changes made to the prototype container)
-include_recipe "lxc::stop_lxc"
+bash 'commit_docker_final' do
+  code 'echo'
+  notifies :run, 'bash[lxc_docker_commit]', :immediately
+  notifies :run, 'bash[lxc_stop]', :immediately
+  notifies :run, 'bash[lxc_stop_proto]', :immediately
+end

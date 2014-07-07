@@ -175,7 +175,7 @@ module Toaster
     def execute_tests(test_cases, do_wait_until_finished=true)
       test_cases = [test_cases] if !test_cases.kind_of?(Array)
       test_cases.each do |test|
-        puts "INFO: pushing test case to queue: #{test}"
+        puts "INFO: Pushing test case to queue: #{test.uuid}"
         @request_queue.push(test)
       end
 
@@ -224,6 +224,7 @@ module Toaster
 
       # start test case execution
       automation_run = nil
+      error_output = nil
       while num_attempts > 0
         begin
           automation_run = TestRunner.do_execute_test(automation_name,
@@ -235,6 +236,7 @@ module Toaster
 
           num_attempts = 0
         rescue Object => ex
+          error_output = ex
           num_attempts -= 1
           puts "WARN: cannot run test case '#{test_case.uuid}' (remaining attempts: #{num_attempts}): #{ex}"
           puts "#{ex.backtrace.join("\n")}"
@@ -253,7 +255,8 @@ module Toaster
             "an empty automation run '#{test_case.automation_run}' with success=false."
         automation_run.success = false
         automation_run.end_time = TimeStamp.now
-        automation_run.error_details = "Test case '#{test_case.uuid}' failed (no automation run created by test runner)."
+        automation_run.error_details = "Test case '#{test_case.uuid}' failed " +
+            "(no automation run created by test runner). Output:\n#{error_output}"
         automation_run.save
         test_case.automation_run = automation_run
       end
@@ -274,8 +277,6 @@ module Toaster
       config_file_cont = "#{lxc['rootdir']}/root/.toaster"
       `cp '#{config_file_host}' '#{config_file_cont}'`
 
-      #`ssh #{lxc["ip"]} "wget #{Config.get("testing.gem_url")} -O /tmp/toaster.gem > /dev/null 2>&1"`
-      #`ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc /tmp/toaster.gem > /dev/null 2>&1"`
       `ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc cloud-toaster 2>&1"`
 
     end
@@ -287,6 +288,7 @@ module Toaster
       lxc = LXC.new_container(prototype_name)
       prepare_test_container(lxc, automation_name, recipes)
 
+      recipes = [recipes] if !recipes.kind_of?(Array)
       automation_run = nil
       output = ""
       output_printed = false
@@ -364,7 +366,8 @@ module Toaster
         if print_output && !output_printed
           puts "Output: #{output} <<==="
         end
-        raise "Could not extract automation run ID from test run (tried #{1+num_repeats} times)"
+        #raise "Could not extract automation run ID from test run (tried #{1+num_repeats} times)"
+        raise output
       end
 
       return automation_run

@@ -90,8 +90,8 @@ bash "host_config_btrfs" do
   code <<-EOH
 	mkdir -p /mnt/btrfs
 	mount -t btrfs -o loop #{node["lxc"]["host"]["btrfs_img_path"]} /mnt/btrfs
-	if [ ! -e /lxc ]; then
-		ln -s /mnt/btrfs /lxc
+	if [ ! -e #{node["lxc"]["root_path"]} ]; then
+		ln -s /mnt/btrfs #{node["lxc"]["root_path"]}
 	fi
 EOH
   only_if do node["lxc"]["host"]["use_copy_on_write"] end

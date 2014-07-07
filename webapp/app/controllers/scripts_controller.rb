@@ -1,7 +1,8 @@
 class ScriptsController < ApplicationController
 
 	require "toaster/model/automation"
-	require "toaster/model/automation_attribute"
+  require "toaster/model/automation_attribute"
+  require "toaster/chef/chef_util"
 
     skip_before_action :verify_authenticity_token
 
@@ -95,32 +96,36 @@ class ScriptsController < ApplicationController
 
   	def import_chef
   		if params[:submitImport]
+        script_file = ChefUtil.get_cookbook_download_link(
+          params[:cookbook], params[:cookbook_version])
   			a = Automation.new(
   				:name => params[:auto_name],
   				:cookbook => params[:cookbook],
   				:cookbook_version => params[:cookbook_version],
   				:recipes => params[:recipes],
-  				:user => current_user
+  				:user => current_user,
+  				:script => script_file
   			)
-  			puts "params[:recipes].split(/[\s,;]+/) #{params[:recipes].split(/[\s,;]+/)}"
+  			#puts "params[:recipes].split(/[\s,;]+/) #{params[:recipes].split(/[\s,;]+/)}"
   			params[:recipes].split(/[\s,;]+/).each do |rec|
 	  			recipe_info = ChefUtil.parse_resources(
 	  				params[:cookbook], rec, params[:cookbook_version])[params[:cookbook]][rec]
 	  			recipe_info["resources"].each do |line,code|
-		  			action = recipe_info["resource_objs"][line].action
-	  				action = action.join(" , ") if action.kind_of?(Array)
+            action = "__action__"
+            resource = "__action__"
+	  			  if recipe_info["resource_objs"][line]
+		  			   action = recipe_info["resource_objs"][line].action
+	  				   action = action.join(" , ") if action.kind_of?(Array)
+	  				   resource = recipe_info["resource_objs"][line].resource_name
+  	        end
 	  				task = Task.new(
 		  				:automation => a,
 		  				:sourceline => line,
 		  				:sourcecode => code,
 		  				:sourcefile => recipe_info["file"],
-		  				:resource => recipe_info["resource_objs"][line].resource_name,
+		  				:resource => resource,
 		  				:action => action
 		  			)
-		  			puts "-----######"
-		  			puts task.resource
-		  			puts task.action
-		  			puts task.action.class
 		  			task.save
 		  			a.tasks << task
 	  			end

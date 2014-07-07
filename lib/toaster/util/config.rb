@@ -14,18 +14,11 @@ module Toaster
 
   class Config
 
-    @dns_suffix = "us.to"
-
     class << self
-      attr_accessor :values, :dns_suffix
-    end
-
-    def self.host(subdomain="toaster")
-      "#{subdomain}.#{dns_suffix}"
+      attr_accessor :values
     end
 
     @values = {}
-    @values["db"] = {"host" => host("toaster")}
 
     def self.set(key,value, v=values)
       parts = key.split(".")
@@ -97,6 +90,9 @@ module Toaster
           puts "DEBUG: Reading configuration values from file '#{file}'"
         end
         MarkupUtil.rmerge!(@values, JSON.parse(File.read(file)))
+      end
+      if ARGV.include?("-v")
+        puts "DEBUG: Configuration hash: '#{@values}'"
       end
     end
 

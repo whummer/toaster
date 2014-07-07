@@ -20,8 +20,8 @@ end
 bash "ruby_install_gems" do
   code <<-EOH
 	# install common gems
-	gem install rspec
-	gem install rspec -v 1.3.2 # required for, e.g., cassandra installation
+	#gem install rspec
+	#gem install rspec -v 1.3.2 # required for, e.g., cassandra installation
 EOH
   not_if "gem list | grep rspec"
 end

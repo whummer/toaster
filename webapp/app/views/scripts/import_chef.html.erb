@@ -61,7 +61,7 @@ if message && message.to_s != "" %>
 	</td><td>
 	</td></tr>
 <tr><td><b>Chef Cookbook:</b></td><td>
-	<%= text_field_tag :cookbook, param("cookbook", 'mysql'), :id => "cookbook" %>
+	<%= text_field_tag :cookbook, param("cookbook", 'tomcat6'), :id => "cookbook" %>
 	</td><td>
 	<% if available_cookbooks.empty? %>
 	<input type="submit" value="Load from OpsCode.com" name="loadOpsCode"/><br/>
@@ -81,7 +81,7 @@ if message && message.to_s != "" %>
 	<input type="submit" value="Update" name="loadOpsCodeVersions"/>
 </td></tr>
 <tr><td style="vertical-align: top"><b>Recipe Name(s):</b></td><td>
-	<%= text_field_tag :recipes, param('recipes', ''), :id => "recipes" %><br/>
+	<%= text_field_tag :recipes, param('recipes', 'default'), :id => "recipes" %><br/>
 	(Use space or comma as separator.)<br/>
 	</td><td>
 	<input type="submit" value="Load from OpsCode.com" name="loadOpsCodeRecipes"/><br/>

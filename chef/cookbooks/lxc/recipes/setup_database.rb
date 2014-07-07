@@ -6,6 +6,7 @@ if platform_family?("debian")
 
   bash 'db_create' do
     code "echo 'create database toaster;' | mysql -u root -p#{node['mysql']['server_root_password']}"
+    not_if "echo \"show databases;\" | mysql -u root -p#{node['mysql']['server_root_password']} | grep toaster"
   end
 
 else

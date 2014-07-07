@@ -8,7 +8,7 @@ require 'rubygems'
 require 'json'
 require 'rexml/document'
 require 'hashdiff'
-require 'active_support/all' #for to_xml(), 'gem install activesupport'
+require 'active_support/all'
 require 'jsonpath'
 require 'toaster/util/util'
 
