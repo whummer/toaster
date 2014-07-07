@@ -126,8 +126,8 @@ class CreateAllTables < ActiveRecord::Migration
       t.string :uuid,            null: false
       t.string :test_suite_id
       t.string :automation_run_id
-      t.text :skip_task_uuids,   null: false, default: "[]"
-      t.text :repeat_task_uuids, null: false, default: "[]"
+      t.text :skip_task_uuids,   null: false
+      t.text :repeat_task_uuids, null: false
       t.integer :start_time,     limit: 8 
       t.integer :end_time,       limit: 8
       t.string :executing_host

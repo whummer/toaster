@@ -26,7 +26,8 @@ Gem::Specification.new do |s|
     "hashdiff",					# License: MIT
     "json",						# License: Ruby - https://www.ruby-lang.org/en/about/license.txt
     "jsonpath",					# ?
-    "mongo",					# License: Apache v2.0
+    #"mongo",					# License: Apache v2.0
+    "mysql2",					# License: MIT
     "ohai",						# License: Apache v2.0
     "open4",					# License: Ruby
     "rails",					# License: MIT
@@ -35,6 +36,7 @@ Gem::Specification.new do |s|
     "sexp_processor",			# License: MIT
     "sinatra",					# License: MIT
     "sinatra-contrib",			# License: custom (MIT?) - https://raw.github.com/sinatra/sinatra-contrib/master/LICENSE
+    "therubyracer",				# License: MIT
     "tidy",						# License: Ruby
     # tidy-ext installation fails on some systems
     #"tidy-ext",					# License: Ruby

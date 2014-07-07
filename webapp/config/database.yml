@@ -13,9 +13,9 @@
 development:
   adapter: mysql2
   database: toaster
-  username: root
-  password:
-  host: localhost
+  username: toaster
+  password: iactesting!
+  host: toaster.us.to
   socket: /var/run/mysqld/mysqld.sock
 
 # Warning: The database defined as "test" will be erased and
@@ -28,7 +28,10 @@ test:
   timeout: 5000
 
 production:
-  adapter: sqlite3
-  database: db/production.sqlite3
-  pool: 5
+  adapter: mysql2
+  database: toaster
+  username: root
+  password:
+  host: localhost
+  socket: /var/run/mysqld/mysqld.sock
   timeout: 5000
