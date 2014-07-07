@@ -55,10 +55,7 @@ module Toaster
       if !config
         config = {
           "db_type" => "mysql", 
-          'mysql' => {
-            'host' => Config.get('db.host'),
-            'db' => "toaster"
-          }
+          'mysql' => Config.get('db')
         }
       end
       if config["db_type"] == "mysql" && config["mysql"]
@@ -66,7 +63,9 @@ module Toaster
         ActiveRecord::Base.establish_connection(
           :adapter => 'mysql2',
           :host => config["mysql"]["host"],
-          :database => config["mysql"]["db"]
+          :database => config["mysql"]["database"],
+          :username => config["mysql"]["username"],
+          :password => config["mysql"]["password"]
         )
       else
         puts "WARN: Incorrect database connection configuration"
@@ -86,9 +85,10 @@ module Toaster
           if ARGV.include?("-v")
             puts "DEBUG: Reading configuration values from file '#{file}'"
           end
-          @values.merge!(JSON.parse(File.read(file)))
+          MarkupUtil.rmerge!(@values, JSON.parse(File.read(file)))
         end
       end
+      puts @values
       if !found
         puts "WARN: No configuration file 'config.json' found."
       end

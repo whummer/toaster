@@ -108,7 +108,7 @@ begin
 	end
 
 	if param("loadProtos") != "" || $session['gen.prototypes'] == ""
-		prototypes = Toaster::LXC.get_prototypes_for_host(param('server'))
+		prototypes = Toaster::LXC.get_prototypes_for_host($session['service.host'])
 		#puts "protos: #{prototypes}"
 		prototypes = prototypes.keys.collect { |name| Toaster::LXC.get_prototype_name(name) }
 		$session['gen.prototypes'] = Toaster::MarkupUtil.to_json(prototypes)
@@ -181,7 +181,7 @@ Script Output:
 	<tr><td>Use Prototype:</td>
 	<td><select name="prototype">
 		<% prototypes.each do |p| %>
-		<option value="<%= p %>"<%= option_selected('prototype', p) %>><%= p %></option>
+		<option value="<%= p %>"><%= p %></option>
 		<% end %>
 		</select>
 	<input type="submit" value="Load Prototypes" name="loadProtos"/><br/>

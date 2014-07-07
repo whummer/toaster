@@ -9,13 +9,18 @@
 #  pool: 5
 #  timeout: 5000
 
+<% 
+$LOAD_PATH << File.join(Dir.pwd, "../lib") 
+require "toaster/util/config"
+%>
+
 # MySQL adapter
 development:
   adapter: mysql2
-  database: toaster
-  username: toaster
-  password: iactesting!
-  host: toaster.us.to
+  host: <%= Toaster::Config.get("db.host") %>
+  database: <%= Toaster::Config.get("db.database") %>
+  username: <%= Toaster::Config.get("db.username") %>
+  password: <%= Toaster::Config.get("db.password") %>
   socket: /var/run/mysqld/mysqld.sock
 
 # Warning: The database defined as "test" will be erased and
@@ -29,9 +34,9 @@ test:
 
 production:
   adapter: mysql2
-  database: toaster
-  username: root
-  password:
-  host: localhost
+  host: <%= Toaster::Config.get("db.host") %>
+  database: <%= Toaster::Config.get("db.database") %>
+  username: <%= Toaster::Config.get("db.username") %>
+  password: <%= Toaster::Config.get("db.password") %>
   socket: /var/run/mysqld/mysqld.sock
   timeout: 5000

@@ -4,7 +4,6 @@
 <h2>LXC Containers</h2>
 <%
 require 'toaster/util/lxc'
-require 'toaster/agent/agent'
 require 'toaster/test/test_orchestrator'
 
 message = nil
@@ -65,7 +64,7 @@ if lxcs
 	count = 0
 	changed = false
 	lxcs.each do |ip,lxc|
-		client = Toaster::TestAgent.new(ip)
+		client = Toaster::ToasterAppClient.new(ip)
 		if param("destroy_#{count}") != ""
 			client.clean()
 			changed = true
