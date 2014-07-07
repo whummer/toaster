@@ -5,7 +5,7 @@
 # 
 
 # some global/constant variables
-REQUIRED_CONFIGS = {"mongodb.host" => "MongoDB host"}
+REQUIRED_CONFIGS = {"db.host" => "Database host"}
 ROOT_DIR = File.join(File.dirname(File.expand_path(__FILE__)), "..")
 
 # requires

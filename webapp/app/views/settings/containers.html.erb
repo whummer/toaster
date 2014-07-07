@@ -142,7 +142,7 @@ lxcs.each do |ip,lxc| %>
 
 <table>
 <tr><td><b>Host Server:</b></td><td><input type="text" name="server" 
-	value="<%= param('server', "localhost:8385") %>"/></td></tr>
+	value="<%= param('server', "#{$session['service.host']}:#{$session['service.port']}") %>"/></td></tr>
 <tr><td><b>Name:</b></td><td>
 	<input type="text" name="protoName" value="<%= param('protoName', '') %>"/>
 <tr></td><td><b>Operating System:</b></td><td>

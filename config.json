@@ -25,7 +25,7 @@
 	"port": 3306,
 	"database": "toaster",
 	"username": "root",
-	"password": ""
+	"password": "root"
 },
 "service": {
 	"host": "localhost",

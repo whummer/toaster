@@ -54,6 +54,7 @@ gem 'ohai'
 gem 'chef'
 gem 'ruby_parser'
 gem 'bson_ext'
-gem 'mongo'
-gem 'diffy'
-gem 'mysql2'
+#gem 'mongo'
+gem 'diffy'        # comparing source files
+gem 'mysql2'       # for DB access
+gem 'therubyracer' # required by execjs
