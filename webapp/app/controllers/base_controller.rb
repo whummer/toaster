@@ -76,7 +76,7 @@ class BaseController < ActionController::Base
     return format_time(secs)
   end
   def format_time(secs)
-    if !secs || secs.empty?
+    if !secs || "#{secs}".empty?
       return "n/a"
     end
     secs = secs.to_s.to_i

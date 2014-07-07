@@ -9,14 +9,15 @@ Gem::Specification.new do |s|
   s.email = [%q{hummer@infosys.tuwien.ac.at}]
   s.extra_rdoc_files = [
     "LICENSE",
-    "README.md",
     "Rakefile",
+    "README.md",
     "VERSION"
   ]
   s.files = Dir.glob("lib/**/*") + Dir.glob("bin/*") +
 		Dir.glob("bin/strace-4.8_patched/strace-x86_64") +
 		Dir.glob("bin/strace-4.8_patched/strace-i686") +
-		Dir.glob("chef/**/*") + Dir.glob("webapp/**/*")
+		Dir.glob("chef/**/*") + Dir.glob("webapp/**/*") + 
+		Dir.glob("config.json")
 
   [
     "bson",						# License: Apache v2.0

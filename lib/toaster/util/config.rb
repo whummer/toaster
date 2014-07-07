@@ -88,7 +88,6 @@ module Toaster
           MarkupUtil.rmerge!(@values, JSON.parse(File.read(file)))
         end
       end
-      puts @values
       if !found
         puts "WARN: No configuration file 'config.json' found."
       end

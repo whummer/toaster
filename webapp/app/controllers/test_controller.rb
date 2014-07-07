@@ -55,9 +55,14 @@ class TestController < ApplicationController
     test_case = cur_case
     if test_case
       test_case.start_time = nil
+      test_case.end_time = nil
       if test_case.automation_run
         test_case.automation_run.delete
       end
+      test_case.save
+      redirect_to "/test/suites/#{test_case.test_suite.id}"
+    else
+      redirect_to "/test/suites"
     end
   end
 

@@ -132,7 +132,7 @@ end
 	<table class="tablesorter">
 	<thead>
 		<tr><th>ID</th><th>Executing Host</th><th>Repeated Tasks</th>
-		<th>Skipped Tasks</th><th>Success</th><th colspan="2">Actions</th></tr>
+		<th>Skipped Tasks</th><th>Success</th><th colspan="3">Actions</th></tr>
 	</thead>
 	<tbody>
 		<% test_suite.test_cases.each do |test| %>
@@ -141,18 +141,20 @@ end
 		<td><%= test.repeat_task_uuids %></td>
 		<td><%= test.skip_task_uuids%></td>
 		<td><%= test.running_or_scheduled? ? "scheduled/running" : test.success %></td>
+		<td>
 		<% if test.automation_run && test.automation_run.id %>
+			<%= link_to 'details', "/execs/#{test_suite.automation.id}/#{test.automation_run.id}/tasks" %>
+		<% end %>
+		</td><td>
+		<% if !test.running_or_scheduled? %>
+			<%= link_to 'execute', "/test/exec/#{test.test_suite.id}/#{test.id}",
+            :data => { :confirm => 'Are you sure you want to execute this test case?', :method => :post } %>
+		<% end %>
+        </td>
 		<td>
 			<%= link_to 'reset', "/test/suites/#{test.test_suite.id}/#{test.id}",
             :data => { :confirm => 'Are you sure you want to delete/reset this test run?' }, :method => :delete %>
-        </td><td>
-			<%= link_to 'details', "/execs/#{test_suite.automation.id}/#{test.automation_run.id}/tasks" %>
-		<% else %>
-		<td>
-			<%= link_to 'execute', "/test/exec/#{test.test_suite.id}/#{test.id}",
-            :data => { :confirm => 'Are you sure you want to execute this test case?', :method => :post } %>
         </td>
-		<% end %>
 		</tr>
 		<% end %>
 	</tbody>

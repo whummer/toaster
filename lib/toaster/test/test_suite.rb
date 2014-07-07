@@ -113,7 +113,8 @@ module Toaster
     end
     def executed_test_cases
       test_cases.select { 
-              |c| c.start_time && !c.start_time.empty? }
+              |c| c.start_time &&
+              !("#{c.start_time}".empty?) }
     end
     def first_test
       cases_copy = test_cases_sorted(executed_test_cases)

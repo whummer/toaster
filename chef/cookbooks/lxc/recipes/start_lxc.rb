@@ -30,7 +30,7 @@ if node["lxc"]["use_docker.io"]
 	if [ "$proto_name" == "" ]; then
 		proto_name=#{node["lxc"]["cont"]["name"]}
 	fi
-	screen -m -d docker run prototypes:$proto_name bash -c "ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]} && /usr/sbin/sshd -D"
+	screen -m -d docker run --privileged prototypes:$proto_name bash -c "ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]} && /usr/sbin/sshd -D"
 	echo "INFO: LXC container '#{node["lxc"]["cont"]["name"]}' started in the background using 'screen'."
 	sleep 2
 	contID=`docker ps | grep -v IMAGE | head -n 1 | awk '{print $1}'`
