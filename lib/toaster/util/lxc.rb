@@ -146,9 +146,6 @@ module Toaster
 
     def self.run_chef(lxc, chef_node, node_attributes)
 
-      # set node name in attributes hash
-      node_attributes["toaster_node_name"] = "node[#{chef_node}]"
-
       # prepare variables
       output = ""
       lxc_dir = lxc["rootdir"]
@@ -157,6 +154,9 @@ module Toaster
 
       # write config files
       Util.write(node_file, node_attributes.to_json(), true)
+      #puts "DEBUG: node file #{node_file} : #{File.read(node_file)}"
+
+      
 
       # IMPORTANT: redirect streams from/to a stream (" < /dev/null >& /some/file"), 
       # because otherwise we might end up in a situation where the ssh command 

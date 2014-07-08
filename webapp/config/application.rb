@@ -4,6 +4,11 @@ require 'rails/all'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
+
+# bug fix for ruby 1.9+
+require 'dl/import'
+DL::Importable = DL::Importer
+
 Bundler.require(:default, Rails.env)
 
 module Toaster

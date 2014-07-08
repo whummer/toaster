@@ -4,3 +4,4 @@ build/
 build.tmp
 test_output.txt
 tmp
+Gemfile.lock

@@ -214,15 +214,6 @@ module Toaster
       require "toaster/chef/chef_util"
       require "toaster/util/lxc"
 
-      #recipes = parse_recipes(options[:recipes])
-      #version = options[:version]
-      #if !options[:version]
-      #  recipes = ["default"]
-      #  version = "latest"
-      #else
-      #  version = options[:version]
-      #end
-
       recipes = parse_recipes(recipes)
       prototype_name_full = prototype_name
       prototype_name_full = "prototype_#{prototype_name_full}" if !prototype_name_full.match(/^prototype_/)

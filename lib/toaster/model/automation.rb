@@ -58,6 +58,10 @@ module Toaster
       return result
     end
 
+    def is_chef?
+      "#{language}".casecmp("chef") == 0
+    end
+
     def short_name()
       get_short_name()
     end
@@ -154,11 +158,11 @@ module Toaster
       return task_ids
     end
 
-    # TODO rename and search based on other criteria.. (not run_list)!
-    def self.find_by_name_and_runlist(automation_name, actual_run_list)
-      criteria = { "name" => automation_name, 
-        # "chef_run_list" => actual_run_list,
-        "user" => User.get_current_user
+    def self.find_by_cookbook_and_runlist(automation_name, run_list)
+      criteria = {
+        :cookbook => automation_name, 
+        :recipes => run_list.to_s,
+        :user => User.get_current_user
       }
       auto = find(criteria)
       puts "Automation for user=#{User.get_current_user} and name='#{automation_name}' : #{auto}"
@@ -173,6 +177,8 @@ module Toaster
       params = {
         :user => User.get_current_user(),
         :name => name,
+        :cookbook => name,
+        :recipes => chef_run_list.to_s,
         :language => "Chef"
       }
       auto = find_by(params)
@@ -191,10 +197,6 @@ module Toaster
         end
         auto.automation_attributes.concat(attr_array)
       end
-      # TODO!
-#      if chef_run_list && auto.chef_run_list.empty?
-#        auto.automation_attributes.concat(attributes)
-#      end
       return auto
     end
 

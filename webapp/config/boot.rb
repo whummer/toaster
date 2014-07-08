@@ -5,6 +5,8 @@ require 'bundler/setup' if File.exists?(ENV['BUNDLE_GEMFILE'])
 
 require 'rails/commands/server'
 
+gem 'bundler'
+
 module Rails
   class Server
     def default_options

@@ -62,7 +62,6 @@ $installed_gems = `gem list --local`.strip
 all_gems_installed = true
 
 [
-  "aquarium",     # Ruby AOP
   "ohai",         # used as a framework to capture system state
   "activesupport",
   "bson",         # JSON like datastructures
@@ -119,18 +118,16 @@ if !File.directory?("#{node['toaster']['tmp_dir']}")
   `mkdir "#{node['toaster']['tmp_dir']}"`
 end
 
-# TODO: remove
-#if !$installed_gems.match("aquarium")
-#  `wget -O "#{node['toaster']['tmp_dir']}/aquarium-0.5.1.gem" "http://files.rubyforge.vm.bytemark.co.uk/aquarium/aquarium-0.5.1.gem"`
-#  `gem install #{node['toaster']['tmp_dir']}/aquarium-0.5.1.gem`
-#  begin
-#    # the following two commands are used to load gems that were just installed 
-#    Gem.clear_paths
-#    Gem.refresh
-#  rescue => ex
-#    puts "Unable to refresh Gem package list: #{ex}"
-#  end
-#end
+if !$installed_gems.match("aquarium")
+  `gem install aquarium`
+  begin
+    # the following two commands are used to load gems that were just installed 
+    Gem.clear_paths
+    Gem.refresh
+  rescue => ex
+    puts "Unable to refresh Gem package list: #{ex}"
+  end
+end
 
 
 $last_toaster_resource_name = "toaster_init_chef_listener"
@@ -157,7 +154,7 @@ ruby_block $last_toaster_resource_name do
           "db_type" => db_type,
           db_type => node['toaster'][db_type],
           "user_id" => node['user_id'],
-          "toaster_node_name" => node['toaster_node_name'],
+          "automation_uuid" => node['automation_uuid'],
           "cookbook_paths" => node['toaster']['cookbook_paths'],
           "skip_tasks" => node['toaster']['skip_tasks'],
           "repeat_tasks" => node['toaster']['repeat_tasks'],

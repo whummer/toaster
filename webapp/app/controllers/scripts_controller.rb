@@ -61,6 +61,7 @@ class ScriptsController < ApplicationController
 	  			auto.language = params[:auto][:language]
 	  			auto.visibility = params[:auto][:visibility]
 	  			auto.user = current_user
+	  			auto.script = params[:auto][:script]
 	  			if params[:auto][:attr]
 		  			params[:auto][:attr].each do |index,attr|
 		  				auto.automation_attributes[index.to_i - 1].key = attr["key"]

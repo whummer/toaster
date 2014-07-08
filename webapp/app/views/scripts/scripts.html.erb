@@ -32,7 +32,7 @@ end
 <table class="tablesorter">
 <thead>
 <tr>
-	<th>#</th><th>Name</th><th>Type</th><th>Visibility</th><th>Tasks</th>
+	<th>#</th><th>UUID</th><th>Name</th><th>Type</th><th>Visibility</th><th>Tasks</th>
 	<th>Attributes</th><th>Runs</th><th colspan="6">Actions</th></tr>
 </thead>
 <tbody>
@@ -46,7 +46,8 @@ globally_executed_tasks = row.get_globally_executed_tasks
 %>
 <tr<%= active ? " class=\"active\"" : "" %>>
 	<td><%= id+1 %></td>
-	<td><a href="scripts/<%= row.id %>"><%= row.name %></a></td>
+	<td><a href="/scripts/<%= row.id %>/details"><%= row.uuid %></a></td>
+	<td><%= row.name %></td>
 	<td><%= row.language %></td>
 	<td><%= row.visibility %></td>
 	<td><%= globally_executed_tasks.size %></td>

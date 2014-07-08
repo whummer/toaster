@@ -64,7 +64,9 @@ module Toaster
           "skip_tasks" => skip_task_uuids.dup,
           # set task IDs which are to be repeated during the test execution
           # (for testing idempotence)
-          "repeat_tasks" => repeat_task_uuids.dup
+          "repeat_tasks" => repeat_task_uuids.dup,
+          "user_id" => test_suite.user.id,
+          "automation_uuid" => test_suite.automation.uuid
         }
       }
       return attrs

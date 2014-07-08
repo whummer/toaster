@@ -12,6 +12,7 @@ require "toaster/util/config"
 require "toaster/model/automation_run"
 require "toaster/util/timestamp"
 require "toaster/test/test_case"
+require "toaster/chef/chef_util"
 
 include Toaster
 
@@ -153,7 +154,8 @@ module Toaster
       chef_node_name = ChefUtil.extract_node_name(automation_name)
       # prepare run list (add toaster::testing recipe definitions)
       actual_run_list = ChefUtil.prepare_run_list(chef_node_name, recipes)
-      automation = Automation.find_by_name_and_runlist(automation_name, actual_run_list)
+      reduced_run_list = ChefUtil.get_reduced_run_list(actual_run_list)
+      automation = Automation.find_by_cookbook_and_runlist(automation_name, reduced_run_list)
       return automation if !automation.nil?
 
       # if we don't have a matching automation in the DB yet, execute an initial run..
@@ -197,11 +199,13 @@ module Toaster
       test_suite = nil
       test_id = nil
       recipes = nil
+      automation = nil
       self.semaphore.synchronize do
         test_suite = test_case.test_suite
+        automation = test_suite.automation
         test_id = test_suite.uuid
-        automation_name = test_suite.automation.get_short_name if !automation_name
-        recipes = test_suite.automation.recipes
+        automation_name = automation.get_short_name if !automation_name
+        recipes = automation.recipes
       end
 
       # generate automation attributes which represent this test case
@@ -227,9 +231,14 @@ module Toaster
       error_output = nil
       while num_attempts > 0
         begin
-          automation_run = TestRunner.do_execute_test(automation_name,
-              recipes, chef_node_attrs, test_suite.lxc_prototype, test_id, 
-              destroy_container, print_output)
+          automation_run = nil
+          if automation.is_chef?
+            automation_run = TestRunner.do_execute_test_chef(automation_name,
+                automation.script, recipes, chef_node_attrs, test_suite.lxc_prototype, 
+                test_id, destroy_container, print_output)
+          else
+            raise "Unknown automation language/type: '#{automation.language}'"
+          end
 
           test_case.test_suite().test_cases << test_case if !test_case.test_suite().test_cases().include?(test_case)
           test_case.automation_run = automation_run
@@ -269,9 +278,9 @@ module Toaster
 
     private
 
-    def self.prepare_test_container(lxc, automation_name, recipes)
+    def self.prepare_test_container(lxc)
       # apply some necessary preparations to the test container
-
+      
       # copy config file from host into container
       config_file_host = "#{Dir.home}/.toaster"
       config_file_cont = "#{lxc['rootdir']}/root/.toaster"
@@ -281,12 +290,20 @@ module Toaster
 
     end
 
-    def self.do_execute_test(automation_name, recipes, chef_node_attrs,
+    def self.prepare_test_container_for_chef(lxc, script_url, automation_name, recipes)
+
+      prepare_test_container(lxc)
+
+      # download code into container
+      Toaster::ChefUtil.download_cookbook_url_in_lxc(lxc, script_url)
+    end
+
+    def self.do_execute_test_chef(automation_name, script_url, recipes, chef_node_attrs,
         prototype_name, test_id=nil, destroy_container=true, print_output=false, num_repeats=0)
 
       # Create/prepare new LXC container. 
       lxc = LXC.new_container(prototype_name)
-      prepare_test_container(lxc, automation_name, recipes)
+      prepare_test_container_for_chef(lxc, script_url, automation_name, recipes)
 
       recipes = [recipes] if !recipes.kind_of?(Array)
       automation_run = nil
@@ -315,7 +332,7 @@ module Toaster
             puts "INFO: Repeating test case '#{test_id}' - automation '#{automation_name}', run list '#{run_list}'"
             # create/prepate new container
             lxc_new = LXC.new_container(prototype_name)
-            prepare_test_container(lxc_new, automation_name, recipes)
+            prepare_test_container_for_chef(lxc_new, script_url, automation_name, recipes)
 
             output = LXC.run_chef_node(lxc_new, automation_name, run_list, chef_node_attrs)
             output.scan(pattern) { |id| automation_run_id = id[0].strip }
