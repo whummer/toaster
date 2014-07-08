@@ -3,7 +3,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require 'rubygems'
 require 'toaster/chef/resource_inspector'
 require 'toaster/model/task'
 

@@ -8,9 +8,18 @@
 REQUIRED_CONFIGS = {"db.host" => "Database host"}
 ROOT_DIR = File.join(File.dirname(File.expand_path(__FILE__)), "..")
 
+# call bundler
+ROOT_DIR = File.join(File.dirname(File.expand_path(__FILE__)), "..")
+require "rubygems"
+require "bundler/setup"
+# bug fix for ruby 1.9+
+require 'dl/import'
+DL::Importable = DL::Importer
+ENV['BUNDLE_GEMFILE'] = File.join(ROOT_DIR, "Gemfile")
+Bundler.require(:default)
+
 # requires
 $LOAD_PATH << File.join(ROOT_DIR, "lib")
-require "rubygems"
 require "toaster/api.rb"
 
 # util functions

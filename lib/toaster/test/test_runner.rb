@@ -51,6 +51,7 @@ module Toaster
       @local_semaphore.synchronize do
         current_num = @active_threads.size
       end
+      puts "DEBUG: currently active worker threads: #{current_num} of #{@max_threads_active}"
       ((current_num)..(@max_threads_active-1)).each do 
         t = Thread.start {
           running = true
@@ -286,7 +287,8 @@ module Toaster
       config_file_cont = "#{lxc['rootdir']}/root/.toaster"
       `cp '#{config_file_host}' '#{config_file_cont}'`
 
-      `ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc cloud-toaster 2>&1"`
+      # TODO: should we always re-install the toaster gem?
+      #`ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc cloud-toaster 2>&1"`
 
     end
 

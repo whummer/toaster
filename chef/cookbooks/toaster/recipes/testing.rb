@@ -35,6 +35,19 @@ require 'fileutils'
 databags_dir = "/var/chef/data_bags"
 FileUtils.mkpath(databags_dir) if !File.directory?(databags_dir)
 
+# Add code directories to Ruby LOAD_PATH.
+root_dir = File.join(File.dirname(__FILE__), "..","..","..","..")
+code_dir = File.join(root_dir, "lib")
+$:.unshift(code_dir)
+require "rubygems"
+require "bundler/setup"
+# bug fix for ruby 1.9+
+require 'dl/import'
+DL::Importable = DL::Importer
+ENV['BUNDLE_GEMFILE'] = File.join(root_dir, "Gemfile")
+Bundler.require(:default)
+
+
 package "gcc-c++" do
   action :install
   not_if "which g++"
@@ -89,7 +102,6 @@ end
 
 
 bash "install_toaster_gem" do
-  require 'toaster/util/config'
   code <<-EOH
     gem install --no-ri --no-rdoc cloud-toaster
   EOH
@@ -103,8 +115,6 @@ $postprocessing_scripts = []
 $postprocessing_scripts_by_name = {}
 
 # Add code directories to Ruby LOAD_PATH.
-code_dir = File.join(__FILE__, "..","..","..","..", "lib")
-$:.unshift(code_dir)
 if node['toaster']['additional_load_paths'].kind_of?(Array)
   node['toaster']['additional_load_paths'].each do |path|
     if File.exist?(path)
@@ -134,7 +144,6 @@ $last_toaster_resource_name = "toaster_init_chef_listener"
 ruby_block $last_toaster_resource_name do
   block do
 
-    require 'rubygems'
     begin
       # the following two commands are used to load gems that were actually installed 
       # within this Chef run and are hence not yet available in this running instance.

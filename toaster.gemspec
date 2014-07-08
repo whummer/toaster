@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
 		Dir.glob("bin/strace-4.8_patched/strace-x86_64") +
 		Dir.glob("bin/strace-4.8_patched/strace-i686") +
 		Dir.glob("chef/**/*") + Dir.glob("webapp/**/*") + 
-		Dir.glob("config.json")
+		Dir.glob("config.json") + Dir.glob("Gemfile")
 
   deps = File.read('Gemfile').scan(/^\s*gem\s*['"]([^'"]+)['"]/).uniq
   deps.each do |matched_dep|

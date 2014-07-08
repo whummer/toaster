@@ -4,7 +4,6 @@
 #
 require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
 
-require 'rubygems'
 require 'toaster/markup/markup_util'
 
 include Toaster

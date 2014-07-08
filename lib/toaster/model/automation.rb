@@ -2,8 +2,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-#require "toaster/model/automation_run"
-#require "toaster/model/task"
 require 'active_record'
 require "toaster/markup/markup_util"
 require "toaster/chef/chef_util"
@@ -86,6 +84,7 @@ module Toaster
       return nil
     end
 
+    # TODO: fix/revise
     def get_seen_attribute_values()
       map = {}
       attribute_names = self.class.get_attribute_array_names(automation_attributes,"")

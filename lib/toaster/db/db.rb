@@ -9,8 +9,6 @@ require "toaster/util/util"
 
 module Toaster
 
-  # TODO deprecated, remove?
-
   class DB
 
     class << self;

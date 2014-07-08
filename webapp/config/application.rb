@@ -8,7 +8,6 @@ require 'rails/all'
 # bug fix for ruby 1.9+
 require 'dl/import'
 DL::Importable = DL::Importer
-
 Bundler.require(:default, Rails.env)
 
 module Toaster

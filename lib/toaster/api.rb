@@ -61,7 +61,6 @@ module Toaster
     long_desc "Example: #{CMD} spawn lxc1 ubuntu1"
     def spawn(lxc_name, prototype_name)
 
-      distribution = "" # TODO remove ?
       prototype_name = "prototype_#{prototype_name}"
 
       prototype_dir = "/lxc/#{prototype_name}"
@@ -91,9 +90,6 @@ module Toaster
           "cont": {
             "name": "#{lxc_name}",
             "ip_address": "#{guest_ip}"
-          },
-          "bare_os": {
-            "distribution": "#{distribution}"
           }
         }
       }
@@ -143,15 +139,13 @@ module Toaster
     # Start an existing container
     desc "start NAME", "Start container with given NAME."
     def start(lxc_name)
-      distribution = "" # TODO remove?
-      start_stop_container("start", lxc_name, distribution)
+      start_stop_container("start", lxc_name)
     end
 
     # Stop an existing container
     desc "stop NAME", "Stop container with given NAME."
     def stop(lxc_name)
-      distribution = "" # TODO remove?
-      start_stop_container("stop", lxc_name, distribution)
+      start_stop_container("stop", lxc_name)
     end
 
     # run tests of a specific test suite
@@ -283,10 +277,12 @@ module Toaster
     #option :detached, :type => :boolean, :aliases => ["-d"]
     def web(detached=false)
       puts "INFO: Starting Web application on port 8080"
+      dir = File.join(File.dirname(__FILE__), "..", "..")
+      cmd = "cd \"#{dir}\" && webapp/bin/rails server thin"
       if detached
-        exec("screen -d -m ruby #{ROOT_DIR}/lib/toaster/web_ui.rb")
+        Kernel::exec("screen -d -m #{cmd}")
       else
-        exec("ruby #{ROOT_DIR}/lib/toaster/web_ui.rb")
+        Kernel::exec("#{cmd}")
       end
     end
 
@@ -345,12 +341,6 @@ module Toaster
       end
     end
 
-    def exec(command)
-      out = `#{command}`
-      puts out
-      return out
-    end
-
     }
 
     ####################
@@ -390,7 +380,7 @@ module Toaster
     def init_db_connection()
       Toaster::Config.init_db_connection()
     end
-    def start_stop_container(action, lxc_name, distribution="")
+    def start_stop_container(action, lxc_name)
 
       if !Dir.exist?("/lxc/#{lxc_name}")
         puts "ERROR: Container directory does not exist: /lxc/#{lxc_name}"
@@ -412,9 +402,6 @@ module Toaster
           "name": "#{lxc_name}",
           "ip_address": "#{guest_ip}",
           "proxy_ip": "#{proxy_ip}"
-        },
-        "bare_os": {
-          "distribution": "#{distribution}"
         }
       }
     }

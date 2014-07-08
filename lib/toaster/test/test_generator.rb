@@ -136,9 +136,8 @@ module Toaster
     end
 
     def gen_test_each_transition()
-      result = []
       # TODO
-      return result
+      raise "not implemented"
     end
 
     private

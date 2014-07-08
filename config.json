@@ -12,7 +12,8 @@
 		}
 	},
 	"cookbook_dirs": [
-		"/tmp/toaster_cookbooks/"
+		"/tmp/toaster_cookbooks/",
+		"/tmp/toaster_cookbooks/cookbooks"
 	]
 },
 

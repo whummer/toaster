@@ -4,7 +4,6 @@
 #
 
 $LOAD_PATH << File.join(File.dirname(__FILE__), "..")
-require 'rubygems'
 require 'sinatra/base'
 require 'toaster/util/config'
 require 'sinatra/reloader' # for reloading ruby files without restarting the server

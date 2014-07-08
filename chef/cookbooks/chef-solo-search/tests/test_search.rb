@@ -17,7 +17,6 @@
 # limitations under the License.
 #
 
-require "rubygems"
 require "test/unit"
 require "chef"
 

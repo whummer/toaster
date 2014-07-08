@@ -4,7 +4,6 @@
 #
 require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
 
-require 'rubygems'
 require 'toaster/util/config'
 require 'toaster/state/state_transition_graph'
 require 'toaster/test/test_suite'

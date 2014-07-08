@@ -34,7 +34,6 @@ set['ruby']['install_script']['ubuntu'] = <<-EOH
     # The following line fails under Ubuntu quantal..
     apt-get -y --force-yes install libc6-dev-amd6
     apt-get -y --force-yes install libeditline-dev build-essential
-	  # removed from list: package rubygems (automatically installs Ruby 1.8, which is undesired)
   	apt-get -y --force-yes install bison git autoconf automake patch make bzip2 zlib1g-dev sed libtool
   	apt-get -y --force-yes install less screen whiptail tar lsof unzip curl wget patch apt-utils make vim
   

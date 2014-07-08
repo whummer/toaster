@@ -4,8 +4,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require "active_record"
-
 include Toaster
 
 module Toaster

@@ -5,7 +5,6 @@
 #
 require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
 
-require 'rubygems'
 require 'toaster/util/combinatorial'
 
 include Toaster

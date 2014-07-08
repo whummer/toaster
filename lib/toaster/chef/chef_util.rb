@@ -4,7 +4,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require 'rubygems'
 require 'chef/log'
 require 'chef/run_context'
 require 'chef/client'
@@ -243,49 +242,49 @@ module Toaster
     end
 
     # TODO remove?
-    def self.download_cookbook_version1(name, version="latest", 
-          target_dir=@@DEFAULT_COOKBOOKS_DIR, quiet=false, num_attempts=2)
-
-      link = get_cookbook_download_link(name, version)
-
-      `mkdir -p '#{target_dir}'` if !File.exist?(target_dir)
-      tgz_file = File.join(target_dir, "#{name}.tgz")
-      tar_file = File.join(target_dir, "#{name}.tar")
-      File.delete(tar_file) if File.exist?(tar_file)
-      cookbook_dir = File.join(target_dir, name)
-      if @@create_backups
-        if File.exist?(cookbook_dir) && !File.exist?("#{cookbook_dir}.bak")
-          `mv #{cookbook_dir} #{cookbook_dir}.bak`
-        end
-      end
-      while num_attempts > 0
-        `rm -rf #{cookbook_dir}`
-        if !quiet
-          puts "DEBUG: Downloading '#{link}' to #{target_dir}"
-        end
-        error = false
-        `wget #{link} -O #{tgz_file} > /dev/null 2>&1`
-        error ||= $?.exitstatus != 0
-        out = `cd #{target_dir} && tar zxf #{name}.tgz`
-        # tar reports status code 2 in case of error...
-        if $?.exitstatus > 1
-          # sometimes, the files are in tar format, 
-          # not in tgz format - let's give it a try!
-          puts "DEBUG: 'cd #{target_dir} && tar zxf #{name}.tgz' returned exit code #{$?.exitstatus}, trying to extract as tar file..."
-          full_file = "#{target_dir}/#{name}.tgz"
-          puts "DEBUG: File #{full_file} exists: #{File.exist?(full_file)}}"
-          out += `cd #{target_dir} && cp #{name}.tgz #{name}.tar`
-          out += `cd #{target_dir} && tar xf #{name}.tar`
-        end
-        error ||= $?.exitstatus > 1
-        break if !error
-        puts "WARN: Could not download/extract #{link} to #{target_dir} . Remaining attempts: #{num_attempts}"
-        num_attempts -= 1
-        sleep 2
-      end
-
-      return out   
-    end
+#    def self.download_cookbook_version1(name, version="latest", 
+#          target_dir=@@DEFAULT_COOKBOOKS_DIR, quiet=false, num_attempts=2)
+#
+#      link = get_cookbook_download_link(name, version)
+#
+#      `mkdir -p '#{target_dir}'` if !File.exist?(target_dir)
+#      tgz_file = File.join(target_dir, "#{name}.tgz")
+#      tar_file = File.join(target_dir, "#{name}.tar")
+#      File.delete(tar_file) if File.exist?(tar_file)
+#      cookbook_dir = File.join(target_dir, name)
+#      if @@create_backups
+#        if File.exist?(cookbook_dir) && !File.exist?("#{cookbook_dir}.bak")
+#          `mv #{cookbook_dir} #{cookbook_dir}.bak`
+#        end
+#      end
+#      while num_attempts > 0
+#        `rm -rf #{cookbook_dir}`
+#        if !quiet
+#          puts "DEBUG: Downloading '#{link}' to #{target_dir}"
+#        end
+#        error = false
+#        `wget #{link} -O #{tgz_file} > /dev/null 2>&1`
+#        error ||= $?.exitstatus != 0
+#        out = `cd #{target_dir} && tar zxf #{name}.tgz`
+#        # tar reports status code 2 in case of error...
+#        if $?.exitstatus > 1
+#          # sometimes, the files are in tar format, 
+#          # not in tgz format - let's give it a try!
+#          puts "DEBUG: 'cd #{target_dir} && tar zxf #{name}.tgz' returned exit code #{$?.exitstatus}, trying to extract as tar file..."
+#          full_file = "#{target_dir}/#{name}.tgz"
+#          puts "DEBUG: File #{full_file} exists: #{File.exist?(full_file)}}"
+#          out += `cd #{target_dir} && cp #{name}.tgz #{name}.tar`
+#          out += `cd #{target_dir} && tar xf #{name}.tar`
+#        end
+#        error ||= $?.exitstatus > 1
+#        break if !error
+#        puts "WARN: Could not download/extract #{link} to #{target_dir} . Remaining attempts: #{num_attempts}"
+#        num_attempts -= 1
+#        sleep 2
+#      end
+#
+#      return out   
+#    end
 
     def self.download_cookbook_url(link, target_dir=@@DEFAULT_COOKBOOKS_DIR, 
         quiet=false, num_attempts=2)

@@ -1,11 +1,5 @@
 
 
-require 'bson'
-require 'json'
-require 'mongo'
-require 'cgi'
-require 'cgi/session'
-
 $tabs = [
   {"tests" => "Tests"},
   {"auto" => "Automations"},

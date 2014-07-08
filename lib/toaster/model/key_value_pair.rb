@@ -2,8 +2,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require "active_record"
-
 module Toaster
   class KeyValuePair < ActiveRecord::Base
     self.inheritance_column = :type

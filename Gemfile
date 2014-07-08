@@ -30,17 +30,21 @@ gem 'thin'
 # TOASTER DEPENDENCIES
 gem 'hashdiff' 		# diff hashes
 gem 'json'
+gem 'aquarium'
 gem 'jsonpath'
 gem 'open4'			# open processes with stdin/stdout
 gem 'chef'
 gem 'ohai'
 gem 'rspec'			# tests
 gem 'ruby_parser'	# parse Ruby code
+gem 'bson'
 gem 'bson_ext'
+gem 'logger'
+gem 'thor'			# CLI generator
 gem 'tidy'			# tidy XML library
 gem 'diffy'  		# comparing source files
 gem 'mysql2'  		# for DB access
 gem 'therubyracer'	# required by execjs
 gem 'railties'
-gem 'activesupport'
-gem 'bundler'
+gem 'activesupport', :require => "active_support"
+gem 'activerecord', :require => "active_record"

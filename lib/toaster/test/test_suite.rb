@@ -139,11 +139,10 @@ module Toaster
       DB.find_activerecord(TestSuite, criteria)
     end
 
-    # TODO
     def query_unfinished_tests 
       return TestCase.find(
-        {"automation_run_id" => nil, "test_suite_id" => id}, 
-        {"test_suite" => self}
+        :automation_run => nil,
+        :test_suite_id => id
       )
     end
 
