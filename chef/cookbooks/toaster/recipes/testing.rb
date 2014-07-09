@@ -39,14 +39,8 @@ FileUtils.mkpath(databags_dir) if !File.directory?(databags_dir)
 root_dir = File.join(File.dirname(__FILE__), "..","..","..","..")
 code_dir = File.join(root_dir, "lib")
 $:.unshift(code_dir)
-require "rubygems"
-require "bundler/setup"
-# bug fix for ruby 1.9+
-require 'dl/import'
-DL::Importable = DL::Importer
-ENV['BUNDLE_GEMFILE'] = File.join(root_dir, "Gemfile")
-Bundler.require(:default)
-
+# load gems and require files using Bundler
+require "toaster/util/load_bundler"
 
 package "gcc-c++" do
   action :install
