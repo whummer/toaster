@@ -23,6 +23,7 @@ sudo su -
 # prerequisites:
 apt-get -y install wget make bzip2 curl patch screen libgdbm-dev libyaml-dev libxml2-dev libxslt-dev libmysqlclient-dev libsqlite3-dev
 curl -L https://get.rvm.io | bash -s stable --ruby
+# (OR: install stable ruby versions from repo: apt-get install ruby ruby-dev)
 source /usr/local/rvm/scripts/rvm
 
 # install toaster gem:

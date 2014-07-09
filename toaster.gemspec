@@ -22,7 +22,13 @@ Gem::Specification.new do |s|
   deps = File.read('Gemfile').scan(/^\s*gem\s*['"]([^'"]+)['"]/).uniq
   deps.each do |matched_dep|
   	dep = matched_dep[0]
-    s.add_runtime_dependency dep
+    version = matched_dep[2]
+    if version && !version.empty?
+      s.add_runtime_dependency dep, version
+    else
+      s.add_runtime_dependency dep
+    end
+
   end
 
   # further project dependencies:

@@ -11,19 +11,6 @@ rescue Bundler::BundlerError => e
 end
 require 'rake'
 
-#require 'jeweler'
-#Jeweler::Tasks.new do |gem|
-#  gem.name = "cloud-toaster"
-#  gem.license = "Apache"
-#  gem.authors     = ["Waldemar Hummer"]
-#  gem.email       = ["hummer@infosys.tuwien.ac.at"]
-#  gem.homepage    = "https://github.com/whummer/toaster"
-#  gem.summary     = %q{Testing of infrastructure-as-code automations.}
-#  gem.description = %q{This gem provides tools for testing of infrastructure-as-code automations.}
-#  gem.files = FileList['lib/**/*.rb', '[A-Z]*', 'spec/**/*'].to_a
-#end
-#Jeweler::RubygemsDotOrgTasks.new
-
 require 'rspec/core'
 require 'rspec/core/rake_task'
 RSpec::Core::RakeTask.new(:spec) do |spec|
@@ -34,9 +21,6 @@ RSpec::Core::RakeTask.new(:rcov) do |spec|
   spec.pattern = 'test/spec/**/*_spec.rb'
   spec.rcov = true
 end
-
-#require 'cucumber/rake/task'
-#Cucumber::Rake::Task.new(:features)
 
 task :default => :spec
 

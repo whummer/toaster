@@ -139,7 +139,7 @@ module Toaster
           node_attributes["toaster"][key] = value
         end
       end
-      puts "DEBUG: Chef node attributes: #{node_attributes.inspect}"
+      puts "DEBUG: Chef automation #{chef_node}, node attributes: #{node_attributes.inspect}"
 
       run_chef(lxc, chef_node, node_attributes)
     end

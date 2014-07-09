@@ -301,12 +301,12 @@ module Toaster
       Toaster::ChefUtil.download_cookbook_url_in_lxc(lxc, script_url)
     end
 
-    def self.do_execute_test_chef(automation_name, script_url, recipes, chef_node_attrs,
+    def self.do_execute_test_chef(cookbook_name, script_url, recipes, chef_node_attrs,
         prototype_name, test_id=nil, destroy_container=true, print_output=false, num_repeats=0)
 
       # Create/prepare new LXC container. 
       lxc = LXC.new_container(prototype_name)
-      prepare_test_container_for_chef(lxc, script_url, automation_name, recipes)
+      prepare_test_container_for_chef(lxc, script_url, cookbook_name, recipes)
 
       recipes = [recipes] if !recipes.kind_of?(Array)
       automation_run = nil
@@ -319,14 +319,12 @@ module Toaster
           r.include?("recipe[") ? r : 
             r.include?("::") ? 
             "recipe[#{r}]" : 
-            "recipe[#{automation_name}::#{r}]" }
-        puts "run_list: #{run_list}" #TODO
-        puts "recipes: #{recipes}"
+            "recipe[#{cookbook_name}::#{r}]" }
 
         # run chef automation within LXC container
         key = "runChef " + Util.generate_short_uid()
         TimeStamp.add(nil, key)
-        output = LXC.run_chef_node(lxc, automation_name, run_list, chef_node_attrs)
+        output = LXC.run_chef_node(lxc, cookbook_name, run_list, chef_node_attrs)
         TimeStamp.add(nil, key)
 
         automation_run_id = nil
@@ -337,12 +335,12 @@ module Toaster
           puts "WARN: Could not extract automation run ID from output of previous test case run ('#{automation_run_id}')."
           # repeat the process
           (1..num_repeats).each do |iteration|
-            puts "INFO: Repeating test case '#{test_id}' - automation '#{automation_name}', run list '#{run_list}'"
+            puts "INFO: Repeating test case '#{test_id}' - cookbook '#{cookbook_name}', run list '#{run_list}'"
             # create/prepate new container
             lxc_new = LXC.new_container(prototype_name)
-            prepare_test_container_for_chef(lxc_new, script_url, automation_name, recipes)
+            prepare_test_container_for_chef(lxc_new, script_url, cookbook_name, recipes)
 
-            output = LXC.run_chef_node(lxc_new, automation_name, run_list, chef_node_attrs)
+            output = LXC.run_chef_node(lxc_new, cookbook_name, run_list, chef_node_attrs)
             output.scan(pattern) { |id| automation_run_id = id[0].strip }
             if destroy_container
               LXC.destroy_container(lxc_new)
@@ -367,7 +365,7 @@ module Toaster
             else
               auto = automation_run.automation
               if !auto.chef_run_list || auto.chef_run_list.empty?
-                chef_node = ChefUtil.extract_node_name(automation_name)
+                chef_node = ChefUtil.extract_node_name(cookbook_name)
                 auto.chef_run_list = [].concat(ChefUtil.prepare_run_list(chef_node, run_list))
                 auto.save
               end
