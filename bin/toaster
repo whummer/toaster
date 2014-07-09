@@ -15,7 +15,7 @@ $LOAD_PATH << File.join(ROOT_DIR, "lib")
 require "toaster/util/load_bundler"
 
 # requires
-require "toaster/api.rb"
+require "toaster/api"
 
 # util functions
 def install_chef()
