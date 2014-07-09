@@ -163,7 +163,7 @@ module Toaster
       c = TestCase.new(test_suite)
       test_suite.test_cases << c
       puts "INFO: Executing initial automation run; test case '#{c.uuid}'"
-      automation_run = execute_test(c, automation_name, destroy_container, print_output)
+      automation_run = execute_test(c, destroy_container, print_output)
       puts "DEBUG: Finished execution of initial automation run; test case '#{c.uuid}': #{automation_run}"
       return nil if !automation_run
       return automation_run.automation
@@ -194,8 +194,8 @@ module Toaster
     #
     # execute the provided test case
     #
-    def self.execute_test(test_case, automation_name=nil, 
-        destroy_container=true, print_output=false, num_attempts=2)
+    def self.execute_test(test_case, destroy_container=true, 
+        print_output=false, num_attempts=2)
 
       test_suite = nil
       test_id = nil
@@ -205,12 +205,8 @@ module Toaster
         test_suite = test_case.test_suite
         automation = test_suite.automation
         test_id = test_suite.uuid
-        automation_name = automation.get_short_name if !automation_name
         recipes = automation.recipes
       end
-
-      # generate automation attributes which represent this test case
-      chef_node_attrs = test_case.create_chef_node_attrs()
 
       sleep_time = 0
       self.semaphore.synchronize do
@@ -234,7 +230,12 @@ module Toaster
         begin
           automation_run = nil
           if automation.is_chef?
-            automation_run = TestRunner.do_execute_test_chef(automation_name,
+            # generate automation attributes which represent this test case
+            chef_node_attrs = test_case.create_chef_node_attrs()
+            # set cookbook if necessary
+            automation.cookbook = automation.get_short_name if !automation.cookbook
+            # now run test!
+            automation_run = TestRunner.do_execute_test_chef(automation.cookbook,
                 automation.script, recipes, chef_node_attrs, test_suite.lxc_prototype, 
                 test_id, destroy_container, print_output)
           else
@@ -314,8 +315,13 @@ module Toaster
 
       begin
         # create run list from list of recipe names
-        run_list = recipes.collect { |r| r.include?("recipe[") ? r :
-          "recipe[#{automation_name}::#{r}]" }
+        run_list = recipes.collect { |r| 
+          r.include?("recipe[") ? r : 
+            r.include?("::") ? 
+            "recipe[#{r}]" : 
+            "recipe[#{automation_name}::#{r}]" }
+        puts "run_list: #{run_list}" #TODO
+        puts "recipes: #{recipes}"
 
         # run chef automation within LXC container
         key = "runChef " + Util.generate_short_uid()

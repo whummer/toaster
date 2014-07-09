@@ -1,18 +1,10 @@
 
 $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "..")
 
+# load dependencies using bundler
+require "toaster/util/load_bundler"
 
-require 'rubygems'
-require 'bundler/setup'
-
-# bug fix for ruby 1.9+
-require 'dl/import'
-DL::Importable = DL::Importer
-
-# call bundler
-Bundler.require(:default)
-
-
+# requires
 require 'toaster/util/config'
 require 'toaster/util/docker'
 

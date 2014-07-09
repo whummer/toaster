@@ -1,14 +1,21 @@
 require File.expand_path('../boot', __FILE__)
 
+root_dir = File.join(File.dirname(__FILE__), "..", "..")
+$LOAD_PATH << File.join(root_dir, "lib")
+puts File.join(root_dir, "lib")
+# load dependencies using bundler
+require "toaster/util/load_bundler"
+
+
 require 'rails/all'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 
 # bug fix for ruby 1.9+
-require 'dl/import'
-DL::Importable = DL::Importer
-Bundler.require(:default, Rails.env)
+#require 'dl/import'
+#DL::Importable = DL::Importer
+#Bundler.require(:default, Rails.env)
 
 module Toaster
   class Application < Rails::Application

@@ -325,7 +325,7 @@ module Toaster
         if blocking
           print_output = true
           destroy_container = true
-          TestRunner.execute_test(test_case, nil, destroy_container, print_output)
+          TestRunner.execute_test(test_case, destroy_container, print_output)
         else
           puts "INFO: Scheduling test cases #{test_case_uuids} for test suite uuid '#{test_suite_uuid}'"
           if $test_runners[test_suite_uuid]

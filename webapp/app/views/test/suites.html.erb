@@ -152,7 +152,7 @@ end
 			<%= link_to 'details', "/execs/#{test_suite.automation.id}/#{test.automation_run.id}" %>
 		<% end %>
 		</td><td>
-		<% if !test.running_or_scheduled? %>
+		<% if !test.automation_run && !test.running_or_scheduled? %>
 			<%= link_to 'execute', "/test/exec/#{test.test_suite.id}/#{test.id}",
             :data => { :confirm => 'Are you sure you want to execute this test case?', :method => :post } %>
 		<% end %>
