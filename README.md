@@ -27,7 +27,7 @@ source /usr/local/rvm/scripts/rvm
 
 # install toaster gem:
 gem build toaster.gemspec
-gem install --no-ri --no-rdoc toaster-1.0.0.gem
+gem install --no-ri --no-rdoc cloud-toaster-*version*.gem
 
 # (OR: install directly using rubygems.org: gem install cloud-toaster)
 
