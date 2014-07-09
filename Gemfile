@@ -24,8 +24,9 @@ group :doc do
 end
 # Authentication module
 gem 'devise'
-# Get rid of some rails warnings
-gem 'thin'
+# Use thin server (faster; prints less rails output/warnings)
+gem 'thin', '~> 1.6'	# 14-07-08: default version 2.0.0.pre is incompatible
+                        # http://stackoverflow.com/questions/19579984/sinatra-server-wont-start-wrong-number-of-arguments
 
 # TOASTER DEPENDENCIES
 gem 'hashdiff' 		# diff hashes

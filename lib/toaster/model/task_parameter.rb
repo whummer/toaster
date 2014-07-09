@@ -9,8 +9,6 @@ require "toaster/model/key_value_pair"
 module Toaster
   class TaskParameter < KeyValuePair
 
-    #attr_accessor :uuid, :task, :key, :value, :type, :constraints
-
     @@id_attributes = ["task_id", "key", "value", "type"]
 
     def initialize(attr_hash)

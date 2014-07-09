@@ -113,7 +113,7 @@ class ScriptsController < ApplicationController
 	  				params[:cookbook], rec, params[:cookbook_version])[params[:cookbook]][rec]
 	  			recipe_info["resources"].each do |line,code|
             action = "__action__"
-            resource = "__action__"
+            resource = "__resource__"
 	  			  if recipe_info["resource_objs"][line]
 		  			   action = recipe_info["resource_objs"][line].action
 	  				   action = action.join(" , ") if action.kind_of?(Array)

@@ -161,9 +161,8 @@ module Toaster
       Util.write(solo_file, (<<-EOF
       cookbook_path [
         "#{File.expand_path(File.join(Dir.pwd, "cookbooks"))}",
-        "#{File.expand_path(Dir.pwd)}",
-        "#{File.join(root_dir, "chef", "cookbooks")}",
-        "#{@@DEFAULT_COOKBOOKS_DIR}"
+        "#{@@DEFAULT_COOKBOOKS_DIR}",
+        "#{File.join(root_dir, "chef", "cookbooks")}"
       ]
     EOF
     ), true)
@@ -809,7 +808,6 @@ module Toaster
             puts "WARN: Could not parse code file #{recipe_file} : #{line + 1}"
           else
             resource_obj = ResourceInspector.get_resource_from_source(code, attributes_source)
-            puts "received resource_obj: #{resource_obj}"
             result[cookbook][recipe_name]["resources"][line] = code
             result[cookbook][recipe_name]["resource_objs"][line] = resource_obj
             if !code.match(/not_if\s*/) && !code.match(/only_if\s*/)

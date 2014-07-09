@@ -47,7 +47,7 @@ module Toaster
         if task_or_sourcecode.kind_of?(Task)
           param = TaskParameter.new(task_or_sourcecode, param)
         else
-          param = TaskParameter.new(nil, param)
+          param = TaskParameter.new(:key => param)
         end
         exists = result.find { |p| (p.kind_of?(TaskParameter) ? p.key : p) == 
             (param.kind_of?(TaskParameter) ? param.key : param) }
@@ -191,11 +191,6 @@ module Toaster
               msg = ex.to_s
               puts msg if attempt <= 1
               puts ex.backtrace if attempt <= 1
-              #puts "----"
-              #puts resource_src
-              #puts "----"
-#              puts msg
-#              puts ex.backtrace
 
               if msg.match(/Cannot find a resource for/)
                 pkg_name = msg.gsub(/.*for ([a-z0-9A-Z_]+) on.*/, '\1').to_s

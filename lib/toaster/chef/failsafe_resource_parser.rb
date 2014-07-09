@@ -55,7 +55,6 @@ class ::Chef
 
   module DSL
     module Recipe
-      #alias_method :old_method_missing, :method_missing
       $old_mm = ::Chef::DSL::Recipe.instance_method(:method_missing)
       def attributes_proxy=(attrs)
         @attributes_proxy = attrs
@@ -70,18 +69,10 @@ class ::Chef
         begin
           super
         rescue Object => ex
-          puts "WARN: cannot run instance_eval on recipe: #{ex}"
+          puts "WARN: cannot run instance_eval on recipe: #{ex} - #{ex.backtrace.join("\n")}"
         end
       end
-#      def build_resource(type, name, created_at=nil, &resource_attrs_block)
-#        if !name
-#          name = "__unnamed__"
-#        end
-#        super(type, name, created_at, &resource_attrs_block)
-#      end
       def method_missing(method_symbol, *args, &block)
-        #puts "method_missing:"
-        puts method_symbol
         begin
 
           # code copied from chef/dsl/recipe.rb
@@ -104,8 +95,6 @@ class ::Chef
             end
           end
 
-          #old_method_missing(method_symbol, args, block)
-          #super
           if caller.size > 250
             puts $old_mm.object_id
             puts "--"
@@ -113,24 +102,9 @@ class ::Chef
             puts "-------"
             return nil
           end
-          # puts "--->"
-          # puts self
-          # $old_mm.bind(self).(method_symbol, *args, &block)
         rescue Object => ex
-#                      begin
-            #puts ex
-            #puts ex.backtrace.join(" \n")
             proxy = @attributes_proxy ? @attributes_proxy : $new_node
-            #puts "proxy (in new line):"
-            #puts proxy
-            #puts method_symbol
             proxy.send(method_symbol, *args, &block)
-#                      rescue Object => ex1
-#                        puts ex1
-#                        puts ex1.backtrace.join(" \n")
-#                        puts "----"
-#                        puts caller
-#                      end
         end
       end
     end

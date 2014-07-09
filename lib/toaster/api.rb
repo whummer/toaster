@@ -278,7 +278,7 @@ module Toaster
     def web(detached=false)
       puts "INFO: Starting Web application on port 8080"
       dir = File.join(File.dirname(__FILE__), "..", "..")
-      cmd = "cd \"#{dir}\" && webapp/bin/rails server thin"
+      cmd = "cd \"#{dir}\" && #{dir}/webapp/bin/rails server thin"
       if detached
         Kernel::exec("screen -d -m #{cmd}")
       else

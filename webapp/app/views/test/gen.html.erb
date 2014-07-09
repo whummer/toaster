@@ -119,7 +119,7 @@ begin
 		test_coverage = TestCoverage.new(test_suite, state_graph)
 	end
 
-	test_suites = Toaster::TestSuite.find()
+	test_suites = Toaster::TestSuite.find().to_a
 	test_suites.sort! { |x,y| (!x.last_test || !y.last_test) ? 0 : 
 		x.last_test.start_time.to_i <=> y.last_test.start_time.to_i }
 rescue => ex
