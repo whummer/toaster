@@ -110,7 +110,7 @@ h1 {
 }
 .panel:target, .pages > :last-child {
 	position: absolute;
-	left: 300px;
+	left: 250px;
 	opacity: 1;
 	-webkit-transition: opacity 200ms ease-in;
 	-moz-transition: opacity 200ms ease-in;

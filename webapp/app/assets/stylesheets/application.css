@@ -18,7 +18,18 @@
   font-weight: 400;
   src: local('Dosis Regular'), local('Dosis-Regular'), url("/assets/font.woff") format('woff');
 }
-
+div.messages div {
+	width: 90%; margin: auto;
+	padding: 7px;
+}
+div.messages .info, div.messages .notice {
+	border: 1px solid #F7DF8D;
+	background: #FAEDC1;
+}
+div.messages .warn, div.messages .alert, div.messages .error {
+	border: 1px solid #FBA3A3;
+	background: #FFD4D4;
+}
 .content table {
 	border: 1px solid #bbc;
 }

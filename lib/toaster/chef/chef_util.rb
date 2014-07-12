@@ -43,6 +43,17 @@ module Toaster
 
     @@DEFAULT_CHEF_DIR = "/tmp/toaster_cookbooks/"
     @@DEFAULT_COOKBOOKS_DIR = "#{@@DEFAULT_CHEF_DIR}/cookbooks/"
+    @@DEFAULT_OPSCODE_TMP_DIR = "/tmp/opscode_cookbooks/" # TODO merge with above?
+
+    def self.DEFAULT_CHEF_DIR
+      @@DEFAULT_CHEF_DIR
+    end
+    def self.DEFAULT_COOKBOOKS_DIR
+      @@DEFAULT_COOKBOOKS_DIR
+    end
+    def self.DEFAULT_OPSCODE_TMP_DIR
+      @@DEFAULT_OPSCODE_TMP_DIR
+    end
 
     def self.guess_cookbook_from_runlist(runlist)
       guess_cookbook_or_recipe_from_runlist(runlist, "cookbook")
@@ -591,7 +602,7 @@ module Toaster
     end
 
     def self.available_recipes_from_opscode(cookbook_name, version="latest", 
-        overwrite_downloads=false, target_dir="/tmp/opscode_cookbooks/")
+        overwrite_downloads=false, target_dir=@@DEFAULT_OPSCODE_TMP_DIR)
       if target_dir
         FileUtils.mkpath(target_dir) if !File.directory?(target_dir)
         # check if cookbook folder already exists
@@ -699,6 +710,12 @@ module Toaster
       url = "#{OPSCODE_API_URL}cookbooks/#{cookbook_name}/"
       json = `curl '#{url}' 2> /dev/null`
       details = MarkupUtil.parse_json(json.strip)
+      if !details['latest_version']
+        if details['error_code']
+          raise "WARN: Unable to fetch cookbook metadata from #{url}: " +
+              "#{details['error_code']} - #{details['error_messages']}"
+        end
+      end
       latest_version = details['latest_version'].gsub(/.*\/([^\/]+)/, '\1')
       cbook['_latest_version'] = latest_version
       versions = []
@@ -747,7 +764,7 @@ module Toaster
       fetch_cookbook_details(cookbook_name)["_versions"].uniq
     end
 
-    def self.download_all_from_opscode(target_dir="/tmp/opscode_cookbooks/", overwrite_downloads=false)
+    def self.download_all_from_opscode(target_dir=@@DEFAULT_OPSCODE_TMP_DIR, overwrite_downloads=false)
       target_dir = "/tmp/opscode_cookbooks/" if !target_dir
       if overwrite_downloads || !File.exist?(target_dir)
         `mkdir -p "#{target_dir}"`
@@ -760,7 +777,8 @@ module Toaster
       end
     end
   
-    def self.parse_resources(cookbook, recipe_name, version="latest", result = {}, cookbook_dir="/tmp/opscode_cookbooks/")
+    def self.parse_resources(cookbook, recipe_name, version="latest", 
+        result = {}, cookbook_dir=@@DEFAULT_OPSCODE_TMP_DIR)
       recipe_file = "#{cookbook_dir}/#{cookbook}/recipes/#{recipe_name}.rb"
       attributes_file = "#{cookbook_dir}/#{cookbook}/attributes/#{recipe_name}.rb"
       recipe_file_relative = "#{cookbook}/recipes/#{recipe_name}.rb"
@@ -822,7 +840,7 @@ module Toaster
       return result
     end
 
-    def self.parse_all_resources(recipe_pattern="default.rb", cookbook_dir="/tmp/opscode_cookbooks/")
+    def self.parse_all_resources(recipe_pattern="default.rb", cookbook_dir=@@DEFAULT_OPSCODE_TMP_DIR)
       # cookbook_name -> recipe_file -> line_no -> resource_code
       result = {}
       scanned_files = 0

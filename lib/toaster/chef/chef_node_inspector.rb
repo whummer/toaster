@@ -110,7 +110,8 @@ module Toaster
     public
     
     # * chef_paths - Chef dirs on local filesystem
-    def initialize(chef_paths, processor = nil, &error_reporting)
+    def initialize(chef_paths = [ChefUtil.DEFAULT_OPSCODE_TMP_DIR,
+      ChefUtil.DEFAULT_COOKBOOKS_DIR], processor = nil, &error_reporting)
       @chef_paths = chef_paths
       @processor = processor
       raise "Invalid 'error_reporting'" if error_reporting.nil?
@@ -125,10 +126,11 @@ module Toaster
         return {}
       end
       
-      default_file = get_filename("cookbooks/" + cookbook_name + "/attributes/#{recipe_name}.rb")
+      file_name = cookbook_name + "/attributes/#{recipe_name}.rb"
+      default_file = get_filename(file_name)
 
       if default_file.nil?
-        @error_reporting.call(Logger::INFO, "Unknown default file #{("cookbooks/" + cookbook_name + "/attributes/#{recipe_name}.rb").inspect}")
+        @error_reporting.call(Logger::INFO, "Unknown attribute file '#{file_name.inspect}'")
         return {}
       end
       
@@ -156,7 +158,7 @@ module Toaster
       end
       
       # No such file
-      @@logger.info "File not found '#{filename}'"
+      @@logger.info "File not found '#{filename}' in paths #{@chef_paths}"
       return nil
     end
 

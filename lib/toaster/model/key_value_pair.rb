@@ -37,7 +37,19 @@ module Toaster
       }
       return result
     end
-    
+
+    def self.flat_attributes_from_hash(hash, clazz=KeyValuePair)
+      result = []
+      return result if !hash
+      SystemState.get_flat_attributes(hash).each do |key,value|
+        result << clazz.new(
+          :key => key,
+          :value => value
+        )
+      end
+      return result
+    end
+
     def to_s
       return "#{self.class}(#{key}=#{value})"
     end

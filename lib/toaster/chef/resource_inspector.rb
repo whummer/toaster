@@ -45,7 +45,7 @@ module Toaster
         param = param[0].strip
         param = MarkupUtil.convert_array_to_dot_notation(param)
         if task_or_sourcecode.kind_of?(Task)
-          param = TaskParameter.new(task_or_sourcecode, param)
+          param = TaskParameter.new(:task => task_or_sourcecode, :key => param)
         else
           param = TaskParameter.new(:key => param)
         end

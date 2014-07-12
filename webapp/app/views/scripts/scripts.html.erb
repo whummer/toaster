@@ -58,7 +58,9 @@ globally_executed_tasks = row.get_globally_executed_tasks
 	<td><a href="/scripts/<%= row.id %>/tasks">tasks</a></td>
 	<td><a href="/scripts/<%= row.id %>/graph">graph</a></td>
 	<td><%= link_to 'delete', "/scripts/#{row.id}",
-            :confirm => 'Are you sure you want to delete the entire automation, including all test suites and executions?', :method => :delete %></td>
+            :data => {
+            	:confirm => 'Are you sure you want to delete the entire automation, including all test suites and executions?'
+            }, :method => :delete %></td>
 	<td><%= link_to 'edit', "/scripts/#{row.id}", :method => :get %></td>
 </tr>
 <% } %>
@@ -67,7 +69,7 @@ globally_executed_tasks = row.get_globally_executed_tasks
 
 <% if auto %>
 	<h3>Details of Automation '<%= auto.name %>'</h3>
-	<h4>Automation Parameters</h4>
+	<h4>Automation Attributes</h4>
 	<table class="tablesorter">
 	<thead>
 	<tr><th>#</th><th>Parameter</th><th>Default Value</th><th>Used Values</th></tr>

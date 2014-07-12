@@ -19,9 +19,6 @@
     session['db.host'] = Toaster::Config.get("db.host") if "#{session['db.host']}".empty?
     session['db.port'] = Toaster::Config.get("db.port") if "#{session['db.port']}".empty?
     %>
-	<p class="notice"><%= notice %></p>
-    <p class="alert"><%= alert %></p>
-
     <div class="container">
 		<div class="header">
 			<h1>ToASTER<sup>[beta]</sup></h1>
@@ -103,10 +100,26 @@
                 </ul>
 
 		<div class="pages">
-			<div id="quickstart" class="panel">
 			<div class="content">
+				<div class="messages">
+					<% flash.each do |name, msg| 
+						if msg.kind_of?(Array) && msg.size == 1
+							msg = msg[0]
+						end %>
+					<div class="<%= name %>">
+					<%	if msg.kind_of?(Array) %>
+						<ul>
+					<%		msg.each do |msg1| %>
+							<li><%= msg1 %></li>
+				    <% 		end %>
+				    	</ul>
+				    <%	else %>
+							<%= msg %>
+				    <% end %>
+				    </div>
+				    <% end %>
+				</div>
 				<%= yield %>
-			</div>
 			</div>
 		</div>
 	</div>

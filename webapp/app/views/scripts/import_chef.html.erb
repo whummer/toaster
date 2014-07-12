@@ -31,8 +31,12 @@ end
 if param("cookbook") != ""
 	cb_name = param("cookbook")
 	if !available_cookbook_versions[cb_name] || available_cookbook_versions[cb_name].empty?
+		begin 
 		available_cookbook_versions[cb_name] = 
 			ChefUtil.available_cookbook_versions(cb_name)
+		rescue => ex
+			flash[:warn] = ex
+		end
 	end
 end
 

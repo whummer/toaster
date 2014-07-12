@@ -1,6 +1,7 @@
 class ScriptsController < ApplicationController
 
-	require "toaster/model/automation"
+  require "toaster/model/automation"
+  require "toaster/model/key_value_pair"
   require "toaster/model/automation_attribute"
   require "toaster/chef/chef_util"
 
@@ -14,9 +15,11 @@ class ScriptsController < ApplicationController
   		if request.post? || request.patch?
   			if params[:add_param]
   				auto = cur_auto
+          set_auto_values(auto)
   				auto.automation_attributes << Toaster::AutomationAttribute.new(
 			  			:key => "", :value => "")
   			elsif params[:del_param]
+          set_auto_values(auto)
 	  			params[:auto][:attr].each do |index,attr|
 	  				if params[:del_param][index]
 	  					to_delete = cur_auto.automation_attributes[index.to_i - 1]
@@ -26,9 +29,11 @@ class ScriptsController < ApplicationController
 	  			end
   			elsif params[:add_ignoreprop]
   				auto = cur_auto
+          set_auto_values(auto)
   				auto.ignore_properties << Toaster::IgnoreProperty.new(
 			  			:key => "", :value => "")
   			elsif params[:del_ignoreprop]
+          set_auto_values(auto)
 	  			params[:auto][:ignoreprop].each do |index,attr|
 	  				if params[:del_ignoreprop][index]
 	  					to_delete = cur_auto.ignore_properties[index.to_i - 1]
@@ -38,13 +43,16 @@ class ScriptsController < ApplicationController
 	  			end
   			elsif params[:add_additionalprop]
   				auto = cur_auto
+          set_auto_values(auto)
   				auto.additional_properties << Toaster::AdditionalProperty.new(
 			  			:key => "", :value => "")
   			elsif params[:del_additionalprop]
+          auto = cur_auto
+          set_auto_values(auto)
 	  			params[:auto][:additionalprop].each do |index,attr|
 	  				if params[:del_additionalprop][index]
-	  					to_delete = cur_auto.additional_properties[index.to_i - 1]
-	  					cur_auto.additional_properties.destroy(to_delete) if to_delete
+	  					to_delete = auto.additional_properties[index.to_i - 1]
+	  					auto.additional_properties.destroy(to_delete) if to_delete
 	  					break
 	  				end
 	  			end
@@ -57,33 +65,37 @@ class ScriptsController < ApplicationController
 			  	else
 			  		auto = cur_auto
 			  	end
-	  			auto.name = params[:auto][:name]
-	  			auto.language = params[:auto][:language]
-	  			auto.visibility = params[:auto][:visibility]
-	  			auto.user = current_user
-	  			auto.script = params[:auto][:script]
-	  			if params[:auto][:attr]
-		  			params[:auto][:attr].each do |index,attr|
-		  				auto.automation_attributes[index.to_i - 1].key = attr["key"]
-		  				auto.automation_attributes[index.to_i - 1].value = attr["value"]
-		  			end
-		  		end
-		  		if params[:auto][:ignoreprop]
-		  			params[:auto][:ignoreprop].each do |index,prop|
-		  				auto.ignore_properties[index.to_i - 1].key = prop["key"]
-		  			end
-		  		end
-		  		if params[:auto][:additionalprop]
-		  			params[:auto][:additionalprop].each do |index,prop|
-		  				auto.additional_properties[index.to_i - 1].key = prop["key"]
-		  			end
-		  		end
+	  			set_auto_values(auto)
 				auto.save
 		  		redirect_to scripts_url()
 		  	end
 		else
 			# TODO
 		end
+  	end
+
+  	def set_auto_values(auto)
+      auto.name = params[:auto][:name]
+      auto.language = params[:auto][:language]
+      auto.visibility = params[:auto][:visibility]
+      auto.user = current_user
+      auto.script = params[:auto][:script]
+      if params[:auto][:attr]
+        params[:auto][:attr].each do |index,attr|
+          auto.automation_attributes[index.to_i - 1].key = attr["key"]
+          auto.automation_attributes[index.to_i - 1].value = attr["value"]
+        end
+      end
+      if params[:auto][:ignoreprop]
+        params[:auto][:ignoreprop].each do |index,prop|
+          auto.ignore_properties[index.to_i - 1].key = prop["key"]
+        end
+      end
+      if params[:auto][:additionalprop]
+        params[:auto][:additionalprop].each do |index,prop|
+          auto.additional_properties[index.to_i - 1].key = prop["key"]
+        end
+      end
   	end
 
   	def delete
@@ -107,44 +119,71 @@ class ScriptsController < ApplicationController
   				:user => current_user,
   				:script => script_file
   			)
-  			#puts "params[:recipes].split(/[\s,;]+/) #{params[:recipes].split(/[\s,;]+/)}"
+  			# get recipes
   			params[:recipes].split(/[\s,;]+/).each do |rec|
-	  			recipe_info = ChefUtil.parse_resources(
-	  				params[:cookbook], rec, params[:cookbook_version])[params[:cookbook]][rec]
-	  			recipe_info["resources"].each do |line,code|
-            action = "__action__"
-            resource = "__resource__"
-	  			  if recipe_info["resource_objs"][line]
-		  			   action = recipe_info["resource_objs"][line].action
-	  				   action = action.join(" , ") if action.kind_of?(Array)
-	  				   resource = recipe_info["resource_objs"][line].resource_name
-  	        end
-	  				task = Task.new(
-		  				:automation => a,
-		  				:sourceline => line,
-		  				:sourcecode => code,
-		  				:sourcefile => recipe_info["file"],
-		  				:resource => resource,
-		  				:action => action
-		  			)
-		  			task.save
-		  			a.tasks << task
-	  			end
-	  		end
-  			a.save
-		  	redirect_to scripts_url()
+  			  begin
+  	  			recipe_info = ChefUtil.parse_resources(
+  	  				params[:cookbook], rec, params[:cookbook_version])[params[:cookbook]][rec]
+            # get recipe parameters
+  		      insp = ChefNodeInspector.new { |level, msg|
+              if flash[:notice] 
+                flash[:notice].concat(msg)
+              else
+                flash[:notice] = [msg]
+              end 
+            }
+  		      attr_hash = insp.get_defaults(params[:cookbook], rec)
+  	        a.automation_attributes.concat(
+  	          KeyValuePair.flat_attributes_from_hash(
+  	            attr_hash, AutomationAttribute))
+
+  	  			recipe_info["resources"].each do |line,code|
+              action = "__action__"
+              resource = "__resource__"
+  	  			  if recipe_info["resource_objs"][line]
+  		  			   action = recipe_info["resource_objs"][line].action
+  	  				   action = action.join(" , ") if action.kind_of?(Array)
+  	  				   resource = recipe_info["resource_objs"][line].resource_name
+    	        end
+  	  				task = Task.new(
+  		  				:automation => a,
+  		  				:sourceline => line,
+  		  				:sourcecode => code,
+  		  				:sourcefile => recipe_info["file"],
+  		  				:resource => resource,
+  		  				:action => action
+  		  			)
+              # get task parameters
+              task.task_parameters = ResourceInspector.get_accessed_parameters(task)
+              # save
+  		  			task.save
+  		  			a.tasks << task
+  	  			end
+          rescue Object => ex
+              msg = "WARN: Unable to import Chef cookbook '#{params[:cookbook]}', " +
+                "version '#{params[:cookbook_version]}', recipe '#{rec}': #{ex}"
+              flash[:alert] = msg
+              puts msg
+              puts ex.backtrace.join("\n")
+          end
+          # save
+          a.save
+        end
+        redirect_to scripts_url()
   		end
   	end
 
   	def cur_auto_reset()
-		session[:auto_cur] = nil
+      session[:auto_cur] = nil
   	end
 
   	def cur_auto()
   		ScriptsController.cur_auto(session, params)
   	end
   	def self.cur_auto(session, params)
-  		if !session[:auto_cur] || "#{session[:auto_cur].id}" != params[:auto_id]
+  		if !session[:auto_cur] || (
+          session[:auto_cur].id && "#{session[:auto_cur].id}" != params[:auto_id])
+
   			session[:auto_cur] = nil
   			if params[:auto_id] == "0"
 				session[:auto_cur] = Toaster::Automation.new(

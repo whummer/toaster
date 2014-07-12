@@ -9,14 +9,7 @@ require "toaster/model/key_value_pair"
 module Toaster
   class TaskParameter < KeyValuePair
 
-    @@id_attributes = ["task_id", "key", "value", "type"]
-
-    def initialize(attr_hash)
-      if !attr_hash[:uuid]
-        attr_hash[:uuid] = Util.generate_short_uid()
-      end
-      super(attr_hash)
-    end
+    belongs_to :task
 
     def self.find(criteria={}, preset_fields={})
       criteria["db_type"] = "task_parameter" if !criteria["db_type"]
@@ -30,22 +23,22 @@ module Toaster
       return objs
     end
 
-    def self.load(uuid_or_task, key = nil, value = nil, type = nil, constraints = [])
-      param = TaskParameter.new(nil, nil)
-      hash = {}
-      if !uuid_or_task.kind_of?(Task)
-        uuid = uuid_or_task
-        return nil if !uuid
-        criteria = {"uuid" => uuid, "db_type" => "task_parameter"}
-        hash = DB.instance.find_one(criteria)
-      else
-        task = uuid_or_task
-        param = TaskParameter.new(task, key, value, type, constraints)
-        hash = DB.instance.get_or_insert(param.to_hash(), @@id_attributes)
-      end
-      param = DB.apply_values(param, hash)
-      return param
-    end
+#    def self.load(uuid_or_task, key = nil, value = nil, type = nil, constraints = [])
+#      param = TaskParameter.new(nil, nil)
+#      hash = {}
+#      if !uuid_or_task.kind_of?(Task)
+#        uuid = uuid_or_task
+#        return nil if !uuid
+#        criteria = {"uuid" => uuid, "db_type" => "task_parameter"}
+#        hash = DB.instance.find_one(criteria)
+#      else
+#        task = uuid_or_task
+#        param = TaskParameter.new(task, key, value, type, constraints)
+#        hash = DB.instance.get_or_insert(param.to_hash(), @@id_attributes)
+#      end
+#      param = DB.apply_values(param, hash)
+#      return param
+#    end
 
     def hash
       h = @key.hash

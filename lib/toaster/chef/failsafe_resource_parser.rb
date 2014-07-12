@@ -70,6 +70,7 @@ class ::Chef
           super
         rescue Object => ex
           puts "WARN: cannot run instance_eval on recipe: #{ex} - #{ex.backtrace.join("\n")}"
+          puts "WARN: eval string was: #{string}"
         end
       end
       def method_missing(method_symbol, *args, &block)
