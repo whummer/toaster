@@ -159,6 +159,8 @@ class ScriptsController < ApplicationController
   		  			task.save
   		  			a.tasks << task
   	  			end
+            # save
+            a.save
           rescue Object => ex
               msg = "WARN: Unable to import Chef cookbook '#{params[:cookbook]}', " +
                 "version '#{params[:cookbook_version]}', recipe '#{rec}': #{ex}"
@@ -166,8 +168,6 @@ class ScriptsController < ApplicationController
               puts msg
               puts ex.backtrace.join("\n")
           end
-          # save
-          a.save
         end
         redirect_to scripts_url()
   		end
