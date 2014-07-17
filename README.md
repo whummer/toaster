@@ -27,7 +27,7 @@ curl -L https://get.rvm.io | bash -s stable --ruby
 source /usr/local/rvm/scripts/rvm
 
 # install toaster gem:
-gem build toaster.gemspec
+gem build cloud-toaster.gemspec
 gem install --no-ri --no-rdoc cloud-toaster-*version*.gem
 
 # (OR: install directly using rubygems.org: gem install cloud-toaster)
