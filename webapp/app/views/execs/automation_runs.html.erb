@@ -18,19 +18,21 @@ end
 <div>
 <h1>Automation Runs</h1>
 
+<p>
 <ul><li>
-<% if auto %>
+<% if auto && auto.id %>
 	Displaying runs of automation <b>'<%= auto.name %>'</b>. 
 	(<a href="/execs">show all</a>)
 <% else %>
 	Displaying runs of all automations. Use the 'Automation' section to filter the list for a specific automation.
 <% end %>
 </li></ul>
+</p>
 
 <table class="tablesorter">
 <thead>
 <tr><th>#</th><th>UUID</th><th>Automation</th><th>Start Time</th><!-- <th>Machine ID</th> -->
-<th>Task Executions</th><th>Duration</th><th>Success</th><th colspan="2">Actions</th></tr>
+<th>Task Executions</th><th>Duration</th><th>Success</th><th colspan="3">Actions</th></tr>
 </thead>
 <tbody>
 <% runs.each_with_index { |row,id| 
@@ -52,6 +54,11 @@ param_hash = {"run" => param_run}.merge(row.automation ? {'auto' => row.automati
 	<td class="center"><%= row.success ? "true" : "false" %></td>
 	<td><% if row.automation %><a href="/execs/<%= row.automation.id %>/<%= row.id %>">details</a><% end %></nobr></td>
 	<td><% if row.automation %><a href="/execs/<%= row.automation.id %>/<%= row.id %>/tasks">executed tasks</a><% end %></nobr></td>
+	<td><%= if row.automation
+			link_to 'delete', "/execs/#{row.automation.id}/#{row.id}",
+            :data => { :confirm => 'Confirm: Delete this automation run, including all task executions?'
+            }, :method => :delete
+            end %></td>
 </tr>
 <% } %>
 </tbody>

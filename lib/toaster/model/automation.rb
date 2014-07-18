@@ -43,6 +43,19 @@ module Toaster
       return tasks
     end
 
+    # collect the executed state transitions of
+    # all tasks contained in this automation
+    def global_state_transitions()
+      result = Set.new
+      get_globally_executed_tasks().each do |task|
+        result += task.global_state_transitions
+      end
+      return result
+    end
+    def num_global_state_transitions()
+      global_state_transitions().size
+    end
+
     # 
     # return a map AutomationRun -> (list of TaskExecution)
     #
@@ -54,6 +67,11 @@ module Toaster
         result[exe.automation_run] << exe
       end
       return result
+    end
+
+    def get_all_test_cases()
+      TestCase.joins(:automation_run => :automation).where(
+        "automations.id = #{self.id}")
     end
 
     def is_chef?

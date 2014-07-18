@@ -10,12 +10,12 @@ convs = {}
 begin
 
 show_all_link = false
-automation = nil
-if param('task') != ""
+automation = cur_auto
+if param('task_id') != ""
 	tasks = [get_task_for_param()]
 	show_all_link = true
-elsif param('auto') != ""
-	automation = get_automation_for_param()
+end
+if automation
 	tasks = automation.get_globally_executed_tasks() if automation
 end
 
@@ -31,9 +31,10 @@ end
 end
 
 %>
-<h2>Convergence of System State</h2>
+<h1>Convergence of System State</h1>
 <form action="#" method="post">
 <% if tasks %>
+	Selected automation UUID: <%= automation.uuid %>
 	<% if show_all_link %>
 		<ul>
 		<li>Currently only displaying convergence of a single task. <a href="<%= l('task' => '') %>">Show All Tasks</a>
@@ -41,7 +42,7 @@ end
 		</ul>
 	<% end %>
 	
-	<h3>Track State Properties</h3>
+	<h2>Track State Properties</h2>
 	Enter state property name patterns (one per line):<br/>
 	<textarea rows="3" cols="40" name="trackProps"><%= 
 		param("trackProps") != "" ? param("trackProps") : ".*"
@@ -60,8 +61,10 @@ end
 				props << prop
 			end
 			exes = []
-			traces[run][props[0]].collect do |tuple| 
-				exes << tuple[0]
+			if traces[run][props[0]]
+				traces[run][props[0]].collect do |tuple| 
+					exes << tuple[0]
+				end
 			end
 			%>
 			<table class="tablesorter"><thead><tr>
@@ -132,7 +135,7 @@ end
 	end
 	%>
 
-	<h3>State Convergence By Task</h3>
+	<h2>State Convergence By Task</h2>
 	<% tasks.each do |task| %>
 		<h3>State Convergence of Task '<a href="<%= l('t'=>'tasks', 'task'=>task.id) %>"><%= task.name %></a>'</h3>
 		<% 	task_convs = convs[task] ? convs[task] : []

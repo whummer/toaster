@@ -51,7 +51,7 @@ module Toaster
         SystemState.remove_ignore_props!(p, ignore_props)
       end
       # remove ignored properties from state changes
-      SystemState.remove_ignore_props!(ch, ignore_props)
+      SystemState.remove_ignore_props!(ch, ignore_props.collect { |ip| ip.key } )
 
       return convergence_for_prop_changes(ch, ps, prop_value_percentage_threshold)
     end
@@ -150,7 +150,7 @@ module Toaster
       # build tmp result hash
       task_execs.each do |run,exes|
         tmp[run] = {}
-        exes.unshift(TaskExecution.new(nil,nil,nil,[],"start"))
+        exes.unshift(TaskExecution.new(:uuid => "start"))
         exes.each_with_index do |exe,idx|
           if exe.kind_of?(TaskExecution)
             pre_state = MarkupUtil.clone(exe.state_before) || {}

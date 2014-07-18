@@ -11,8 +11,14 @@ include Toaster
 module Toaster
   class Idempotence
 
-    def initialize(test_suite)
-      @test_suite = test_suite
+    def initialize(test_suite_or_automation)
+      if test_suite_or_automation.kind_of?(Automation)
+        @automation = test_suite_or_automation
+        @test_cases = @automation.get_all_test_cases
+      else
+        @automation = test_suite_or_automation.automation
+        @test_cases = test_suite_or_automation.test_cases
+      end
       @repeated_task_execs = nil
       @non_idempotent_tasks_details = nil
       @non_idempotent_taskseqs_details = nil
@@ -154,7 +160,7 @@ module Toaster
       return @repeated_task_execs if @repeated_task_execs
       result = {}
       tasks = {}
-      @test_suite.test_cases.each do |tc|
+      @test_cases.each do |tc|
         if tc.automation_run
           tc.repeat_task_uuids.each do |rt|
             #puts "#{rt.inspect}"
@@ -165,11 +171,11 @@ module Toaster
             rt.each do |repeated_task|
               #execs = tc.task_executions(repeated_task)
               #tasks[repeated_task] = Task.find("uuid"=>repeated_task)[0] if !tasks[repeated_task]
-              tasks[repeated_task] = @test_suite.automation.get_task(repeated_task, true)
+              tasks[repeated_task] = @automation.get_task(repeated_task, true)
               #puts "===> #{tasks[repeated_task]}"
               execs = TaskExecution.find(
-                  {"task_id"=>tasks[repeated_task].id, "automation_run_id"=>tc.automation_run.id},
-                  {"task" => tasks[repeated_task], "automation_run" => tc.automation_run}
+                  :task_id => tasks[repeated_task].id, 
+                  :automation_run_id => tc.automation_run.id
               )
               execs.sort! { |a,b|
                 a.start_time <=> b.start_time

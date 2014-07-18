@@ -1,7 +1,8 @@
 function initTree(containerID, jsonData) {
 	$("#" + containerID).jstree({
 		"plugins" : [ 
-			"themes","json_data","ui","crrm","cookies","dnd","search","types","hotkeys","contextmenu" 
+			//"themes",
+			"json_data","ui","crrm","cookies","dnd","search","types","hotkeys","contextmenu" 
 		],
 		"json_data" : { 
 			"data" : prepareTreeNode(jsonData)

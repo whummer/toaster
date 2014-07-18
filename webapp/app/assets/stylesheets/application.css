@@ -58,3 +58,6 @@ div.messages .warn, div.messages .alert, div.messages .error {
 	opacity: 0.7;
 	-moz-opacity: 0.7;
 }
+tr.active td {
+	font-weight: bold;
+}

@@ -5,7 +5,6 @@ require "toaster/test/test_suite"
 
 $session = session
 
-message = nil
 backups = []
 testresult_collections = []
 
@@ -22,11 +21,13 @@ if param('saveSettings') != ""
 	$session['db.name'] = param('dbDB') if param('dbDB') != ""
 	$session['service.host'] = param('serviceHost')
 	$session['service.port'] = param('servicePort')
-	message = "Settings successfully applied."
+	msg = "Settings successfully applied."
+	flash[:notice] ? (flash[:notice] << msg) : flash[:notice] = [msg]
 	if connection_changed
 		#load_cache()
 		Toaster::Cache.clear()
-		message += " Cache has been cleaned due to changes in connection settings."
+		msg = "Cache has been cleaned due to changes in connection settings."
+		flash[:notice] ? (flash[:notice] << msg) : flash[:notice] = [msg]
 	end
 end
 
@@ -34,9 +35,6 @@ end
 <form action="" method="post">
 <input type="hidden" name="sessionID" value="<%= $session['session_id'] %>"/>
 <h2>Settings</h2>
-<% if message %>
-<div class="info"><%= message %></div>
-<% end %>
 
 <% if !Toaster::Config.get("testing.hosted_mode") %>
 <h3>Test Agent Service</h3>

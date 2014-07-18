@@ -66,7 +66,7 @@
                         <li><a href="/execs/0/tasks">Task Executions</a></li></ul>
                     </li>
                     <li class="<%= request.path.match(/^\/analysis/) ? "active" : "inactive" %>">
-                        <a href="/analysis/conv">
+                        <a href="/analysis/index">
                             <span class="ca-icon">L</span>
                             <div class="ca-content">
                                 <h2 class="ca-main">Analysis</h2>
@@ -87,14 +87,14 @@
                         <ul><li><a href="/util/chef">Chef</a></li></ul>
                     </li>
                     <li class="<%= request.path.match(/^\/settings/) ? "active" : "inactive" %>">
-                        <a href="/settings/index">
+                        <a href="/settings/config">
                             <span class="ca-icon">K</span>
                             <div class="ca-content">
                                 <h2 class="ca-main">Settings</h2>
                                 <h3 class="ca-sub">Adjust configurations</h3>
                             </div>
                         </a>
-                        <ul><li><a href="/settings/index">Configuration</a></li>
+                        <ul><li><a href="/settings/config">Configuration</a></li>
                         <li><a href="/settings/containers">Containers</a></li></ul>
                     </li>
                 </ul>

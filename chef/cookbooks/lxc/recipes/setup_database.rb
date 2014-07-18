@@ -3,6 +3,7 @@ if platform_family?("debian")
 
   root_dir = File.join(File.dirname(__FILE__), "..","..","..","..")
   $LOAD_PATH << File.join(root_dir, "lib")
+  require 'toaster/util/config'
 
   cfg_db_pass = Toaster::Config.get("db.password")
   cfg_db_pass = "root" if "#{cfg_db_pass}".empty?

@@ -68,7 +68,8 @@ module Toaster
     end
 
     def self.load_all_for_automation(auto)
-      return joins(:automation_run).where(:automation_run => {:automation_id => auto.id})
+      return joins(:automation_run).where(
+        :automation_runs => {:automation_id => auto.id})
     end
 
   end

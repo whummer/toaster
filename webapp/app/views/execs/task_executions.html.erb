@@ -8,16 +8,16 @@ run = cur_run()
 show_toaster_tasks = true # TODO
 
 %>
-<h2>Task Executions</h2>
+<h1>Task Executions</h1>
 <% if task 
 global_executions = task.global_executions
 %>
-	<h3>Details of Task '<%= task.name %>'</h3>
+	<h2>Details of Task '<%= task.name %>'</h2>
 	<table>
 		<tr><td>Number of executions:</td><td><%= global_executions.size %></td></tr>
 	</table>
 
-	<h4>Executions</h4>
+	<h3>Executions</h3>
 	<table class="properties tablesorter">
 	<thead>
 	<tr><th>#</th><th>Automation Run</th><th>Start Time</th><th>Duration</th><th>Success</th><th>Property<br/>Changes</th><th>Actions</th></tr>
@@ -30,25 +30,29 @@ global_executions = task.global_executions
 	%>
 	<tr class="<%= exe.success ? 'success' : 'error' %><%= active ? ' active' : '' %>">
 		<td><%= index+1 %></td>
-		<td><a href="/execs/<%= run.automation.id %>/<%= run.id %>"><%= run.uuid %></a></td>
+		<td><% if run.automation %>
+		<a href="/execs/<%= run.automation.id %>/<%= run.id %>"><%= run.uuid %></a>
+		<% end %></td>
 		<td><%= format_time(exe.start_time) %></td>
 		<td><%= to_minutes(exe.end_time.to_i - exe.start_time) %></td>
 		<td><%= exe.success %></td>
 		<td><%= exe.state_changes.size %></td>
-		<td><a href="<%= l('exe' => param_exe) %>"><%= active ? "hide" : "show" %> details</a></td>
+		<td><% if run.automation %>
+		<a href="/execs/<%= run.automation.id %>/tasks/<%= task.id %>/<%= exe.id %>">details</a>
+		<% end %></td>
 	</tr>
 	<% end %>
 	</tbody>
 	</table>
 
 	<% if exec %>
-	<h4>Execution Details</h4>
+	<h3>Execution Details</h3>
 		<% if exec.output && exec.output.strip != "" %>
-		<h5>Script Output:</h5>
+		<h4>Script Output:</h4>
 		<pre style="overflow: auto; height: 100px"><%= exec.output %></pre>
 		<% end %>
 		<% if !exec.success && exec.error_details %>
-		<h5>Error Details:</h5>
+		<h4>Error Details:</h4>
 		<pre style="overflow: auto; height: 250px"><%= exec.error_details %></pre>
 		<% end %>
 		<script type="text/javascript" src="/assets/jquery.jstree.js"></script>
@@ -57,11 +61,10 @@ global_executions = task.global_executions
 		<script type="text/javascript" src="/assets/jstree.util.js"></script>
 		<% if exec.state_before %>
 		<div class="stateFrame">
-			<h5>Pre-State:</h5>
+			<h4>Pre-State:</h4>
 			<div id="preState"></div>
 		</div>
 		<script type="text/javascript">
-			<%= puts exec.state_before.to_s %>
 			var jsonData = <%= exec.state_before.to_json.html_safe %>
 			initTree("preState", jsonData);
 		</script>
@@ -69,7 +72,7 @@ global_executions = task.global_executions
 		<div style="width: 5%; float: left;">&nbsp;</div>
 		<% if exec.state_after %>
 		<div class="stateFrame">
-			<h5>Post-State:</h5>
+			<h4>Post-State:</h4>
 			<div id="postState"></div>
 		</div>
 		<script type="text/javascript">
@@ -80,7 +83,7 @@ global_executions = task.global_executions
 		<div style="clear: both"></div>
 	<% end %>
 
-	<h4>State changes</h4>
+	<h3>State changes</h3>
 	<table id="properties" class="tablesorter">
 		<thead>
 		<tr><th>Action</th><th>Property</th><th colspan="3">Value(s)</th><th>Occurrences</th><th>Occurrences (%)</th></tr>
@@ -105,7 +108,7 @@ global_executions = task.global_executions
 	</table>
 
 <% elsif run %>
-
+<p>Automation run UUID: <%= run.uuid %></p>
 <table class="tablesorter" id="tablesorter">
 	<thead>
 	<tr><th>#</th><th>ID</th>
@@ -140,7 +143,7 @@ global_executions = task.global_executions
 			<td><%= row.sourcefile %></td>
 			<td><%= row.sourceline %></td>
 			<td><%= exec.success %></td>
-			<td><a href="/execs/<%= run.automation.id %>/tasks/<%= exec.id %>/<%= run.id %>">details</a></td>
+			<td><a href="/execs/<%= run.automation.id %>/tasks/<%= exec.task.id %>/<%= exec.id %>">details</a></td>
 		</tr>
 	<% end
 	} %>

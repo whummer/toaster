@@ -1,0 +1,117 @@
+<h1>Test Analysis</h1>
+<h2>Automations</h2>
+<%
+
+require 'toaster/state/convergence'
+require 'toaster/util/util'
+require 'toaster/model/automation'
+
+autos = Toaster::Automation.find()
+auto = cur_auto
+tasks = []
+suite = suite
+show_toaster_tasks = false
+if cur_suite
+	auto = suite.automation
+end
+if auto
+	tasks = auto.tasks.to_a
+end
+
+%>
+
+<table class="tablesorter">
+<thead>
+<tr>
+	<th>#</th><th>UUID</th><th>Name</th><th>Type</th><th>Tasks</th>
+	<th>Attributes</th><th>Runs</th><th>State Changes</th><th colspan="6">Actions</th></tr>
+</thead>
+<tbody>
+<% autos.each_with_index { |row,id| 
+t = Time.now.to_i
+active = !auto ? false : row.id == auto.id
+param_auto = active ? "" : row.id
+param_hash = {"auto" => param_auto, "run" => "", "task" => "", "exe" => ""}
+num_runs = row.get_num_runs	
+globally_executed_tasks = row.get_globally_executed_tasks
+prop_changes = row.num_global_state_transitions
+%>
+<tr class="<%= active ? "active" : "" %>">
+	<td><%= id+1 %></td>
+	<td><a href="/scripts/<%= row.id %>/details"><%= row.uuid %></a></td>
+	<td><%= row.name %></td>
+	<td><%= row.language %></td>
+	<td><%= globally_executed_tasks.size %></td>
+	<td><%= row.automation_attributes.size %></td>
+	<td><%= num_runs %></td>
+	<td><%= link_to "#{prop_changes}", "/execs/#{row.id}/tasks" %></td>
+	<td><%= link_to 'details', "/analysis/index/#{row.id}" %></td>
+	<td><%= link_to 'convergence', "/analysis/conv/auto/#{row.id}" %></td>
+	<td><%= link_to 'idempotence', "/analysis/idem/auto/#{row.id}" %></td>
+</tr>
+<% } %>
+</tbody>
+</table>
+
+<% if !auto %>
+	Please select an <b>automation</b> or a specific <b>test suite</b> to perform idempotence analysis.
+<% else %>
+	<h2>Automation Details</h2>
+	<p>Selected Automation UUID: <%= auto.uuid %></p>
+	<h3>Automation Tasks</h3>
+	<% if suite %>
+	<br/>Test Suite UUID: <%= suite.uuid %>
+	<% end %>
+
+<table class="tablesorter" id="tablesorter">
+	<thead>
+	<tr><th>#</th><th>ID</th>
+		<th>Resource</th><th>Action</th>
+		<!--<th>File</th><th>Line</th>-->
+		<th>Success (%)</th>
+		<th>State Changes</th>
+		<th colspan="2">Actions</th></tr>
+	</thead>
+	<tbody>
+	<% count = 0
+	tasks.each_with_index { |row,id|
+	if show_toaster_tasks || !row.toaster_testing_task?
+		active = false
+		param_task = active ? "" : row.id
+		clazz = active ? "active " : ""
+		clazz.strip!
+		#prop_changes = row.global_state_prop_changes
+		prop_changes = row.global_state_transitions
+		%>
+		<tr<%= clazz != '' ? " class=\"#{clazz}\"" : "" %>>
+			<td><%= count += 1 %></td>
+			<td><%= row.uuid %></td>
+			<td><%= row.resource %></td>
+			<td><%= row.action %></td>
+			<!--<td><%= row.sourcefile %></td>
+			<td><%= row.sourceline %></td>-->
+			<td><%= format_float(row.global_success_percentage) %> %</td>
+			<td><%= prop_changes.size %></td>
+			<td><a href="/analysis/conv/task/<%= row.id %>">convergence</a></td>
+			<td><a href="/analysis/idem/task/<%= row.id %>">idempotence</a></td>
+		</tr>
+	<% end
+	} %>
+	</tbody>
+</table>
+
+	<h3>All Affected State Properties</h3>
+	<table class="tablesorter">
+		<thead>
+		<tr><th>Property Name</th></tr>
+		</thead>
+		<% 	begin
+				auto.all_affected_property_names.each do |p| %>
+		<tr><td><%= p %></td></tr>
+		<% 		end
+			rescue => ex %>
+		 <tr><td>[Error: <%= ex %> <%= ex.backtrace %>]</td></tr>
+		<% 	end %>
+	</table>
+	
+<% end %>

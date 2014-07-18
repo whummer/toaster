@@ -6,7 +6,6 @@
 require 'toaster/util/lxc'
 require 'toaster/test/test_orchestrator'
 
-message = nil
 lxcs = {}
 prototypes = []
 
@@ -50,9 +49,11 @@ end
 if param('createProto') != ""
 	name = param('protoName')
 	if !name.match(/^[a-zA-Z0-9_]+$/)
-		message += "The prototype name must match the pattern [a-zA-Z0-9_]+"
+		msg = "The prototype name must match the pattern [a-zA-Z0-9_]+"
+		flash[:notice] ? (flash[:notice] << msg) : flash[:notice] = [msg]
 	elsif prototypes.include?(name)
-		message += "A prototype with the same name already exists."
+		msg = "A prototype with the same name already exists."
+		flash[:notice] ? (flash[:notice] << msg) : flash[:notice] = [msg]
 	else
 		distro = param('protoOS')
         output = Toaster::LXC.new_prototype(param('server'), name, distro)
@@ -78,10 +79,10 @@ if lxcs
 end
 
 rescue => ex
+	msg = "ERROR: #{ex}"
+	flash[:error] ? (flash[:error] << msg) : flash[:error] = [msg]
 %>
-	<div class="error">Error:<br/><%= ex %><br/>
 	<!--<pre><%= ex.backtrace.join("\n").html_safe %></pre>-->
-	</div>
 <% 
 end
 
@@ -90,9 +91,6 @@ lxcs ||= {}
 This page provides details about the available LXC containers 
 (light-weight VMs) which are used for testing purposes.
 <h3>Host Machines</h3>
-<% if message %>
-<div class="info"><%= message %></div>
-<% end %>
 Host Node(s):<br/>
 <textarea name="lxcHosts" style="width: 300px; height: 100px;"><%= $session['lxcHosts'] %></textarea><br/>
 <input type="submit" value="Update" name="updateHosts"/><br/>
@@ -147,8 +145,8 @@ lxcs.each do |ip,lxc| %>
 	<input type="text" name="protoName" value="<%= param('protoName', '') %>"/>
 <tr></td><td><b>Operating System:</b></td><td>
 	<select name="protoOS">
-	<option value="fedora">Fedora</option>
 	<option value="ubuntu">Ubuntu</option>
+	<!--<option value="fedora">Fedora</option>-->
 	</select><br/>
 </td></tr><tr><td></td><td>
 	<input type="submit" value="Create New Prototype" name="createProto"/><br/>

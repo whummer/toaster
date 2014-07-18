@@ -37,23 +37,26 @@ Toaster::Application.routes.draw do
   match "execs/:auto_id/tasks/:task_id" => "execs#task_executions", :via => [:get]
   match "execs/:auto_id/tasks/:task_id/:task_exec_id" => "execs#task_executions", :via => [:get]
   match "execs/:auto_id/:run_id" => "execs#automation_runs", :via => [:get]
+  match "execs/:auto_id/:run_id" => "execs#delete_run", :via => [:delete]
   match "execs/:auto_id/:run_id/tasks" => "execs#task_executions", :via => [:get]
   match "execs/:auto_id" => "execs#automation_runs", :via => [:get]
   match "execs" => "execs#automation_runs", :via => [:get]
 
+  get "analysis/index" => "analysis#index"
+  get "analysis/index/:auto_id" => "analysis#index"
   get "analysis/idem" => "analysis#idempotence"
   get "analysis/conv" => "analysis#convergence"
-  get "analysis/idem/auto/:auto_id" => "analysis#idempotence"
-  get "analysis/conv/auto/:auto_id" => "analysis#convergence"
-  get "analysis/idem/task/:task_id" => "analysis#idempotence"
-  get "analysis/conv/task/:task_id" => "analysis#convergence"
+  match "analysis/idem/auto/:auto_id" => "analysis#idempotence", :via => [:get, :post]
+  match "analysis/conv/auto/:auto_id" => "analysis#convergence", :via => [:get, :post]
+  match "analysis/idem/task/:task_id" => "analysis#idempotence", :via => [:get, :post]
+  match "analysis/conv/task/:task_id" => "analysis#convergence", :via => [:get, :post]
 
   match "util/chef", :via => [:get, :post]
 
   get "settings/containers"
   post "settings/containers"
-  get "settings/index"
-  post "settings/index", :as => :save
+  get "settings/config"
+  post "settings/config", :as => :save
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

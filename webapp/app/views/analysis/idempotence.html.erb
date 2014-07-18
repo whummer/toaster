@@ -1,2 +1,35 @@
 <h1>Idempotence</h1>
-<p>coming soon...</p>
+<%
+
+require 'toaster/state/idempotence'
+require 'toaster/util/util'
+
+auto = cur_auto
+suite = cur_suite
+non_idem = nil
+if suite
+	auto = suite.automation
+	idem_check = Idempotence.new(suite)
+	non_idem = idem_check.non_idempotent_task_seq()
+elsif auto
+	idem_check = Idempotence.new(auto)
+	non_idem = idem_check.non_idempotent_task_seq()
+end
+
+%>
+
+<% if auto %>
+	Automation UUID: <%= auto.uuid %>
+	<% if suite %>
+	<br/>Test Suite UUID: <%= suite.uuid %>
+	<% end %>
+	<h2>Non-Idempotent Task Sequences</h2>
+	<table>
+	<tr><th>Task List</th></tr>
+	<% non_idem.each do |seq| %>
+	<tr><td><%= seq %></td></tr>
+	<% end %>
+	</table>
+<% else %>
+	Please select an <b>automation</b> or a specific <b>test suite</b> to perform idempotence analysis.
+<% end %>

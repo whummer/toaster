@@ -10,9 +10,17 @@ class ExecsController < ApplicationController
 	end
 
 	def list
-
 	end
 
+	def delete_run
+    run = cur_run
+    if run
+      run.delete()
+      msg = "Successfully deleted automation run with UUID '#{run.uuid}'"
+      flash[:notice] ? (flash[:notice] << msg) : (flash[:notice] = [msg])
+    end
+    redirect_to "/execs"
+	end
 
 	def cur_auto()
 		ScriptsController.cur_auto(session, params)
@@ -26,9 +34,9 @@ class ExecsController < ApplicationController
 		end
 	end
 
-  	def cur_run()
-  		ExecsController.cur_run(session, params)
-  	end
+  def cur_run()
+  	ExecsController.cur_run(session, params)
+  end
 	def self.cur_run(session, params)
 		a = ScriptsController.cur_auto(session, params)
 		return nil if !a

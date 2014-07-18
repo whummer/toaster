@@ -15,7 +15,7 @@ end
 <input type="hidden" name="sessionID" value="<%= $session["session_id"] %>"/>
 
 	<% if automation %>
-<h2>State Graph for Automation '<a href="/scripts/<%= automation.id %>"><%= automation.name %></a>'</h2>
+<h2>State Graph for Automation '<a href="/scripts/<%= automation.id %>/details"><%= automation.name %></a>'</h2>
 
 	<% if param('genGraph') != ""
 		idem = param('idempotenceN').gsub(/\s+/, "")

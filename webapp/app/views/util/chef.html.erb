@@ -1,7 +1,7 @@
 <div style="width: 100%">
 <form action="<%= l({'p' => 'chef'}) %>" method="post">
 <input type="hidden" name="sessionID" value="<%= $session['session_id'] %>"/>
-<h2>Chef Cookbooks</h2>
+<h1>Chef Utilities</h2>
 <style type="text/css">
 <%= 
 require "diffy"
@@ -18,7 +18,7 @@ if param("submitCompare") != ""
 	v2 = param("v2")
 end
 %>
-<h3>Diff Tool</h3>
+<h2>Diff Tool</h2>
 <table>
 	<tr><td>Cookbook:</td><td><input type="text" name="cookb" value="<%= param('cookb', 'apache2') %>"/></td></tr>
 	<tr><td>Version 1:</td><td><input type="text" name="v1" value="<%= param('v1', '1.1.8') %>"/> (e.g., '1.3.2')</td></tr>

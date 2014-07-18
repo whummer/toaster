@@ -68,8 +68,8 @@ globally_executed_tasks = row.get_globally_executed_tasks
 </table>
 
 <% if auto %>
-	<h3>Details of Automation '<%= auto.name %>'</h3>
-	<h4>Automation Attributes</h4>
+	<h2>Details of Automation '<%= auto.name %>'</h2>
+	<h3>Automation Attributes</h3>
 	<table class="tablesorter">
 	<thead>
 	<tr><th>#</th><th>Parameter</th><th>Default Value</th><th>Used Values</th></tr>
@@ -93,20 +93,6 @@ globally_executed_tasks = row.get_globally_executed_tasks
 	</tr>
 	<% } %>
 	</tbody>
-	</table>
-
-	<h4>All Affected State Properties</h4>
-	<table class="tablesorter">
-		<thead>
-		<tr><th>Property Name</th></tr>
-		</thead>
-		<% 	begin
-				auto.all_affected_property_names.each do |p| %>
-		<tr><td><%= p %></td></tr>
-		<% 		end
-			rescue => ex %>
-		 <tr><td>[Error: <%= ex %> <%= ex.backtrace %>]</td></tr>
-		<% 	end %>
 	</table>
 	
 <% end %>
