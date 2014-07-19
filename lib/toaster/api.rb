@@ -290,7 +290,7 @@ module Toaster
       cmd = "cd \"#{dir}\" && #{dir}/webapp/bin/rails server thin"
       detached ||= options[:detached]
       if detached
-        Kernel::exec("screen -d -m #{cmd}")
+        Kernel::exec("screen -d -m bash -c '#{cmd}'")
       else
         Kernel::exec("#{cmd}")
       end

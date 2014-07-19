@@ -12,8 +12,11 @@ if platform_family?("debian")
 
   bash 'db_create' do
     code <<-EOH
-    echo 'create database toaster;' | mysql -u root -p#{node['mysql']['server_root_password']}
-    # TODO: GRANT ALL for user "root" on 192.168.100.2 - do we need to add this??
+    db_pass=#{node['mysql']['server_root_password']}
+    ip_pattern=#{node["network"]["ip_pattern"].gsub('*','%')}
+    echo 'create database toaster;' | mysql -u root -p$db_pass
+    echo "GRANT ALL ON toaster.* TO 'root'@'$ip_pattern' IDENTIFIED BY '$db_pass';" | mysql -u root -p$db_pass
+    echo "FLUSH PRIVILEGES;" | mysql -u root -p$db_pass
     cd #{root_dir}/webapp && ./bin/rake db:migrate RAILS_ENV=development
 EOH
     not_if "echo \"show databases;\" | mysql -u root -p#{node['mysql']['server_root_password']} | grep toaster"

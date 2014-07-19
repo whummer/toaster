@@ -156,8 +156,8 @@ ruby_block $last_toaster_resource_name do
         {
           "db_type" => db_type,
           db_type => node['toaster'][db_type],
-          "user_id" => node['user_id'],
-          "automation_uuid" => node['automation_uuid'],
+          "user_id" => node['toaster']['user_id'],
+          "automation_uuid" => node['toaster']['automation_uuid'],
           "cookbook_paths" => node['toaster']['cookbook_paths'],
           "skip_tasks" => node['toaster']['skip_tasks'],
           "repeat_tasks" => node['toaster']['repeat_tasks'],

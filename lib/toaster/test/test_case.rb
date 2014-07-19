@@ -59,7 +59,7 @@ module Toaster
 
     def create_chef_node_attrs()
       attrs = {
-        "toaster_testing" => {
+        "toaster" => {
           # set task IDs which are to be skipped during the test execution
           "skip_tasks" => skip_task_uuids.dup,
           # set task IDs which are to be repeated during the test execution
