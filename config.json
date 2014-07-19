@@ -23,6 +23,7 @@
 },
 "db": {
 	"host": "localhost",
+	"host_from_container": "192.168.100.2",
 	"port": 3306,
 	"database": "toaster",
 	"username": "root",

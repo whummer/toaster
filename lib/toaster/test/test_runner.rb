@@ -280,13 +280,21 @@ module Toaster
 
     private
 
+    # apply some necessary preparations to the test container
     def self.prepare_test_container(lxc)
-      # apply some necessary preparations to the test container
-      
+
       # copy config file from host into container
       config_file_host = "#{Dir.home}/.toaster"
       config_file_cont = "#{lxc['rootdir']}/root/.toaster"
       `cp '#{config_file_host}' '#{config_file_cont}'`
+
+      # set DB host for container
+      if Toaster::Config.get("db.host_from_container")
+        config_hash = JSON.parse(File.read(config_file_cont).strip)
+        config_hash["db"] = {} if !config_hash["db"]
+        config_hash["db"]["host"] = Toaster::Config.get("db.host_from_container")
+        Util.write(config_file_cont, MarkupUtil.to_json(config_hash), true)
+      end
 
       # TODO: should we always re-install the toaster gem?
       #`ssh #{lxc["ip"]} "gem install --no-ri --no-rdoc cloud-toaster 2>&1"`
