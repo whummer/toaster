@@ -1,3 +1,5 @@
+
+
 Toaster::Application.routes.draw do
 
   resources :automations
@@ -5,8 +7,9 @@ Toaster::Application.routes.draw do
   # global requires
   $LOAD_PATH << File.join(File.dirname(__FILE__), "../../lib") 
   require "toaster/model/user"
-  devise_for :users
-
+  require "toaster/util/load_bundler"
+  # use authentication based on "devise"
+  devise_for :user, :class_name => 'User'
 
   get "scripts" => "scripts#scripts"
   get "scripts/tasks" => "scripts#tasks"

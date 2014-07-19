@@ -264,12 +264,21 @@ module Toaster
       require "toaster/toaster_app_service"
       ToasterAppService.start_service()
     end
-
+  
     # Clean spawned containers
     desc "clean", "Clean all spawned containers (prototypes will be preserved)."
     def clean()
       require "toaster/util/lxc"
       Toaster::LXC.clean()
+    end
+
+    # Print version information
+    desc "version", "Print version of ToASTER."
+    def version()
+      file = File.join(File.dirname(__FILE__), "..", "..", "VERSION")
+      version = File.read(file)
+      puts version
+      return "#{version}".strip
     end
 
     # Start web app

@@ -1,3 +1,4 @@
+
 class BaseController < ActionController::Base
 
   def l(hash=nil) 
