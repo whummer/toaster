@@ -19,7 +19,8 @@ Gem::Specification.new do |s|
 		Dir.glob("bin/strace-4.8_patched/strace-x86_64") +
 		Dir.glob("bin/strace-4.8_patched/strace-i686") +
 		Dir.glob("chef/**/*") + Dir.glob("webapp/**/*") + 
-		Dir.glob("config.json") + Dir.glob("Gemfile")
+		Dir.glob("config.json") + Dir.glob("Gemfile") + 
+		Dir.glob("cloud-toaster.gemspec")
 
   deps = {
   	'bundler'		=> '~> 1.3',
