@@ -365,7 +365,7 @@ module Toaster
         end
 
         if automation_run_id
-          automation_run = AutomationRun.load(automation_run_id)
+          automation_run = AutomationRun.find(automation_run_id)
           if test_id
             if !automation_run.automation
               #automation_run.automation = Automation.load(automation_run.automation_id)

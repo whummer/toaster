@@ -86,15 +86,6 @@ module Toaster
       return end_time - start_time
     end
 
-    def self.load(id, automation = nil)
-      id = DB.instance.wrap_db_id(id)
-      preset_fields = {}
-      preset_fields["automation"] = automation if automation
-      runs = find({"_id" => id}, preset_fields)
-      return nil if !runs || runs.empty?
-      return runs[0]
-    end
-
     def self.find(criteria={})
       DB.find_activerecord(AutomationRun, criteria)
     end
