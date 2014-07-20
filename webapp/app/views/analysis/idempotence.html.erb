@@ -25,9 +25,15 @@ end
 	<% end %>
 	<h2>Non-Idempotent Task Sequences</h2>
 	<table>
-	<tr><th>Task List</th></tr>
-	<% non_idem.each do |seq| %>
-	<tr><td><%= seq %></td></tr>
+	<thead>
+	<tr><th>ID</th><th>Task List</th></tr>
+	</thead>
+	<% non_idem.each_with_index do |seq,idx| 
+		seq = seq.collect {|t| 
+			"<a href=\"/scripts/#{t.automation.id}/tasks/#{t.id}\">#{t.resource}</a>"
+		}
+	%>
+	<tr><td><%= idx+1 %></td><td><%= seq.join(" &rarr; ").html_safe %></td></tr>
 	<% end %>
 	</table>
 <% else %>

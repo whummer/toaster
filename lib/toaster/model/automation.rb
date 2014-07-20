@@ -19,6 +19,7 @@ module Toaster
 
     belongs_to :user
     has_many :tasks, :autosave => true, :dependent => :destroy
+    has_many :test_suites, :autosave => true, :dependent => :destroy
     has_many :automation_attributes, :autosave => true, :dependent => :destroy
     has_many :ignore_properties, :autosave => true, :dependent => :destroy
     has_many :additional_properties, :autosave => true, :dependent => :destroy

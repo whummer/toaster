@@ -368,8 +368,9 @@ module Toaster
         EOF
         )
       end
-      puts "INFO: Running Chef scripts..."
       require "toaster/chef/chef_util"
+      Toaster::ChefUtil.create_chef_config(CHEF_TMP_SOLO_FILE)
+      puts "INFO: Running Chef scripts..."
       Toaster::ChefUtil.run_chef(CHEF_TMP_SOLO_FILE, CHEF_TMP_NODE_FILE, print_output)
     end
     def parse_recipes(arg)

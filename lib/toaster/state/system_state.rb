@@ -242,6 +242,7 @@ module Toaster
       end
       #puts "TRACE: ignore_prop_names #{ignore_prop_names}"
       ignore_prop_names.each do |key|
+        key = key.key if key.respond_to?(:key) # get IgnoreProperty.key
         if props_hash.kind_of?(Array)
           props_hash.dup.each do |k|
 

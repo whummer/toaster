@@ -109,7 +109,7 @@ end
 			post_states = Set.new(task.global_post_states_flat)
 			%>
 			<tr><td colspan="4">Task 
-				<b><a href="<%= l('t'=>'tasks', 'task'=>task.id) %>"><%= task.name %></a></b>
+				<b><a href="/scripts/<%= task.automation.id %>/tasks/<%= task.id %>"><%= task.name %></a></b>
 			</td></tr>
 			<%
 			{"PRE-state" => pre_states, 
@@ -137,7 +137,7 @@ end
 
 	<h2>State Convergence By Task</h2>
 	<% tasks.each do |task| %>
-		<h3>State Convergence of Task '<a href="<%= l('t'=>'tasks', 'task'=>task.id) %>"><%= task.name %></a>'</h3>
+		<h3>State Convergence of Task '<a href="/scripts/<%= task.automation.id %>/tasks/<%= task.id %>"><%= task.name %></a>'</h3>
 		<% 	task_convs = convs[task] ? convs[task] : []
 			if task_convs.empty? %>
 				No convergent state property found for this task.
