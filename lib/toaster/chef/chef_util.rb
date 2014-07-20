@@ -333,7 +333,7 @@ module Toaster
 
       cookbooks_after = Dir.entries(target_dir)
       new_cb = cookbooks_after - cookbooks_before
-      puts "INFO: Downloaded and installed new cookbooks: #{new_cb}"
+      puts "INFO: Downloaded and installed new cookbooks: #{new_cb}" if !new_cb.empty?
 
       # download dependencies
       new_cb.each do |cb|

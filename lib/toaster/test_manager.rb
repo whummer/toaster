@@ -106,6 +106,7 @@ module Toaster
       # get additional_state_configs from automation
       automation = AutomationRun.get_current().automation
       add_automation_specific_state_config(@state_change_config)
+      task.automation = automation if !task.automation
 
       # determine which parameters the task code accesses:
       task.task_parameters.concat(ResourceInspector.get_accessed_parameters(task))
@@ -248,15 +249,8 @@ module Toaster
       if !test_suite.kind_of?(TestSuite)
         test_suite = TestSuite.find({"uuid" => test_suite})
       end
-      if blocking
-        runner = TestRunner.new(test_suite, nil, false)
-        runner.start_test_suite(blocking)
-        runner.stop
-      else
-        runner = TestRunner.new(test_suite, nil, true)
-        runner.start_test_suite(blocking)
-        runner.start_worker_threads()
-      end
+      tests_to_run = test_suite.test_cases.select { |tc| !tc.executed? }
+      TestRunner.instance.execute_tests(tests_to_run, blocking)
     end
 
     private

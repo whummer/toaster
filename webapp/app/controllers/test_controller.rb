@@ -59,6 +59,7 @@ class TestController < ApplicationController
       if test_case.automation_run
         test_case.automation_run.destroy
       end
+      test_case.executing_host = nil
       test_case.save
       redirect_to "/test/suites/#{test_case.test_suite.id}"
     else
@@ -79,7 +80,7 @@ class TestController < ApplicationController
     test_suite = cur_suite
     client = service_client
     session[:suite_cur] = nil
-    client.runtests(test_suite.uuid)
+    session[:exec_output] = client.runtests(test_suite.uuid)
     redirect_to "/test/suites/#{params["suite_id"]}"
   end
 

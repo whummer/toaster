@@ -36,6 +36,7 @@ Toaster::Application.routes.draw do
   match "graph/:auto_id/graph_frame" => "scripts#graph", :via => [:get, :post]
 
   get "execs/list"
+  match "execs/tasks" => "execs#task_executions", :via => [:get]
   match "execs/:auto_id/tasks" => "execs#task_executions", :via => [:get]
   match "execs/:auto_id/tasks/:task_id" => "execs#task_executions", :via => [:get]
   match "execs/:auto_id/tasks/:task_id/:task_exec_id" => "execs#task_executions", :via => [:get]

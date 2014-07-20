@@ -23,13 +23,16 @@ module Toaster
     @delay_between_tests = 6 # wait some seconds before starting next test
     @semaphore = Mutex.new
     @signal = ConditionVariable.new
+    @singleton = nil
 
     class << self
-      attr_accessor :last_start_time, :delay_between_tests, :semaphore, :signal
+      attr_accessor :last_start_time, :delay_between_tests, :semaphore, :signal, :singleton
     end
 
-    def initialize(test_suite=nil, max_threads_active=nil, terminate_when_queue_empty=true)
-      @test_suite = test_suite
+    private
+
+    # private constructor
+    def initialize(max_threads_active=nil, terminate_when_queue_empty=false)
       @max_threads_active = max_threads_active ? max_threads_active : 5
       @active_threads = []
       @terminate_when_queue_empty = terminate_when_queue_empty
@@ -39,101 +42,18 @@ module Toaster
       @received_requests = []
       @handled_requests = []
       if !terminate_when_queue_empty
-        start_worker_threads()
+        start()
       end
     end
+
+    public
 
     def start()
       start_worker_threads()
     end
-    def start_worker_threads()
-      current_num = 0
-      @local_semaphore.synchronize do
-        current_num = @active_threads.size
-      end
-      puts "DEBUG: currently active worker threads: #{current_num} of #{@max_threads_active}"
-      ((current_num)..(@max_threads_active-1)).each do 
-        t = Thread.start {
-          running = true
-          while running
-            begin
-              test_case = nil
-              @local_semaphore.synchronize do
-                # terminate if no more requests are queued
-                if @request_queue.empty? && @terminate_when_queue_empty
-                  # do NOT add this check --> leads to busy wait loop!
-                  #if @handled_requests.size >= @received_requests.size
-                    running = false
-                  #end
-                end
-                if running
-                  test_case = @request_queue.pop()
-                  @received_requests << test_case
-                end
-              end
-              if test_case
-                begin
-                  automation_run = TestRunner.execute_test(test_case)
-                  @result_map.put(test_case, automation_run)
-                rescue Object => ex
-                  err = "WARN: exception when running test case: #{ex}\n#{ex.backtrace.join("\n")}"
-                  puts err
-                  @result_map.put(test_case, err)
-                end
-                @local_semaphore.synchronize do
-                  @handled_requests << test_case
-                end
-              end
-            rescue Exception => ex
-              puts "WARN: exception in test runner thread: #{ex}\n#{ex.backtrace.join("\n")}"
-              @result_map.put(test_case, nil)
-            end
-          end
-          @local_semaphore.synchronize do
-            @active_threads.delete(self)
-          end
-        }
-        @active_threads << t
-      end
-    end
 
     def stop()
       stop_threads()
-    end
-    def stop_threads()
-      @active_threads.dup.each do |t|
-        t.terminate()
-        @active_threads.delete(t)
-      end
-    end
-
-    def start_test_suite(blocking=true)
-
-      start_worker_threads()
-
-      @test_generator = TestGenerator.new(@test_suite) if @test_suite && !@test_generator
-
-      @test_suite.save()
-
-      # generate tests
-      execute_tests(@test_generator.gen_all_tests())
-
-      @test_suite.save()
-
-    end
-
-    def wait_until_finished(test_cases)
-      test_cases = [test_cases] if !test_cases.kind_of?(Array)
-      test_cases.dup.each do |t|
-        # this operation will block until a results becomes available..
-        @result_map.get(t)
-      end
-    end
-
-    def self.schedule_tests(test_suite, test_case_uuids)
-      runner = TestRunner.new(test_suite)
-      runner.schedule_tests(test_suite, test_case_uuids)
-      runner.start_worker_threads()
     end
 
     def schedule_tests(test_suite, test_case_uuids)
@@ -149,26 +69,6 @@ module Toaster
       end
     end
 
-    def self.ensure_automation_exists_in_db(automation_name,
-      recipes, test_suite, destroy_container=true, print_output=false)
-
-      chef_node_name = ChefUtil.extract_node_name(automation_name)
-      # prepare run list (add toaster::testing recipe definitions)
-      actual_run_list = ChefUtil.prepare_run_list(chef_node_name, recipes)
-      reduced_run_list = ChefUtil.get_reduced_run_list(actual_run_list)
-      automation = Automation.find_by_cookbook_and_runlist(automation_name, reduced_run_list)
-      return automation if !automation.nil?
-
-      # if we don't have a matching automation in the DB yet, execute an initial run..
-      c = TestCase.new(test_suite)
-      test_suite.test_cases << c
-      puts "INFO: Executing initial automation run; test case '#{c.uuid}'"
-      automation_run = execute_test(c, destroy_container, print_output)
-      puts "DEBUG: Finished execution of initial automation run; test case '#{c.uuid}': #{automation_run}"
-      return nil if !automation_run
-      return automation_run.automation
-    end
-
     def schedule_test_case(test_case)
       execute_test_case(test_case, false)
     end
@@ -182,13 +82,40 @@ module Toaster
         @request_queue.push(test)
       end
 
-      # start worker threads (if they are not already running..)
-      start_worker_threads()
-
       if do_wait_until_finished
         puts "INFO: Waiting until #{test_cases.size} test cases are finished."
         wait_until_finished(test_cases)
       end
+    end
+
+    # singleton pattern
+    def self.instance
+      self.semaphore.synchronize do
+        if !self.singleton
+          self.singleton = TestRunner.new()
+        end
+      end
+      return singleton
+    end
+
+    def self.ensure_automation_exists_in_db(automation_name,
+      recipes, test_suite, destroy_container=true, print_output=false)
+    
+      chef_node_name = ChefUtil.extract_node_name(automation_name)
+      # prepare run list (add toaster::testing recipe definitions)
+      actual_run_list = ChefUtil.prepare_run_list(chef_node_name, recipes)
+      reduced_run_list = ChefUtil.get_reduced_run_list(actual_run_list)
+      automation = Automation.find_by_cookbook_and_runlist(automation_name, reduced_run_list)
+      return automation if !automation.nil?
+    
+      # if we don't have a matching automation in the DB yet, execute an initial run..
+      c = TestCase.new(test_suite)
+      test_suite.test_cases << c
+      puts "INFO: Executing initial automation run; test case '#{c.uuid}'"
+      automation_run = execute_test(c, destroy_container, print_output)
+      puts "DEBUG: Finished execution of initial automation run; test case '#{c.uuid}': #{automation_run}"
+      return nil if !automation_run
+      return automation_run.automation
     end
 
     #
@@ -207,7 +134,7 @@ module Toaster
         test_id = test_suite.uuid
         recipes = automation.recipes
       end
-
+    
       sleep_time = 0
       self.semaphore.synchronize do
         time = TimeStamp.now()
@@ -217,12 +144,12 @@ module Toaster
         end
         self.last_start_time = time + sleep_time
       end
-
+    
       # sleep a bit, and then this test is ready to go...
       sleep(sleep_time)
       time_now = TimeStamp.now()
       test_case.start_time = time_now
-
+    
       # start test case execution
       automation_run = nil
       error_output = nil
@@ -241,11 +168,11 @@ module Toaster
           else
             raise "Unknown automation language/type: '#{automation.language}'"
           end
-
+    
           automation_run.success = true
           test_case.test_suite().test_cases << test_case if !test_case.test_suite().test_cases().include?(test_case)
           test_case.automation_run = automation_run
-
+    
           num_attempts = 0
         rescue Object => ex
           error_output = ex
@@ -254,7 +181,7 @@ module Toaster
           puts "#{ex.backtrace.join("\n")}"
         end
       end
-
+    
       if !automation_run
         machine_id = Util.get_machine_id()
         automation = test_case.test_suite.automation
@@ -272,14 +199,21 @@ module Toaster
         automation_run.save
         test_case.automation_run = automation_run
       end
-
+    
       test_case.end_time = TimeStamp.now().to_i
       test_case.save
-
+    
       return automation_run
     end
 
     private
+
+    def stop_threads()
+      @active_threads.dup.each do |t|
+        t.terminate()
+        @active_threads.delete(t)
+      end
+    end
 
     # apply some necessary preparations to the test container
     def self.prepare_test_container(lxc)
@@ -368,6 +302,7 @@ module Toaster
         if automation_run_id
           automation_run = AutomationRun.find(automation_run_id)
           automation_run.success = true
+          automation_run.save
           if test_id
             if !automation_run.automation
               #automation_run.automation = Automation.load(automation_run.automation_id)
@@ -406,5 +341,63 @@ module Toaster
       return automation_run
     end
 
+    def start_worker_threads()
+      current_num = 0
+      @local_semaphore.synchronize do
+        current_num = @active_threads.size
+      end
+      #puts "DEBUG: currently active worker threads: #{current_num} of #{@max_threads_active}"
+      ((current_num)..(@max_threads_active-1)).each do 
+        t = Thread.start {
+          running = true
+          while running
+            begin
+              test_case = nil
+              @local_semaphore.synchronize do
+                # terminate if no more requests are queued
+                if @request_queue.empty? && @terminate_when_queue_empty
+                  # do NOT add this check --> leads to busy wait loop!
+                  #if @handled_requests.size >= @received_requests.size
+                    running = false
+                  #end
+                end
+                if running
+                  test_case = @request_queue.pop()
+                  @received_requests << test_case
+                end
+              end
+              if test_case
+                begin
+                  automation_run = TestRunner.execute_test(test_case)
+                  @result_map.put(test_case, automation_run)
+                rescue Object => ex
+                  err = "WARN: exception when running test case: #{ex}\n#{ex.backtrace.join("\n")}"
+                  puts err
+                  @result_map.put(test_case, err)
+                end
+                @local_semaphore.synchronize do
+                  @handled_requests << test_case
+                end
+              end
+            rescue Exception => ex
+              puts "WARN: exception in test runner thread: #{ex}\n#{ex.backtrace.join("\n")}"
+              @result_map.put(test_case, nil)
+            end
+          end
+          @local_semaphore.synchronize do
+            @active_threads.delete(self)
+          end
+        }
+        @active_threads << t
+      end
+    end
+
+    def wait_until_finished(test_cases)
+      test_cases = [test_cases] if !test_cases.kind_of?(Array)
+      test_cases.dup.each do |t|
+        # this operation will block until a results becomes available..
+        @result_map.get(t)
+      end
+    end
   end
 end

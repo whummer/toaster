@@ -182,14 +182,14 @@ module Toaster
       else
         puts "INFO: Running/continuing tests for test suite '#{test_suite_uuid}'"
         test_suite = test_suites[0]
-        test_suite.coverage_goal.idempotence = idem_N if idem_N
-        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::SKIP_N] = skip_N if skip_N
-        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::SKIP_N_SUCCESSIVE] = skip_N_succ if skip_N_succ
-        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::COMBINE_N] = combine_N if combine_N
-        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::COMBINE_N_SUCCESSIVE] = combine_N_succ if combine_N_succ
-        test_suite.save()
+#        test_suite.coverage_goal.idempotence = idem_N if idem_N
+#        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::SKIP_N] = skip_N if skip_N
+#        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::SKIP_N_SUCCESSIVE] = skip_N_succ if skip_N_succ
+#        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::COMBINE_N] = combine_N if combine_N
+#        test_suite.coverage_goal.combinations[Toaster::CombinationCoverage::COMBINE_N_SUCCESSIVE] = combine_N_succ if combine_N_succ
+#        test_suite.save()
         orch = Toaster::TestOrchestrator.new
-        orch.generate_tests_for_suite(test_suite)
+#        orch.generate_tests_for_suite(test_suite)
         if Config.get("testing.test_hosts").kind_of?(Array)
           Config.get("testing.test_hosts").each do |test_host|
             orch.add_host(test_host)
@@ -315,8 +315,7 @@ module Toaster
       test_case_uuids = test_case_uuid.split(/[ ;,]+/)
       test_cases = TestCase.find(:uuid => test_case_uuids[0]).to_a
       if !test_cases || test_cases.empty?
-        puts "ERROR: Invalid test case id(s) specified: '#{test_case_uuid}'"
-        puts "database: #{Toaster::Config.get("db.host")}"
+        puts "ERROR: Invalid test case id(s) specified: '#{test_case_uuid}' (DB host: #{Toaster::Config.get("db.host")})"
       else
         
         # set the start time of all test cases. This is important
@@ -338,15 +337,8 @@ module Toaster
           TestRunner.execute_test(test_case, destroy_container, print_output)
         else
           puts "INFO: Scheduling test cases #{test_case_uuids} for test suite uuid '#{test_suite_uuid}'"
-          if $test_runners[test_suite_uuid]
-            runner = $test_runners[test_suite_uuid]
-            runner.schedule_tests(test_suite, test_case_uuids)
-          else
-            runner = TestRunner.new(test_suite, num_threads, true)
-            runner.schedule_tests(test_suite, test_case_uuids)
-            runner.start_worker_threads()
-            $test_runners[test_suite_uuid] = runner
-          end
+          runner = TestRunner.instance
+          runner.schedule_tests(test_suite, test_case_uuids)
         end
       end
     end

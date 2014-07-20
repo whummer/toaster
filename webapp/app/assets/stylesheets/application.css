@@ -61,3 +61,9 @@ div.messages .warn, div.messages .alert, div.messages .error {
 tr.active td {
 	font-weight: bold;
 }
+.content pre {
+	border: 1px solid #dddddd;
+	background: #f1f1f1;
+	font-size: 12px;
+	margin: 10px;
+}

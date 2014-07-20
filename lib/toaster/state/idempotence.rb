@@ -176,7 +176,7 @@ module Toaster
               execs = TaskExecution.find(
                   :task_id => tasks[repeated_task].id, 
                   :automation_run_id => tc.automation_run.id
-              )
+              ).to_a
               execs.sort! { |a,b|
                 a.start_time <=> b.start_time
               }
