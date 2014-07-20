@@ -102,7 +102,7 @@ class ScriptsController < ApplicationController
   		id = params[:auto_id]
   		a = Toaster::Automation.find(id)
   		if a
-	  		a.delete
+	  		a.destroy
 	  	end
 	  	redirect_to scripts_url()
   	end

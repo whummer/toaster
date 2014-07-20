@@ -10,7 +10,6 @@ begin
 	auto = cur_auto()
 	runs = cur_runs()
 	run = cur_run()
-	puts "run #{run}"
 
 end
 
@@ -37,7 +36,7 @@ end
 <tbody>
 <% runs.each_with_index { |row,id| 
 clazz = row.success ? 'success' : 'error'
-active = row.id.to_s == param('run')
+active = run && row.id == run.id
 clazz += ' active' if active
 param_run = active ? "" : row.id
 auto_name = row.automation ? row.automation.name : "n/a"

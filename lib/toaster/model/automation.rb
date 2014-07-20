@@ -18,11 +18,11 @@ module Toaster
   class Automation < ActiveRecord::Base
 
     belongs_to :user
-    has_many :tasks, nil, {:autosave => true, :dependent => :delete_all}
-    has_many :automation_attributes, nil, {:autosave => true, :dependent => :delete_all}
-    has_many :ignore_properties, nil, {:class_name => IgnoreProperty, :autosave => true, :dependent => :delete_all}
-    has_many :additional_properties, nil, {:class_name => AdditionalProperty, :autosave => true, :dependent => :delete_all}
-    has_many :automation_runs, nil, {:autosave => true, :dependent => :delete_all}
+    has_many :tasks, :autosave => true, :dependent => :destroy
+    has_many :automation_attributes, :autosave => true, :dependent => :destroy
+    has_many :ignore_properties, :autosave => true, :dependent => :destroy
+    has_many :additional_properties, :autosave => true, :dependent => :destroy
+    has_many :automation_runs, :autosave => true, :dependent => :destroy
 
     #attr_accessor :tasks, :attributes,
     attr_accessor  :chef_run_list, :additional_state_configs, :version
@@ -155,12 +155,12 @@ module Toaster
     def get_task(task_id, check_automation_runs=false)
       task_id = task_id.to_s
       tasks.each do |t| 
-        return t if t.id.to_s == task_id || t.uuid.to_s == task_id
+        return t if (t.id.to_s == task_id || t.uuid.to_s == task_id)
       end
       if check_automation_runs
         automation_runs().each do |r|
           r.task_executions().each do |exe|
-            if exe.task && exe.task.uuid.to_s == task_id || exe.task.uuid.to_s == task_id
+            if exe.task && (exe.task.id.to_s == task_id || exe.task.uuid == task_id)
               return exe.task
             end
           end

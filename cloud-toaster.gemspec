@@ -67,9 +67,11 @@ Gem::Specification.new do |s|
     #version = matched_dep[2]
     #puts "#{dep} - #{version}"
     if version && !version.empty?
-      s.add_runtime_dependency dep, version
+      #s.add_runtime_dependency dep, version
+      s.add_development_dependency dep, version
     else
-      s.add_runtime_dependency dep
+      #s.add_runtime_dependency dep
+      s.add_development_dependency dep
     end
 
   end

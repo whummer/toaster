@@ -242,6 +242,7 @@ module Toaster
             raise "Unknown automation language/type: '#{automation.language}'"
           end
 
+          automation_run.success = true
           test_case.test_suite().test_cases << test_case if !test_case.test_suite().test_cases().include?(test_case)
           test_case.automation_run = automation_run
 
@@ -366,6 +367,7 @@ module Toaster
 
         if automation_run_id
           automation_run = AutomationRun.find(automation_run_id)
+          automation_run.success = true
           if test_id
             if !automation_run.automation
               #automation_run.automation = Automation.load(automation_run.automation_id)

@@ -47,6 +47,7 @@ global_executions = task.global_executions
 
 	<% if exec %>
 	<h3>Execution Details</h3>
+		<p>Task execution UUID: <%= exec.uuid %></p>
 		<% if exec.output && exec.output.strip != "" %>
 		<h4>Script Output:</h4>
 		<pre style="overflow: auto; height: 100px"><%= exec.output %></pre>
@@ -122,7 +123,7 @@ global_executions = task.global_executions
 	run.task_executions.each_with_index { |exec,id|
 	row = exec.task
 	if show_toaster_tasks || !row.toaster_testing_task?
-		active = row.id.to_s == param('task')
+		active = task && row.id == task.id
 		param_task = active ? "" : row.id
 		clazz = active ? "active " : ""
 		if !run && detailed

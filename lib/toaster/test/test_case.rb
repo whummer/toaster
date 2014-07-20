@@ -16,7 +16,7 @@ module Toaster
 
     belongs_to :test_suite
     belongs_to :automation_run
-    has_many :test_attributes, nil, {:autosave => true, :dependent => :delete_all}
+    has_many :test_attributes, :autosave => true, :dependent => :destroy
     serialize :skip_task_uuids, JSON
     serialize :repeat_task_uuids, JSON
 
@@ -46,10 +46,10 @@ module Toaster
     def delete_test_result()
       # delete all task executions
       automation_run.task_executions.each do |exe|
-        exe.delete
+        exe.destroy
       end
       # delete automation run
-      automation_run.delete
+      automation_run.destroy
       # reset properties and save
       automation_run = nil
       start_time = 0
@@ -147,7 +147,7 @@ module Toaster
       h = 0
       h += skip_task_uuids.hash
       h += repeat_task_uuids.hash
-      h += test_suite.uuid.hash
+      h += test_suite.uuid.hash if test_suite
       h += test_attributes ? test_attributes.hash : 0
       return h
     end

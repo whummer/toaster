@@ -20,7 +20,7 @@ module Toaster
     belongs_to :automation
     belongs_to :user
     belongs_to :test_coverage_goal
-    has_many :test_cases, nil, {:autosave => true, :dependent => :delete_all}
+    has_many :test_cases, :autosave => true, :dependent => :destroy
     serialize :parameter_test_values, JSON
 
     def initialize(attr_hash)

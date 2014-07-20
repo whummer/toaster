@@ -15,7 +15,7 @@ class ExecsController < ApplicationController
 	def delete_run
     run = cur_run
     if run
-      run.delete()
+      run.destroy
       msg = "Successfully deleted automation run with UUID '#{run.uuid}'"
       flash[:notice] ? (flash[:notice] << msg) : (flash[:notice] = [msg])
     end

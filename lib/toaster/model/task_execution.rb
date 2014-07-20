@@ -15,7 +15,7 @@ module Toaster
 
     belongs_to :task
     belongs_to :automation_run
-    has_many :state_changes
+    has_many :state_changes, :autosave => true, :dependent => :destroy
     serialize :state_before, JSON
     serialize :state_after, JSON
 

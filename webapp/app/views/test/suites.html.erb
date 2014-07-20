@@ -119,7 +119,7 @@ end
 		<td><%= failed.size %></td>
 		<td><%= !has_executed_cases ? "n/a" : to_minutes(net) %></td>
 		<td><%= !has_executed_cases ? "n/a" : to_minutes(avg_net) %></td>
-		<td><a href="<%= is_active ? l('test' => '') : l('test' => suite.id.to_s)  %>">details</a></td>
+		<td><%= link_to 'details', "/test/suites/#{suite.id}" %></td>
 		<td><%= link_to 'delete', "/test/suites/#{suite.id}",
             :data => { :confirm => 'Confirm: Delete the entire test suite, including all executed test cases?'}, :method => :delete %></td>
         <td><%= link_to 'execute', "/test/exec/#{suite.id}",

@@ -18,8 +18,8 @@ module Toaster
 
     belongs_to :user
     belongs_to :automation
-    has_many :task_executions, nil, {:autosave => true, :dependent => :delete_all}
-    has_many :run_attributes, nil, {:autosave => true, :dependent => :delete_all}
+    has_many :task_executions, :autosave => true, :dependent => :destroy
+    has_many :run_attributes, :autosave => true, :dependent => :destroy
 
     # FIELDS: 
     #  :uuid, :machine_id, :automation, :start_time, 

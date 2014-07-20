@@ -14,8 +14,8 @@ require "toaster/chef/resource_inspector"
 module Toaster
   class Task < ActiveRecord::Base
 
-    has_many :task_parameters
-    has_many :task_executions
+    has_many :task_parameters, :autosave => true, :dependent => :destroy
+    has_many :task_executions, :autosave => true, :dependent => :destroy
     belongs_to :automation
 
     attr_accessor :resource_obj

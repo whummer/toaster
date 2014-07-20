@@ -148,9 +148,9 @@ module Toaster
       # try to retrieve automation from DB, if it exists..
       if File.exist?(json_file)
         attribs = JSON.parse(File.read(json_file))
-        if attribs["automation_uuid"]
+        if attribs["toaster"] && attribs["toaster"]["automation_uuid"]
           autos = Toaster::Automation.find(
-            :uuid => attribs["automation_uuid"]).to_a
+            :uuid => attribs["toaster"]["automation_uuid"]).to_a
           if !autos.empty?
             run.automation = autos[0]
             return

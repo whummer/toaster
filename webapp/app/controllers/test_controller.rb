@@ -57,7 +57,7 @@ class TestController < ApplicationController
       test_case.start_time = nil
       test_case.end_time = nil
       if test_case.automation_run
-        test_case.automation_run.delete
+        test_case.automation_run.destroy
       end
       test_case.save
       redirect_to "/test/suites/#{test_case.test_suite.id}"
@@ -84,11 +84,10 @@ class TestController < ApplicationController
   end
 
   def delete_suite
-    puts "deleting suite ..."
     if cur_suite
       puts "deleting suite #{cur_suite}"
       session[:suite_cur] = nil
-      cur_suite.delete
+      cur_suite.destroy
       redirect_to "/test/suites"
     end
   end
