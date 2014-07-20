@@ -126,7 +126,7 @@ module Toaster
       tests = test_suite.test_cases
       tests_to_run = []
       tests.each do |t|
-        if !t.executed?()
+        if !t.executed? && !t.running_or_scheduled?
           tests_to_run << t
         end
       end
