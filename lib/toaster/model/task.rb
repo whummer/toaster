@@ -271,12 +271,12 @@ module Toaster
       params = {
         :resource => resource.to_s,
         :action => action,
-        :sourcecode => sourcecode,
         :sourcefile => sourcefile,
         :sourceline => sourceline
       }
       task = find_by(params)
       if !task
+        params[:sourcecode] = sourcecode
         task = Task.new(params)
       end
       task.resource_obj = resource

@@ -143,7 +143,7 @@ class ScriptsController < ApplicationController
   	  			  if recipe_info["resource_objs"][line]
   		  			   action = recipe_info["resource_objs"][line].action
   	  				   action = action.join(" , ") if action.kind_of?(Array)
-  	  				   resource = recipe_info["resource_objs"][line].resource_name
+  	  				   resource = recipe_info["resource_objs"][line].to_s
     	        end
   	  				task = Task.new(
   		  				:automation => a,

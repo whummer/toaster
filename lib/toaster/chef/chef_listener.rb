@@ -432,7 +432,7 @@ module Toaster
                 end
               end
               task = get_task_from_sourcecode_line(resource, action, source_line_spec)
-              puts "get task #{resource} #{action} #{source_line_spec}: #{task}"
+              #puts "get task #{resource} #{action} #{source_line_spec}: #{task}"
             end
 
             # check if we execute within an "immediate notification"

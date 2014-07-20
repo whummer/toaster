@@ -813,7 +813,7 @@ module Toaster
 
       File.open(recipe_file) do |io|
         io.each_with_index { |line,idx| 
-          #if line.match(/^\s*((#{resource_names.join(")|(")}))\s+.*((do)|(\{)).*$/)
+          idx += 1 # index is 0-based, line should be 1-based
           if line.match(/^(\s*[0-9a-zA-Z_]+\s*=\s*)?\s*((#{resource_names.join(")|(")}))((\s+)|($)|(\s*\())/)
             resource_lines << idx
           elsif line.match(/execute.*do/) && !line.match(/^\s*#/)
@@ -821,9 +821,9 @@ module Toaster
           end
         }
         resource_lines.each do |line|
-          code = read_sourcecode_from_line(recipe_file, line + 1)
+          code = read_sourcecode_from_line(recipe_file, line)
           if !code
-            puts "WARN: Could not parse code file #{recipe_file} : #{line + 1}"
+            puts "WARN: Could not parse code file #{recipe_file} : #{line}"
           else
             resource_obj = ResourceInspector.get_resource_from_source(code, attributes_source)
             result[cookbook][recipe_name]["resources"][line] = code

@@ -44,6 +44,9 @@ module Toaster
     end
 
     def self.init_db_connection(config=nil)
+      if $db_connection_initialized
+        return
+      end
       require "toaster/util/util"
       if !config || !config["mysql"]
         config = {
@@ -59,8 +62,10 @@ module Toaster
           :host => "#{config["mysql"]["host"]}".empty? ? get("db.host") : config["mysql"]["host"],
           :database => "#{config["mysql"]["database"]}".empty? ? get("db.database") : config["mysql"]["database"],
           :username => "#{config["mysql"]["username"]}".empty? ? get("db.username") : config["mysql"]["username"],
-          :password => "#{config["mysql"]["password"]}".empty? ? get("db.password") : config["mysql"]["password"]
+          :password => "#{config["mysql"]["password"]}".empty? ? get("db.password") : config["mysql"]["password"],
+          :pool => 50 # connection pool size limit (default is 5 which is not sufficient)
         )
+        $db_connection_initialized = true
       else
         puts "WARN: Incorrect database connection configuration"
       end

@@ -19,7 +19,8 @@
 
 "testing": {
 	"timeservice_url" : "http://www.infosys.tuwien.ac.at/staff/hummer/tmp/time.php",
-	"test_hosts" : ["localhost"]
+	"test_hosts" : ["localhost"],
+	"max_threads" : 8
 },
 "db": {
 	"host": "localhost",

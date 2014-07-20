@@ -33,7 +33,7 @@ module Toaster
 
     # private constructor
     def initialize(max_threads_active=nil, terminate_when_queue_empty=false)
-      @max_threads_active = max_threads_active ? max_threads_active : 5
+      @max_threads_active = max_threads_active ? max_threads_active : Config.get("testing.max_threads")
       @active_threads = []
       @terminate_when_queue_empty = terminate_when_queue_empty
       @request_queue = Queue.new
@@ -368,6 +368,10 @@ module Toaster
               end
               if test_case
                 begin
+                  # do this to load all fields and avoid activeRecord error 
+                  # "could not obtain a database connection within X seconds""
+                  test_case.load_associations()
+                  # now execute the test case
                   automation_run = TestRunner.execute_test(test_case)
                   @result_map.put(test_case, automation_run)
                 rescue Object => ex

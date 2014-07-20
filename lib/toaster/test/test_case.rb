@@ -143,6 +143,11 @@ module Toaster
       return automation_run ? automation_run.success : nil
     end
 
+    # force loading of associations from DB
+    def load_associations
+      hash() # loads all
+    end
+
     def hash()
       h = 0
       h += skip_task_uuids.hash
