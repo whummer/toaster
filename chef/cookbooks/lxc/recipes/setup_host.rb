@@ -100,6 +100,7 @@ end
 
 bash "host_install_lxc" do
   code <<-EOH
+  echo 'node["lxc"]["containers_supported"]=#{node["lxc"]["containers_supported"]}'
 	# install requirements for lxc and some tools
 	yum install --skip-broken -y libcap-devel febootstrap bridge-utils libvirt git screen
 	# install lxc
@@ -108,6 +109,7 @@ bash "host_install_lxc" do
 	mount --make-rprivate /
 EOH
   not_if "which lxc-ls 2> /dev/null"
+  only_if do node["lxc"]["containers_supported"] end
   # don't execute if we use docker.io tools
   not_if do node["lxc"]["use_docker.io"] end
 end
@@ -121,11 +123,12 @@ bash "host_config_ssh" do
 	echo '	StrictHostKeyChecking=no' >> /root/.ssh/config
 	echo '	ConnectionAttempts=10' >> /root/.ssh/config
 EOH
+  only_if do node["lxc"]["containers_supported"] end
   not_if "cat /root/.ssh/config | grep \"#{node["network"]["ip_pattern"]}\""
 end
 
 # install docker.io tools for LXC handling
-if node["lxc"]["use_docker.io"]
+if node["lxc"]["containers_supported"] && node["lxc"]["use_docker.io"]
 	include_recipe "lxc::install_docker"
 end
 
@@ -136,6 +139,7 @@ bash "host_create_bridge" do
 	/usr/sbin/brctl setfd #{node["network"]["host"]["bridge_device"]} 0
 EOH
   not_if "/sbin/iptables | grep #{node["network"]["host"]["bridge_device"]}"
+  only_if do node["lxc"]["containers_supported"] end
   # don't execute if we use docker.io tools
   not_if do node["lxc"]["use_docker.io"] end
 end
@@ -145,6 +149,7 @@ bash "host_config_bridge" do
   code <<-EOH
 	/sbin/ifconfig #{node["network"]["host"]["bridge_device"]} #{node["network"]["gateway"]} netmask 255.255.0.0 promisc up
 EOH
+  only_if do node["lxc"]["containers_supported"] end
   not_if "/sbin/iptables | grep #{node["network"]["host"]["bridge_device"]}"
 end
 
@@ -153,6 +158,7 @@ bash "host_setup_bridge_iptables" do
 	/sbin/iptables -t nat -A POSTROUTING -o #{node["network"]["host"]["wan_device"]} -j MASQUERADE
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 EOH
+  only_if do node["lxc"]["containers_supported"] end
   not_if "/sbin/iptables -t nat -L POSTROUTING | grep MASQUERADE | grep anywhere"
 end
 
@@ -161,12 +167,15 @@ bash "host_disable_iptables_reject" do
   code <<-EOH
 	/sbin/service iptables stop
 EOH
+  only_if do node["lxc"]["containers_supported"] end
   only_if "iptables -L | grep 'reject-with icmp-host-prohibited'"
 end
 
 
 # setup squid proxy on host
-include_recipe "lxc::setup_proxy"
+if node["lxc"]["containers_supported"]
+  include_recipe "lxc::setup_proxy"
+end
 
 # setup DB server on host
 include_recipe "lxc::setup_database"
