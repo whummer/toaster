@@ -22,7 +22,7 @@ ActiveRecord::Schema.define(version: 20140628002058) do
     t.integer  "start_time",     limit: 8
     t.integer  "end_time",       limit: 8
     t.boolean  "success"
-    t.string   "error_details"
+    t.text     "error_details"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
@@ -97,24 +97,14 @@ ActiveRecord::Schema.define(version: 20140628002058) do
   end
 
   create_table "test_cases", force: true do |t|
-    t.string   "uuid",              null: false
+    t.string   "uuid",                        null: false
     t.string   "test_suite_id"
     t.string   "automation_run_id"
-    t.text     "skip_task_uuids"
-    t.text     "repeat_task_uuids"
-    t.string   "start_time"
-    t.string   "end_time"
+    t.text     "skip_task_uuids",             null: false
+    t.text     "repeat_task_uuids",           null: false
+    t.integer  "start_time",        limit: 8
+    t.integer  "end_time",          limit: 8
     t.string   "executing_host"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  create_table "test_coverage", force: true do |t|
-    t.string   "idempotence"
-    t.string   "combinations"
-    t.string   "repeat_N"
-    t.string   "graph"
-    t.boolean  "only_connect_to_start"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
@@ -132,11 +122,11 @@ ActiveRecord::Schema.define(version: 20140628002058) do
   create_table "test_suites", force: true do |t|
     t.string   "uuid",                  null: false
     t.string   "user_id",               null: false
+    t.string   "automation_id",         null: false
+    t.string   "lxc_prototype",         null: false
+    t.text     "test_coverage_goal_id", null: false
     t.string   "name"
-    t.string   "automation_id"
-    t.string   "lxc_prototype"
     t.text     "parameter_test_values"
-    t.text     "test_coverage_goal_id"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
