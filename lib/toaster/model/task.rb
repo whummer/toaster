@@ -77,7 +77,7 @@ module Toaster
     # 
     def global_state_prop_changes(global_execs = nil)
       return StateChange.joins(:task_execution => :task).where(
-        "task_executions.task_id" => self.id)
+        "task_executions.task_id" => self.uuid)
     end
     def global_num_state_prop_changes(global_executions = nil)
       return global_state_prop_changes(global_executions).size
