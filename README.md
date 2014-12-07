@@ -22,6 +22,7 @@ sudo su -
 
 # prerequisites:
 apt-get -y install wget make bzip2 curl patch screen libgdbm-dev libyaml-dev libxml2-dev libxslt-dev libmysqlclient-dev libsqlite3-dev g++
+gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
 curl -L https://get.rvm.io | bash -s stable --ruby
 # (OR: install stable ruby versions from repo: apt-get install -y ruby ruby-dev)
 source /usr/local/rvm/scripts/rvm
