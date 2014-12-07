@@ -22,6 +22,12 @@ if node["lxc"]["use_docker.io"]
 	ip_addr=#{node["lxc"]["cont"]["ip_address"]}
 	name=#{node["lxc"]["cont"]["name"]}
 	proto_name=#{node["lxc"]["proto"]["name"]}
+  manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+  if [ $manage_networking ]; then
+    network_setup="ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]}"
+  else
+    network_setup="echo" #noop
+  fi
 	echo "$proto_name" >> /tmp/tmp.lxc.protos
 	if [ "$proto_name" == "" ]; then
 		proto_name=`cat #{node["lxc"]["root_path"]}/$name/container.prototype.name`
@@ -32,7 +38,7 @@ if node["lxc"]["use_docker.io"]
 	fi
 	cidfile=#{node["lxc"]["root_path"]}/$name/docker.container.id
 	rm -f $cidfile
-	screen -m -d docker run --cidfile=$cidfile --privileged prototypes:$proto_name bash -c "ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]} && /usr/sbin/sshd -D"
+	screen -m -d docker run --cidfile=$cidfile --privileged prototypes:$proto_name bash -c "$network_setup && /usr/sbin/sshd -D"
 	echo "INFO: LXC container '#{node["lxc"]["cont"]["name"]}' started in the background using 'screen'."
 	sleep 2
 	#contID=`docker ps | grep -v IMAGE | head -n 1 | awk '{print $1}'`
@@ -121,7 +127,8 @@ file "lxc_create_setup_script" do
 
 	# make sure we have a default route
 	existing=`route | grep "^default"`
-	if [ "$existing" == "" ]; then
+  manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+	if [ "$existing" == "" ] && [ $manage_networking ]; then
 		route add default gw #{node["network"]["gateway"]}
 		echo
 	fi

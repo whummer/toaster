@@ -150,6 +150,7 @@ bash "host_config_bridge" do
 	/sbin/ifconfig #{node["network"]["host"]["bridge_device"]} #{node["network"]["gateway"]} netmask 255.255.0.0 promisc up
 EOH
   only_if do node["lxc"]["containers_supported"] end
+  only_if do node["network"]["manage_networking"] end
   not_if "/sbin/iptables | grep #{node["network"]["host"]["bridge_device"]}"
 end
 
