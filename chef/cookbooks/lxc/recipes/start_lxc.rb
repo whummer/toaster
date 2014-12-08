@@ -23,7 +23,7 @@ if node["lxc"]["use_docker.io"]
 	name=#{node["lxc"]["cont"]["name"]}
 	proto_name=#{node["lxc"]["proto"]["name"]}
   manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
-  if [ $manage_networking ]; then
+  if [ $manage_networking == 1 ]; then
     network_setup="ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]}"
   else
     network_setup="echo" #noop
@@ -58,6 +58,8 @@ if node["lxc"]["use_docker.io"]
 	elif [ -d /var/lib/docker/containers/$contID/rootfs ]; then
     ln -s /var/lib/docker/containers/$contID/rootfs #{node["lxc"]["root_path"]}/$name/rootfs
 	else
+    # TODO: fix for Mac OS (boot2docker) where docker runs inside a Linux VM in
+    # Virtualbox and hence we don't have direct access to the file system
 	  echo "ERROR: Unable to determine container root directory."
 	  exit 1
 	fi
@@ -128,7 +130,7 @@ file "lxc_create_setup_script" do
 	# make sure we have a default route
 	existing=`route | grep "^default"`
   manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
-	if [ "$existing" == "" ] && [ $manage_networking ]; then
+	if [ "$existing" == "" ] && [ $manage_networking == 1 ]; then
 		route add default gw #{node["network"]["gateway"]}
 		echo
 	fi

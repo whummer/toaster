@@ -174,9 +174,7 @@ bash "proto_docker_create" do
 	mkdir -p #{node["lxc"]["proto"]["root_path"]}
 	cat <<EOF > #{node["lxc"]["proto"]["root_path"]}/Dockerfile
 	FROM ubuntu
-	RUN mkdir /var/run/sshd
-	#RUN grep -v rootfs /proc/mounts > /etc/mtab
-	#RUN bash -c "ip addr flush dev eth0; ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0; ip route del default; ip route add default via #{node["network"]["gateway"]}; apt-get install -y net-tools openssh-server iptables dnsutils iputils-ping vim"
+	RUN mkdir -p /var/run/sshd
   # add ssh dir
   RUN mkdir -p /root/.ssh
 EOF
@@ -195,10 +193,17 @@ EOF
 	fi
 	echo "$imgID" > #{node["lxc"]["root_path"]}/$proto_name/docker.image.id
 
+  manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+  if [ $manage_networking == 1 ]; then
+    network_setup="ip addr flush dev eth0; ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0; ip route del default; ip route add default via #{node["network"]["gateway"]};"
+  else
+    network_setup="" #noop
+  fi
+
   cidfile=$root_path/$proto_name/docker.container.id
   rm -f $cidfile
-  # the following commands can only be run in "privileged" docker mode:
-	docker run --privileged --cidfile=$cidfile $imgID bash -c "ip addr flush dev eth0; ip addr add #{node["lxc"]["proto"]["ip_address"]}/24 dev eth0; ip route del default; ip route add default via #{node["network"]["gateway"]}; apt-get update; apt-get install -y net-tools openssh-server iptables dnsutils iputils-ping vim; update-rc.d ssh defaults"
+  # the commands in $network_setup can only be run in "privileged" docker mode:
+	docker run --privileged --cidfile=$cidfile $imgID bash -c "$network_setup apt-get update; apt-get install -y net-tools openssh-server iptables dnsutils iputils-ping vim; update-rc.d ssh defaults"
 EOH
   else
     code <<-EOH
@@ -289,9 +294,11 @@ file "proto_setup_inside_script" do
 #!/bin/bash
 
 	# make sure we have a default route
-  ip route del default
-  ip route add default via #{node["network"]["gateway"]}
-	#route add default gw #{node["network"]["gateway"]}
+  manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+  if [ $manage_networking == 1 ]; then
+    ip route del default
+    ip route add default via #{node["network"]["gateway"]}
+  fi
 
 	# sometimes the DNS is not immediately available and lookup of google.com fails
 	for i in {1..10}; do
