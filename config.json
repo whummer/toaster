@@ -1,5 +1,5 @@
 {
-"chef": {
+"chef": { 
 	"node_values": {
 		"node": {
 		"platform": "fedora", 

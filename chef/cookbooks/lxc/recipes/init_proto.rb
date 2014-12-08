@@ -184,7 +184,6 @@ EOF
 	mkdir -p #{node["lxc"]["root_path"]}/$proto_name/dockerfiles/.ssh/
 	if [ ! -f $HOME/.ssh/id_rsa.pub ]; then
     ssh-keygen -f $HOME/.ssh/id_rsa.pub -P ""
-	end
 	fi
 	cp $HOME/.ssh/id_rsa.pub #{node["lxc"]["root_path"]}/$proto_name/dockerfiles/.ssh/authorized_keys
 	imgID=`docker build -t prototypes:$proto_name #{node["lxc"]["proto"]["root_path"]} | grep "Successfully built" | tail -n 1 | sed "s/Successfully built //g"`
