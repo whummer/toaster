@@ -99,12 +99,34 @@ bash "auth_ssh" do
 EOH
 end
 
-
 bash "lxc_adjust_iptables" do
   code <<-EOH
 	iptables -F
 EOH
   only_if "iptables -L | grep REJECT | grep all"
+end
+
+ruby_block "get_container_ip" do
+  block do
+    name = node["lxc"]["cont"]["name"]
+    cidfile = "#{node["lxc"]["root_path"]}/#{name}/docker.container.id"
+    puts "INFO: Getting container ID from file '#{cidfile}'"
+    cid = `cat #{cidfile}`
+    ip = `docker inspect #{cid} | grep IPAddress`
+    puts "INFO: IP address of container '#{cid}' is: #{ip}"
+    node.set["lxc"]["cont"]["ip_address"] = ip
+  end
+  only_if do node["lxc"]["use_docker.io"] end
+  only_if do node["network"]["manage_networking"] end
+end
+
+ruby_block "store_container_ip" do
+  block do
+    name = node["lxc"]["cont"]["name"]
+    ipfile = "#{node["lxc"]["root_path"]}/#{name}/container.ip"
+    ip = node["lxc"]["cont"]["ip_address"]
+    `echo '#{ip}' > #{ipfile}`
+  end
 end
 
 bash "lxc_wait_for_connectivity" do
@@ -119,6 +141,7 @@ bash "lxc_wait_for_connectivity" do
 		fi
 	done
 EOH
+  only_if do node["network"]["manage_networking"] end
 end
 
 file "lxc_create_setup_script" do
