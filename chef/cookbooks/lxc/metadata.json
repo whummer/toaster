@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "mysql": ">= 0.0.0"
+    "mysql": ">= 0.0.0",
+    "ssh": "1.0.0"
   },
   "name": "lxc",
   "version": "1.0.0"
