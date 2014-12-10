@@ -22,6 +22,12 @@ if node["lxc"]["use_docker.io"]
 	ip_addr=#{node["lxc"]["cont"]["ip_address"]}
 	name=#{node["lxc"]["cont"]["name"]}
 	proto_name=#{node["lxc"]["proto"]["name"]}
+  manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+  if [ $manage_networking == 1 ]; then
+    network_setup="ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]}"
+  else
+    network_setup="echo" #noop
+  fi
 	echo "$proto_name" >> /tmp/tmp.lxc.protos
 	if [ "$proto_name" == "" ]; then
 		proto_name=`cat #{node["lxc"]["root_path"]}/$name/container.prototype.name`
@@ -32,7 +38,7 @@ if node["lxc"]["use_docker.io"]
 	fi
 	cidfile=#{node["lxc"]["root_path"]}/$name/docker.container.id
 	rm -f $cidfile
-	screen -m -d docker run --cidfile=$cidfile --privileged prototypes:$proto_name bash -c "ifconfig eth0 $ip_addr && route add default gw #{node["network"]["gateway"]} && /usr/sbin/sshd -D"
+	screen -m -d docker run --cidfile=$cidfile --privileged prototypes:$proto_name bash -c "$network_setup && /usr/sbin/sshd -D"
 	echo "INFO: LXC container '#{node["lxc"]["cont"]["name"]}' started in the background using 'screen'."
 	sleep 2
 	#contID=`docker ps | grep -v IMAGE | head -n 1 | awk '{print $1}'`
@@ -52,6 +58,8 @@ if node["lxc"]["use_docker.io"]
 	elif [ -d /var/lib/docker/containers/$contID/rootfs ]; then
     ln -s /var/lib/docker/containers/$contID/rootfs #{node["lxc"]["root_path"]}/$name/rootfs
 	else
+    # TODO: fix for Mac OS (boot2docker) where docker runs inside a Linux VM in
+    # Virtualbox and hence we don't have direct access to the file system
 	  echo "ERROR: Unable to determine container root directory."
 	  exit 1
 	fi
@@ -91,7 +99,6 @@ bash "auth_ssh" do
 EOH
 end
 
-
 bash "lxc_adjust_iptables" do
   code <<-EOH
 	iptables -F
@@ -99,18 +106,51 @@ EOH
   only_if "iptables -L | grep REJECT | grep all"
 end
 
+ruby_block "get_container_ip" do
+  block do
+    name = node["lxc"]["cont"]["name"]
+    cidfile = "#{node["lxc"]["root_path"]}/#{name}/docker.container.id"
+    #puts "DEBUG: Getting container ID from file '#{cidfile}'"
+    cid = `cat #{cidfile}`
+    ip = `docker inspect #{cid} | grep IPAddress | awk '{print $2}' | sed 's/[",]*//g'`
+    ip = "#{ip}".strip
+    puts "INFO: IP address of container '#{cid}' is: #{ip}"
+    node.set["lxc"]["cont"]["ip_address"] = ip
+  end
+  only_if do node["lxc"]["use_docker.io"] end
+  not_if do node["network"]["manage_networking"] end
+end
+
+ruby_block "store_container_ip" do
+  block do
+    name = node["lxc"]["cont"]["name"]
+    ipfile = "#{node["lxc"]["root_path"]}/#{name}/container.ip"
+    ip = node["lxc"]["cont"]["ip_address"]
+    ip = "#{ip}".strip
+    `echo '#{ip}' > #{ipfile}`
+    # set IP subnet pattern for SSH settings; used in next resource (ssh::permit_subnet)
+    node.set["ssh"]["permit_subnet_pattern"] = ip.gsub(/[0-9]+$/, "*")
+    puts "DEBUG: IP addr #{ip}, subnet #{node["ssh"]["permit_subnet_pattern"]}"
+  end
+end
+
+# configure SSH settings to disable strict host checking when connecting to LXC containers
+include_recipe "ssh::permit_subnet"
+
+# sometimes the network is not immediately available
 bash "lxc_wait_for_connectivity" do
   code <<-EOH
-	# sometimes the network is not immediately available
-	echo "INFO: ssh'ing into '#{node["lxc"]["cont"]["ip_address"]}'"
+  	ip=`cat #{node["lxc"]["root_path"]}/#{name}/container.ip`
+  	echo "INFO: ssh'ing into '$ip'"
 	for i in {1..10}; do
-		ssh #{node["lxc"]["cont"]["ip_address"]} echo && break
+		ssh $ip echo && break
 		sleep 1
 		if [ "$i" == "10" ]; then
 			echo "WARN: Unable to ssh into new container."
 		fi
 	done
 EOH
+  only_if do node["network"]["manage_networking"] end
 end
 
 file "lxc_create_setup_script" do
@@ -121,7 +161,8 @@ file "lxc_create_setup_script" do
 
 	# make sure we have a default route
 	existing=`route | grep "^default"`
-	if [ "$existing" == "" ]; then
+	manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+	if [ "$existing" == "" ] && [ $manage_networking == 1 ]; then
 		route add default gw #{node["network"]["gateway"]}
 		echo
 	fi
@@ -134,12 +175,17 @@ file "lxc_create_setup_script" do
 
 	# setup transparent proxy forwarding
 	existing=`iptables -t nat -L OUTPUT | grep 3128 | grep DNAT`
-	if [ "$existing" == "" ] && [ "#{node["lxc"]["cont"]["proxy_ip"]}" != "" ]; then
-		echo "INFO: Setting up local iptables for transparent proxy residing under '#{node["lxc"]["cont"]["proxy_ip"]}:3128'"
+	proxy="#{node["lxc"]["cont"]["proxy_ip"]}"
+	if [ $manage_networking == 0 ]; then
+		# get default gateway
+		proxy=`route -n | grep "^0.0.0.0" | awk '{print $2}'`
+        fi
+	if [ "$existing" == "" ] && [ "$proxy" != "" ]; then
+		echo "INFO: Setting up local iptables for transparent proxy residing under '$proxy:3128'"
 		if [ -f "/etc/init.d/iptables" ]; then
 			/etc/init.d/iptables start
 		fi
-		iptables -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to #{node["lxc"]["cont"]["proxy_ip"]}:3128
+		iptables -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to $proxy:3128
 	fi
 
 	exit 0
@@ -149,9 +195,10 @@ end
 bash "lxc_setup_inside" do
   code <<-EOH
 	# again, wait for connectivity
-	echo "INFO: ssh'ing into '#{node["lxc"]["cont"]["ip_address"]}'"
+	ip=`cat #{node["lxc"]["root_path"]}/#{node["lxc"]["cont"]["name"]}/container.ip`
+	echo "INFO: ssh'ing into '$ip'"
 	for i in {1..3}; do
-		ssh #{node["lxc"]["cont"]["ip_address"]} echo && break
+		ssh $ip echo && break
 		sleep 2
 		if [ "$i" == "3" ]; then
 			echo "WARN: Unable to ssh into new container."
@@ -159,16 +206,17 @@ bash "lxc_setup_inside" do
 		fi
 	done
 	# ssh into the container and run config scripts from there
-	echo "INFO: ssh'ing into the LXC container at '#{node["lxc"]["cont"]["ip_address"]}' to perform some configurations."
-	ssh #{node["lxc"]["cont"]["ip_address"]} /tmp/setup.instance.inside.sh
+	echo "INFO: ssh'ing into the LXC container at '$ip' to perform some configurations."
+	ssh $ip /tmp/setup.instance.inside.sh
 EOH
 end
 
 bash "lxc_wait_for_dns" do
   code <<-EOH
+	ip=`cat #{node["lxc"]["root_path"]}/#{node["lxc"]["cont"]["name"]}/container.ip`
 	# sometimes DNS is not immediately available
-	for i in {1..20}; do
-		ssh #{node["lxc"]["cont"]["ip_address"]} ping -c 1 www.google.com && break
+	for i in {1..15}; do
+		ssh $ip ping -c 1 www.google.com && break
 		sleep 1
 		if [ "$i" == "20" ]; then
 			echo "WARN: Unable to ssh into new container and ping host 'www.google.com'."
@@ -176,5 +224,5 @@ bash "lxc_wait_for_dns" do
 		fi
 	done
 EOH
+  only_if do node["network"]["manage_networking"] end
 end
-

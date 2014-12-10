@@ -115,16 +115,9 @@ EOH
 end
 
 # configure SSH settings to disable strict host checking when connecting to LXC containers
-bash "host_config_ssh" do
-  code <<-EOH
-	mkdir -p /root/.ssh
-	echo "Host #{node["network"]["ip_pattern"]}" >> /root/.ssh/config
-	echo '	UserKnownHostsFile=/dev/null' >> /root/.ssh/config
-	echo '	StrictHostKeyChecking=no' >> /root/.ssh/config
-	echo '	ConnectionAttempts=10' >> /root/.ssh/config
-EOH
-  only_if do node["lxc"]["containers_supported"] end
-  not_if "cat /root/.ssh/config | grep \"#{node["network"]["ip_pattern"]}\""
+node.set["ssh"]["permit_subnet_pattern"] = node["network"]["ip_pattern"]
+if node["lxc"]["containers_supported"]
+	include_recipe "ssh::permit_subnet"
 end
 
 # install docker.io tools for LXC handling
@@ -150,6 +143,7 @@ bash "host_config_bridge" do
 	/sbin/ifconfig #{node["network"]["host"]["bridge_device"]} #{node["network"]["gateway"]} netmask 255.255.0.0 promisc up
 EOH
   only_if do node["lxc"]["containers_supported"] end
+  only_if do node["network"]["manage_networking"] end
   not_if "/sbin/iptables | grep #{node["network"]["host"]["bridge_device"]}"
 end
 
