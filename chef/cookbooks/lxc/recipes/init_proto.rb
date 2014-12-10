@@ -270,6 +270,15 @@ end
 # start prototype container
 include_recipe "lxc::start_lxc"
 
+# get IP address of container
+ruby_block "get_proto_ip" do
+  block do
+    node.set["lxc"]["proto"]["ip_address"] = node["lxc"]["cont"]["ip_address"]
+    puts "INFO: IP address of prototype container is: #{node["lxc"]["proto"]["ip_address"]}"
+  end
+  not_if do node["network"]["manage_networking"] end
+end
+
 # make sure /tmp directory is preserved over time (365 days) and not flushed on every boot
 bash "proto_preserve_tmp_dir" do
   code <<-EOH
@@ -358,7 +367,11 @@ bash "proto_install_packages" do
   code <<-EOH
 	echo "INFO: Installing packages, please be patient..."
 
-	ssh_cmd="ssh #{node["lxc"]["proto"]["ssh_user"]}@#{node["lxc"]["proto"]["ip_address"]}"
+	name="#{node["lxc"]["proto"]["name"]}"
+	ip=`cat #{node["lxc"]["root_path"]}/$name/container.ip | head -n 1`
+	echo "INFO: Installation will ssh to '#{node["lxc"]["proto"]["ssh_user"]}@$ip'"
+	ssh_cmd="ssh #{node["lxc"]["proto"]["ssh_user"]}@$ip"
+
 	if [ "#{node["lxc"]["bare_os"]["distribution"]}" == "fedora" ]; then
 		install_cmd="$ssh_cmd yum install -y"
 	elif [ "#{node["lxc"]["bare_os"]["distribution"]}" == "ubuntu" ]; then
@@ -406,10 +419,13 @@ end
 # run setup scripts inside prototype
 bash "proto_setup_inside" do
   code <<-EOH
-	echo "INFO: Running configuration script inside prototype; ssh'ing to #{node["lxc"]["proto"]["ssh_user"]}@#{node["lxc"]["proto"]["ip_address"]} as user: `whoami`"
-	echo "DEBUG: running: ssh #{node["lxc"]["proto"]["ssh_user"]}@#{node["lxc"]["proto"]["ip_address"]} /tmp/setup.proto.inside.sh"
+	name="#{node["lxc"]["proto"]["name"]}"
+        ip=`cat #{node["lxc"]["root_path"]}/$name/container.ip | head -n 1`
+
+	echo "INFO: Running configuration script inside prototype; ssh'ing to #{node["lxc"]["proto"]["ssh_user"]}@$ip as user: `whoami`"
+	echo "DEBUG: running: ssh #{node["lxc"]["proto"]["ssh_user"]}@$ip /tmp/setup.proto.inside.sh"
 	# #{chroot_cmd} /usr/sbin/sshd
-	ssh #{node["lxc"]["proto"]["ssh_user"]}@#{node["lxc"]["proto"]["ip_address"]} /tmp/setup.proto.inside.sh
+	ssh #{node["lxc"]["proto"]["ssh_user"]}@$ip /tmp/setup.proto.inside.sh
 EOH
 end
 

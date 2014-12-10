@@ -110,7 +110,7 @@ ruby_block "get_container_ip" do
   block do
     name = node["lxc"]["cont"]["name"]
     cidfile = "#{node["lxc"]["root_path"]}/#{name}/docker.container.id"
-    puts "INFO: Getting container ID from file '#{cidfile}'"
+    #puts "DEBUG: Getting container ID from file '#{cidfile}'"
     cid = `cat #{cidfile}`
     ip = `docker inspect #{cid} | grep IPAddress | awk '{print $2}' | sed 's/[",]*//g'`
     ip = "#{ip}".strip
@@ -161,7 +161,7 @@ file "lxc_create_setup_script" do
 
 	# make sure we have a default route
 	existing=`route | grep "^default"`
-  manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
+	manage_networking=#{node["network"]["manage_networking"] ? 1 : 0}
 	if [ "$existing" == "" ] && [ $manage_networking == 1 ]; then
 		route add default gw #{node["network"]["gateway"]}
 		echo
@@ -175,12 +175,17 @@ file "lxc_create_setup_script" do
 
 	# setup transparent proxy forwarding
 	existing=`iptables -t nat -L OUTPUT | grep 3128 | grep DNAT`
-	if [ "$existing" == "" ] && [ "#{node["lxc"]["cont"]["proxy_ip"]}" != "" ]; then
-		echo "INFO: Setting up local iptables for transparent proxy residing under '#{node["lxc"]["cont"]["proxy_ip"]}:3128'"
+	proxy="#{node["lxc"]["cont"]["proxy_ip"]}"
+	if [ $manage_networking == 0 ]; then
+		# get default gateway
+		proxy=`route -n | grep "^0.0.0.0" | awk '{print $2}'`
+        fi
+	if [ "$existing" == "" ] && [ "$proxy" != "" ]; then
+		echo "INFO: Setting up local iptables for transparent proxy residing under '$proxy:3128'"
 		if [ -f "/etc/init.d/iptables" ]; then
 			/etc/init.d/iptables start
 		fi
-		iptables -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to #{node["lxc"]["cont"]["proxy_ip"]}:3128
+		iptables -t nat -A OUTPUT -p tcp --dport 80 -j DNAT --to $proxy:3128
 	fi
 
 	exit 0
