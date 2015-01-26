@@ -18,7 +18,7 @@ module Citac
           ns.each_index do |i|
             node_indices[ns[i]] = i
 
-            label = node_label_getter.call ns[i] #TODO escape label
+            label = node_label_getter.call(ns[i]).to_s.gsub '"', '\\"'
             result << "    n#{i} [label = \"#{label}\"];"
           end
 
@@ -29,8 +29,9 @@ module Citac
             source_node.outgoing_edges.each do |edge|
               target_index = node_indices[edge.target]
 
-              label = edge_label_getter.call edge #TODO escape label
+              label = edge_label_getter.call edge
               if label && label.to_s.strip.length > 0
+                label = label.to_s.gsub '"', '\\"'
                 result << "    n#{source_index} -> n#{target_index} [label = \"#{label}\"];"
               else
                 result << "    n#{source_index} -> n#{target_index};"

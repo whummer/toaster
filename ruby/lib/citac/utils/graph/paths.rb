@@ -4,8 +4,8 @@ module Citac
   module Utils
     module Graphs
       class Graph
-        def each_path(source_node_or_label, destination_node_or_label, options = {})
-          check_cycles = options.include?(:check_cycles) ? options[:check_cycles] : true
+        def each_path(source_node_or_label, destination_node_or_label)
+          check_cycles = cyclic?
 
           source_node = get_node_safe source_node_or_label
           destination_node = get_node_safe destination_node_or_label
@@ -33,9 +33,9 @@ module Citac
           end
         end
 
-        def path_count(source_node_or_label, destination_node_or_label, options = {})
+        def path_count(source_node_or_label, destination_node_or_label)
           count = 0
-          each_path source_node_or_label, destination_node_or_label, options do |_|
+          each_path source_node_or_label, destination_node_or_label do |_|
             count += 1
           end
 

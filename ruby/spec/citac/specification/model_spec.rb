@@ -1,11 +1,11 @@
 require_relative '../../helper'
-require_relative '../../../lib/citac/specification/model'
+require_relative '../../../lib/citac/specification/core'
 
 describe Citac::ConfigurationSpecification do
   describe '#alldeps' do
     context 'with no dependencies' do
       before :each do
-        @spec = Citac::ConfigurationSpecification.new 2
+        @spec = Citac::ConfigurationSpecification.from_confspec ['2']
       end
 
       it 'should not contain any dependency' do
@@ -16,7 +16,7 @@ describe Citac::ConfigurationSpecification do
 
     context 'with dependency 1 -> 2' do
       before :each do
-        @spec = Citac::ConfigurationSpecification.new 2
+        @spec = Citac::ConfigurationSpecification.from_confspec ['2']
         @spec.add_dep 1, 2
       end
 
@@ -28,7 +28,7 @@ describe Citac::ConfigurationSpecification do
 
     context 'with transitive dependencies 1 -> 2 -> 3' do
       before :each do
-        @spec = Citac::ConfigurationSpecification.new 3
+        @spec = Citac::ConfigurationSpecification.from_confspec ['3']
         @spec.add_dep 1, 2
         @spec.add_dep 2, 3
       end
@@ -46,7 +46,7 @@ describe Citac::ConfigurationSpecification do
 
     context 'with transitive dependencies multiple times 1 -> 2 -> 3 and 1 -> 3' do
       before :each do
-        @spec = Citac::ConfigurationSpecification.new 3
+        @spec = Citac::ConfigurationSpecification.from_confspec ['3']
         @spec.add_dep 1, 2
         @spec.add_dep 2, 3
         @spec.add_dep 1, 3

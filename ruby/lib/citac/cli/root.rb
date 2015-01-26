@@ -1,13 +1,17 @@
 require 'thor'
 
 require_relative 'puppet'
-require_relative '../specification/parser'
+require_relative 'spec'
+require_relative '../specification/core'
 
 module Citac
   module CLI
     class CitacCLI < Thor
       desc 'puppet <command> <args...>', 'Puppet specific commands'
       subcommand 'puppet', Puppet
+
+      desc 'spec <command> <args...>', 'Configuration specification related commands'
+      subcommand 'spec', Spec
 
       desc 'graph specfile [--png pngfile]', 'Generates a Graphviz graph of the given configuration specification'
       option :png

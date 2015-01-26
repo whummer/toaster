@@ -535,4 +535,66 @@ describe Citac::Utils::Graphs::Graph do
       end
     end
   end
+
+  describe '#cyclic?' do
+    context 'with acyclic graph' do
+      before :each do
+        @graph.add_node 1
+        @graph.add_node 2
+        @graph.add_node 3
+
+        @graph.add_edge 1, 2
+        @graph.add_edge 1, 3
+        @graph.add_edge 2, 3
+      end
+
+      it 'should determine that graph is acyclic' do
+        expect(@graph.cyclic?).to be_falsey
+      end
+    end
+
+    context 'with cyclic graph' do
+      before :each do
+        @graph.add_node 1
+        @graph.add_node 2
+        @graph.add_node 3
+
+        @graph.add_edge 1, 2
+        @graph.add_edge 1, 3
+        @graph.add_edge 3, 1
+      end
+
+      it 'should determine that graph is cyclic' do
+        expect(@graph.cyclic?).to be_truthy
+      end
+    end
+  end
+
+  describe '#toposort' do
+    it 'should sort graph topologically' do
+      @graph.add_node 1
+      @graph.add_node 2
+      @graph.add_node 3
+
+      @graph.add_edge 1, 2
+      @graph.add_edge 1, 3
+      @graph.add_edge 2, 3
+
+      order = @graph.toposort.map(&:label).to_a
+      expect(order).to eq([1, 2, 3])
+    end
+
+    it 'should return nil if graph cannot be sorted topologically' do
+      @graph.add_node 1
+      @graph.add_node 2
+      @graph.add_node 3
+
+      @graph.add_edge 1, 2
+      @graph.add_edge 2, 3
+      @graph.add_edge 3, 1
+
+      order = @graph.toposort
+      expect(order).to be_nil
+    end
+  end
 end
