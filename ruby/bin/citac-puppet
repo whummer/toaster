@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require 'puppet/util/command_line'
+require_relative '../lib/citac/puppet/patches'
+
+cmd = Puppet::Util::CommandLine.new 'puppet'
+cmd.execute
