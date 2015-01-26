@@ -1,8 +1,38 @@
 require 'thor'
 require_relative '../puppet/utils/graph_generation'
+require_relative '../puppet/forge/client'
 
 module Citac
   module CLI
+    class Forge < Thor
+      option :os
+      option :tag, :aliases => :t
+      option :owner, :aliases => :o
+      option :limit, :aliases => :n
+      desc 'search [--os <os>] [--tag|-t <tag>] [--owner|-o <owner>] [--limit|-n <count>] [<search keyword>]', 'Searches for Puppet modules.'
+      def search(search_keyword = nil)
+        query = Citac::Puppet::Forge::PuppetForgeModuleQuery.new
+        query.os = options[:os]
+        query.tag = options[:tag]
+        query.owner = options[:owner]
+        query.search_keyword = search_keyword
+
+        query_options = {}
+        query_options[:limit] = options[:limit].to_i if options[:limit]
+
+        count = 0
+
+        client = Citac::Puppet::Forge::PuppetForgeClient.new
+        client.each_module query, query_options do |mod|
+          puts "#{mod.full_name}\t#{mod.downloads} downloads\t#{mod.versions.length} versions"
+          count += 1
+        end
+
+        puts
+        puts "#{count} modules found"
+      end
+    end
+
     class Puppet < Thor
       desc 'graph <file1> <file2> <file...>', 'Generations dependency graphs for the given Puppet manifests.'
       def graph(*files)
@@ -15,6 +45,9 @@ module Citac
           end
         end
       end
+
+      desc 'forge <command> <args...>', 'Interacts with the Puppet Forge.'
+      subcommand 'forge', Forge
     end
   end
 end

@@ -5,10 +5,11 @@ module Citac
         def to_dot(options = {})
           node_label_getter = options[:node_label_getter] || lambda {|n| n.label}
           edge_label_getter = options[:edge_label_getter] || lambda {|e| e.label}
+          direction = options[:direction] || 'TB'
 
           result = []
           result << 'digraph g {'
-          result << '    rankdir = LR;'
+          result << "    rankdir = #{direction};"
           result << ''
 
           ns = nodes.to_a
@@ -29,7 +30,7 @@ module Citac
               target_index = node_indices[edge.target]
 
               label = edge_label_getter.call edge #TODO escape label
-              if label && label.strip.length > 0
+              if label && label.to_s.strip.length > 0
                 result << "    n#{source_index} -> n#{target_index} [label = \"#{label}\"];"
               else
                 result << "    n#{source_index} -> n#{target_index};"

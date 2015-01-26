@@ -6,8 +6,6 @@ describe Citac::Puppet::Utils::GraphCleanup do
   before :each do
     @graph = Citac::Utils::Graphs::Graph.from_graphml graphml
     Citac::Puppet::Utils::GraphCleanup.cleanup_expanded_relationships @graph
-
-    puts @graph.to_dot
   end
 
   it 'should reduce keep only real resources' do

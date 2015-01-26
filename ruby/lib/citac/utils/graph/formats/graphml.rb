@@ -98,6 +98,7 @@ module Citac
 
           formatter = REXML::Formatters::Pretty.new
           formatter.compact = true
+          formatter.width = 1000000
           formatter.write doc, output
 
           output
