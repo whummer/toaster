@@ -6,11 +6,11 @@ module Citac
       module GraphCleanup
         class << self
           def cleanup_resources(graph)
-            remove_node_type graph, ['Schedule', 'Filebucket[puppet]'], false
+            remove_node_type graph, ['Schedule', 'Filebucket[puppet]', 'Anchor'], false
           end
 
           def cleanup_expanded_relationships(graph)
-            remove_node_type graph, ['Schedule', 'Filebucket[puppet]', 'Whit']
+            remove_node_type graph, ['Schedule', 'Filebucket[puppet]', 'Whit', 'Anchor']
           end
 
           private
