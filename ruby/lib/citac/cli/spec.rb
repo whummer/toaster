@@ -1,6 +1,5 @@
 require 'thor'
-require_relative '../data/filesystem'
-require_relative '../environments/docker'
+require_relative 'ioc'
 require_relative '../agent/analyzation'
 
 module Citac
@@ -8,40 +7,38 @@ module Citac
     class Spec < Thor
       desc 'list', 'Lists all stored configuration specifications.'
       def list
-        repository.each_spec do |spec_name|
+        ServiceLocator.specification_repository.each_spec do |spec_name|
           puts spec_name
         end
       end
 
       desc 'info <id>', 'Prints information about the stored configuration specification.'
       def info(spec_id)
-        spec = repository.get spec_id
+        repo = ServiceLocator.specification_repository
+        spec = repo.get spec_id
+
         puts "Id:\t#{spec.id}"
         puts "Name:\t#{spec.name}"
         puts "Type:\t#{spec.type}"
 
         puts 'Operating systems:'
         spec.operating_systems.each do |os|
-          puts "  - #{os}"
+          msg = "  - #{os}"
+          msg << ' (analyzed)' if repo.has_dependency_graph? spec, os.name, os.version
+
+          puts msg
         end
       end
 
-      desc 'analyze <spec>', 'Generates the dependency graph for the given configuration specification.'
+      desc 'analyze <spec> [<os>]', 'Generates the dependency graph for the given configuration specification.'
       def analyze(spec_name, os_name, os_version)
-        spec = repository.get spec_name
+        repo = ServiceLocator.specification_repository
+        env_mgr = ServiceLocator.environment_manager
 
-        env_mgr = Citac::Environments::DockerEnvironmentManager.new
+        spec = repo.get spec_name
 
-        analyzer = Citac::Agent::Analyzer.new repository, env_mgr
+        analyzer = Citac::Agent::Analyzer.new repo, env_mgr
         analyzer.run spec, os_name, os_version
-      end
-
-      no_commands do
-        def repository
-          path = '/home/oliver/Projects/citac/test-cases'  #TODO determine path
-          @repo = Citac::Data::FileSystemSpecificationRepository.new path unless @repo
-          @repo
-        end
       end
     end
   end

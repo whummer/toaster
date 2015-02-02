@@ -45,6 +45,12 @@ module Citac
         ConfigurationSpecification.new spec_id, spec_id, type, metadata[type], oss
       end
 
+      def has_dependency_graph?(spec, os_name, os_version)
+        dir = graph_dir spec, os_name, os_version
+        path = File.join dir, 'dependencies.graphml'
+        File.exist? path
+      end
+
       def dependency_graph(spec, os_name, os_version)
         dir = graph_dir spec, os_name, os_version
         path = File.join dir, 'dependencies.graphml'

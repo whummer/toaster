@@ -42,7 +42,7 @@ module Citac
 
           log_debug 'agent', "Analyzation script '#{script_path}':\n--EOF--\n#{script_contents}\n--EOF--"
 
-          env = @env_manager.find os_name, os_version, spec.type
+          env = @env_manager.find :os_name => os_name, :os_version => os_version, :spec_runner => spec.type
 
           log_info 'agent', "Running analyzation in environment '#{env}'..."
           output = @env_manager.run env, run_script_path

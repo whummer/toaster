@@ -1,21 +1,17 @@
 require 'fileutils'
 
+require_relative 'common'
 require_relative 'model'
 require_relative '../docker'
 
 module Citac
   module Environments
     class DockerEnvironmentManager
+      include EnvironmentManagerExtensions
+
       def environments
         @envs = Citac::Docker.images.map{|i| docker_image_to_environment i}.reject{|e| e.nil?}.to_a unless @envs
         @envs
-      end
-
-      def find(os_name, os_version, spec_runner)
-        env = environments.find{|e| e.os_name == os_name && e.os_version == os_version && e.spec_runners.include?(spec_runner)}
-        raise "No suitable environment found for os '#{os_name}-#{os_version}' and '#{spec_runner}'" unless env
-
-        env
       end
 
       def run(env, script_path)
