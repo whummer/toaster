@@ -43,5 +43,19 @@ describe Citac::Environments::DockerEnvironmentManager, :explicit => true do
         expect(output).to eq('/opt/citac/bin/citac')
       end
     end
+
+    it 'should include stderr in output' do
+      env = @em.environments.first
+
+      Dir.mktmpdir do |dir|
+        script_path = File.join dir, 'script.sh'
+        IO.write script_path, "#!/usr/bin/ruby\nSTDERR.puts 'stderr'\nSTDOUT.puts 'stdout'"
+
+        output = @em.run env, script_path
+        output.strip!
+
+        expect(output).to include('stderr')
+      end
+    end
   end
 end
