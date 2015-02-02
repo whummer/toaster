@@ -12,15 +12,15 @@ class Puppet::Graph::SimpleGraph
     __citac_original_write_graph name
 
     file = File.join Puppet[:graphdir], "#{name}.graphml"
-    File.open(file, 'w') do |f|
+    File.open file, 'w', :encoding => 'UTF-8' do |f|
       f.puts __citac_to_graphml
     end
   end
 
   def __citac_to_graphml
     unless directed?
-      STDERR.puts 'Cannot generate GraphML graph from undirected graph.'
-      return
+      STDERR.puts 'Cannot generate GraphML for undirected graph.'
+      return nil
     end
 
     graph = Citac::Utils::Graphs::Graph.new

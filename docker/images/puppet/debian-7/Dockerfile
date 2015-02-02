@@ -9,3 +9,5 @@ RUN wget https://apt.puppetlabs.com/puppetlabs-release-wheezy.deb 2>&1 \
 
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y puppet-common
+
+ENV PATH /opt/citac/bin:$PATH

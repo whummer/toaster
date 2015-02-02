@@ -1,10 +1,3 @@
-require_relative 'formats/dot'
-require_relative 'formats/graphml'
-require_relative 'cyclic'
-require_relative 'paths'
-require_relative 'reachability'
-require_relative 'toposort'
-
 module Citac
   module Utils
     module Graphs

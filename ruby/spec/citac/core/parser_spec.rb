@@ -1,11 +1,11 @@
 require_relative '../../helper'
-require_relative '../../../lib/citac/specification/core'
+require_relative '../../../lib/citac/core/core'
 
-describe Citac::ConfigurationSpecification do
+describe Citac::Core::DependencyGraph do
   describe '::parse' do
     context 'spec of 3 resources without dependencies' do
       before :each do
-        @spec = Citac::ConfigurationSpecification.from_confspec ['3']
+        @spec = Citac::Core::DependencyGraph.from_confspec ['3']
       end
 
       it 'should parse resource count' do
@@ -21,7 +21,7 @@ describe Citac::ConfigurationSpecification do
 
     context 'spec of 3 resources with dependencies 1->3 and 2->3' do
       before :each do
-        @spec = Citac::ConfigurationSpecification.from_confspec ['3', '3 1 2']
+        @spec = Citac::Core::DependencyGraph.from_confspec ['3', '3 1 2']
       end
 
       it 'should parse resource count' do
@@ -37,7 +37,7 @@ describe Citac::ConfigurationSpecification do
 
     context 'spec of 3 resources with cyclic dependencies 1 -> 2 -> 3 -> 1' do
       it 'should raise error during parsing' do
-        expect { Citac::ConfigurationSpecification.from_confspec ['3', '2 1', '3 1', '1 3'] }.to raise_error
+        expect { Citac::Core::DependencyGraph.from_confspec ['3', '2 1', '3 1', '1 3'] }.to raise_error
       end
     end
   end

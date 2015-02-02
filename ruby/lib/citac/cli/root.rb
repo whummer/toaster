@@ -1,39 +1,25 @@
 require 'thor'
 
+require_relative 'dg'
 require_relative 'puppet'
 require_relative 'spec'
-require_relative '../specification/core'
+require_relative '../version'
 
 module Citac
   module CLI
     class CitacCLI < Thor
+      desc 'dg <command> <args...>', 'Dependency graph related commands'
+      subcommand 'dg', Dg
+
       desc 'puppet <command> <args...>', 'Puppet specific commands'
       subcommand 'puppet', Puppet
 
       desc 'spec <command> <args...>', 'Configuration specification related commands'
       subcommand 'spec', Spec
 
-      desc 'graph specfile [--png pngfile]', 'Generates a Graphviz graph of the given configuration specification'
-      option :png
-      def graph(specfile, pngfile = nil)
-        spec = File.open(specfile) { |f| ConfigurationSpecification.parse f }
-        g = spec.to_graph
-
-        if options[:png] && pngfile
-          IO.popen('dot -Tpng', 'rb+') do |dot|
-            dot.puts g
-            dot.close_write
-
-            buf = ''
-            File.open(pngfile, 'wb') do |f|
-              while dot.read(1024, buf)
-                f.write buf
-              end
-            end
-          end
-        else
-          puts g
-        end
+      desc 'version', 'Prints the version number.'
+      def version
+        puts Citac::VERSION
       end
     end
   end

@@ -1,3 +1,5 @@
+require_relative 'base'
+
 module Citac
   module Utils
     module Graphs
@@ -19,6 +21,10 @@ module Citac
           end
 
           ordered
+        end
+
+        def cyclic?
+          toposort.nil?
         end
       end
     end

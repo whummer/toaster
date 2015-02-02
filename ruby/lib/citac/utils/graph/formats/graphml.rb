@@ -1,5 +1,6 @@
 require 'rexml/document'
 require 'rexml/formatters/pretty'
+require_relative '../base'
 
 module Citac
   module Utils

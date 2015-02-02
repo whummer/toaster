@@ -1,53 +1,46 @@
 require 'thor'
-require_relative '../specification/core'
+require_relative '../data/filesystem'
+require_relative '../environments/docker'
+require_relative '../agent/analyzation'
 
 module Citac
   module CLI
     class Spec < Thor
-      desc 'traces <file>', 'Prints all possible execution traces for the given configuration specification.'
-      def traces(file)
-        spec = parse_spec file
-        stg = spec.to_stg
-
-        stg.each_path [], spec.resources do |path|
-          puts path.join ' -> '
+      desc 'list', 'Lists all stored configuration specifications.'
+      def list
+        repository.each_spec do |spec_name|
+          puts spec_name
         end
       end
 
-      desc 'tc <file>', 'Calculates the number of possible execution traces for the given configuration specification.'
-      def tc(file)
-        spec = parse_spec file
-        stg = spec.to_stg
+      desc 'info <id>', 'Prints information about the stored configuration specification.'
+      def info(spec_id)
+        spec = repository.get spec_id
+        puts "Id:\t#{spec.id}"
+        puts "Name:\t#{spec.name}"
+        puts "Type:\t#{spec.type}"
 
-        trace_count = stg.path_count [], spec.resources
-        puts trace_count
+        puts 'Operating systems:'
+        spec.operating_systems.each do |os|
+          puts "  - #{os}"
+        end
       end
 
-      desc 'stg <file>', 'Generated the STG for the given configuration specification.'
-      def stg(file)
-        spec = parse_spec file
-        stg = spec.to_stg
-        puts stg.to_dot(:node_label_getter => lambda{|n| n.label.join(', ')})
+      desc 'analyze <spec>', 'Generates the dependency graph for the given configuration specification.'
+      def analyze(spec_name, os_name, os_version)
+        spec = repository.get spec_name
+
+        env_mgr = Citac::Environments::DockerEnvironmentManager.new
+
+        analyzer = Citac::Agent::Analyzer.new repository, env_mgr
+        analyzer.run spec, os_name, os_version
       end
 
       no_commands do
-        def parse_spec(file_path)
-          ext = File.extname file_path
-
-          case ext
-            when '.graphml'
-              File.open file_path, 'r' do |f|
-                return Citac::ConfigurationSpecification.from_graphml f
-              end
-
-            when '.confspec'
-              File.open file_path, 'r' do |f|
-                return Citac::ConfigurationSpecification.from_confspec f
-              end
-
-            else
-              raise "Unknown file format: #{ext}"
-          end
+        def repository
+          path = '/home/oliver/Projects/citac/test-cases'  #TODO determine path
+          @repo = Citac::Data::FileSystemSpecificationRepository.new path unless @repo
+          @repo
         end
       end
     end

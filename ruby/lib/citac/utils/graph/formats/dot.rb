@@ -1,3 +1,5 @@
+require_relative '../base'
+
 module Citac
   module Utils
     module Graphs

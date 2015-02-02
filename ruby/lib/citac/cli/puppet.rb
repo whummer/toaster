@@ -34,12 +34,13 @@ module Citac
     end
 
     class Puppet < Thor
-      desc 'graph <file1> <file2> <file...>', 'Generations dependency graphs for the given Puppet manifests.'
+      desc 'graph [--dot|-d] <file> <file> <file...>', 'Generates dependency graphs for the given Puppet manifests.'
+      option :dot, :type => :boolean, :aliases => :d, :desc => 'Generates DOT files as well if specified.'
       def graph(*files)
         files.each do |file|
           begin
             puts "Generating graphs for '#{file}' ..."
-            Citac::Puppet::Utils::GraphGeneration.generate_graphs file
+            Citac::Puppet::Utils::GraphGeneration.generate_graphs file, :generate_dot => options[:dot]
           rescue StandardError => e
             STDERR.puts "Failed to generate graphs for '#{file}': #{e}"
           end

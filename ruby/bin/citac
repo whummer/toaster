@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require_relative '../lib/citac'
+require_relative '../lib/citac/cli'
 
 Citac::CLI::CitacCLI.start ARGV
