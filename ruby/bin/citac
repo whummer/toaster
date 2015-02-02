@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+require_relative '../lib/citac/logging'
 require_relative '../lib/citac/cli'
 
-Citac::CLI::CitacCLI.start ARGV
+begin
+    Citac::CLI::CitacCLI.start ARGV
+rescue StandardError => e
+    log_fatal 'main', 'Unhandled exception occurred', e
+end
