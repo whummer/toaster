@@ -53,7 +53,7 @@ module Citac
     end
 
     @logger = Logger.new(STDOUT)
-    @logger.level = Logger::DEBUG
+    @logger.level = Logger::INFO
 
     @logs = Hash.new {|h, k| h[k] = Log.new @logger, k }
 

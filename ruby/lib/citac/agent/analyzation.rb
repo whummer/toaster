@@ -12,7 +12,7 @@ module Citac
       end
 
       def run(spec, os_name, os_version)
-        log_info 'agent', "Starting to analyze configuration specification '#{spec}'..."
+        log_info 'agent', "Starting to analyze configuration specification '#{spec}' on os '#{os_name}-#{os_version}'..."
 
         provider = Citac::Providers.get spec.type
 
