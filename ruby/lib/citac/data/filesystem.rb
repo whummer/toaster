@@ -65,7 +65,7 @@ module Citac
         FileUtils.makedirs dir
 
         IO.write File.join(dir, 'dependencies.graphml'), graph.to_graphml, :encoding => 'UTF-8'
-        IO.write File.join(dir, 'dependencies.dot'), graph.to_dot, :encoding => 'UTF-8' #TODO apply tred to dot
+        IO.write File.join(dir, 'dependencies.dot'), graph.to_dot(:tred => true), :encoding => 'UTF-8'
       end
 
       def script(spec, os_name, os_version)

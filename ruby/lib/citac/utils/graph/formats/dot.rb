@@ -1,4 +1,5 @@
 require_relative '../base'
+require_relative '../../../logging'
 
 module Citac
   module Utils
@@ -43,7 +44,26 @@ module Citac
 
           result << '}'
 
-          result.join "\n"
+          dot = result.join "\n"
+          dot = apply_tred dot if options[:tred]
+          dot
+        end
+
+        private
+
+        def apply_tred(dot)
+          begin
+            log_debug 'graph', 'Applying transitive reduction to graph...'
+            IO.popen 'tred', 'r+' do |f|
+              f.puts dot
+              f.close_write
+
+              f.read
+            end
+          rescue StandardError => e
+            log_warn 'graph', 'Failed to apply transitive reduction to graph', e
+            dot
+          end
         end
       end
     end
