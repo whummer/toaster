@@ -11,13 +11,15 @@ module Citac
         @env_manager = env_manager
       end
 
-      def run(spec, os_name, os_version)
-        log_info 'agent', "Starting to analyze configuration specification '#{spec}' on os '#{os_name}-#{os_version}'..."
+      def run(spec, operating_system, options = {})
+        return if @repository.has_dependency_graph?(spec, operating_system) && !options[:force]
+
+        log_info 'agent', "Starting to analyze configuration specification '#{spec}' on operating system '#{operating_system}'..."
 
         provider = Citac::Providers.get spec.type
 
         script_name = "script#{provider.script_extension}"
-        script_contents = @repository.script spec, os_name, os_version
+        script_contents = @repository.script spec, operating_system
 
         Dir.mktmpdir do |dir|
           log_debug 'agent', "Using temporary directory '#{dir}'..."
@@ -27,7 +29,6 @@ module Citac
 
           File.open run_script_path, 'w', :encoding => 'UTF-8' do |f|
             f.puts '#!/bin/sh'
-            f.puts 'gem install --no-ri --no-rdoc thor rest-client'
             f.puts 'cd /tmp/citac'
 
             provider.write_preparation_code f, spec
@@ -42,7 +43,7 @@ module Citac
 
           log_debug 'agent', "Analyzation script '#{script_path}':\n--EOF--\n#{script_contents}\n--EOF--"
 
-          env = @env_manager.find :os_name => os_name, :os_version => os_version, :spec_runner => spec.type
+          env = @env_manager.find :operating_system => operating_system, :spec_runner => spec.type
 
           log_info 'agent', "Running analyzation in environment '#{env}'..."
           output = @env_manager.run env, run_script_path
@@ -52,7 +53,7 @@ module Citac
           dependencies = Citac::Utils::Graphs::Graph.from_graphml dependencies_graphml
 
           log_info 'agent', "Saving generated dependency graph for '#{spec}' to repository..."
-          @repository.save_dependency_graph spec, os_name, os_version, dependencies
+          @repository.save_dependency_graph spec, operating_system, dependencies
         end
       end
     end

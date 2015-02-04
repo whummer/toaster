@@ -1,5 +1,5 @@
 require 'fileutils'
-require_relative 'model'
+require_relative '../model'
 require_relative '../providers'
 require_relative '../utils/file'
 require_relative '../utils/graph'
@@ -40,19 +40,19 @@ module Citac
         type = metadata['type']
 
         oss = metadata['operating-systems'] || []
-        oss.map! {|os| OperatingSystem.parse os}
+        oss.map! {|os| Citac::Model::OperatingSystem.parse os}
 
-        ConfigurationSpecification.new spec_id, spec_id, type, metadata[type], oss
+        Citac::Model::ConfigurationSpecification.new spec_id, spec_id, type, metadata[type], oss
       end
 
-      def has_dependency_graph?(spec, os_name, os_version)
-        dir = graph_dir spec, os_name, os_version
+      def has_dependency_graph?(spec, operating_system)
+        dir = graph_dir spec, operating_system
         path = File.join dir, 'dependencies.graphml'
         File.exist? path
       end
 
       def dependency_graph(spec, os_name, os_version)
-        dir = graph_dir spec, os_name, os_version
+        dir = graph_dir spec, operating_system
         path = File.join dir, 'dependencies.graphml'
         return nil unless File.exist? path
 
@@ -60,16 +60,16 @@ module Citac
         Citac::Utils::Graphs::Graph.from_graphml graphml
       end
 
-      def save_dependency_graph(spec, os_name, os_version, graph)
-        dir = graph_dir spec, os_name, os_version
+      def save_dependency_graph(spec, operating_system, graph)
+        dir = graph_dir spec, operating_system
         FileUtils.makedirs dir
 
         IO.write File.join(dir, 'dependencies.graphml'), graph.to_graphml, :encoding => 'UTF-8'
         IO.write File.join(dir, 'dependencies.dot'), graph.to_dot(:tred => true), :encoding => 'UTF-8'
       end
 
-      def script(spec, os_name, os_version)
-        path = script_path spec, os_name, os_version
+      def script(spec, operating_system)
+        path = script_path spec, operating_system
         IO.read path, :encoding => 'UTF-8'
       end
 
@@ -80,27 +80,31 @@ module Citac
         File.join @root, "#{id}.spec"
       end
 
-      def graph_dir(spec, os_name, os_version)
-        File.join spec_dir(spec), 'graphs', "#{os_name}-#{os_version}"
+      def graph_dir(spec, operating_system)
+        raise "Operating system '#{operating_system}' is not fully specified" unless operating_system.specific?
+
+        File.join spec_dir(spec), 'graphs', "#{operating_system}"
       end
 
-      def script_path(spec, os_name, os_version)
+      def script_path(spec, operating_system)
+        raise "Operating system '#{operating_system}' is not fully specified" unless operating_system.specific?
+
         provider = Providers.get spec.type
         ext = provider.script_extension
 
         dir = spec_dir spec
         script_dir = File.join dir, 'scripts'
 
-        file_path = File.join script_dir, "#{os_name}-#{os_version}#{ext}"
+        file_path = File.join script_dir, "#{operating_system}#{ext}"
         return file_path if File.exist? file_path
 
-        file_path = File.join script_dir, "#{os_name}#{ext}"
+        file_path = File.join script_dir, "#{operating_system.name}#{ext}"
         return file_path if File.exist? file_path
 
         file_path = File.join script_dir, "default#{ext}"
         return file_path if File.exist? file_path
 
-        raise "Unable to locate script file for spec '#{spec}' for os '#{os_name}-#{os_version}'."
+        raise "Unable to locate script file for spec '#{spec}' for os '#{operating_system}'."
       end
     end
   end

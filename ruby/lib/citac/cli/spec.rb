@@ -1,6 +1,7 @@
 require 'thor'
 require_relative 'ioc'
 require_relative '../agent/analyzation'
+require_relative '../model'
 
 module Citac
   module CLI
@@ -24,21 +25,29 @@ module Citac
         puts 'Operating systems:'
         spec.operating_systems.each do |os|
           msg = "  - #{os}"
-          msg << ' (analyzed)' if repo.has_dependency_graph? spec, os.name, os.version
+          msg << ' (analyzed)' if repo.has_dependency_graph? spec, os
 
           puts msg
         end
       end
 
-      desc 'analyze <spec> [<os>]', 'Generates the dependency graph for the given configuration specification.'
-      def analyze(spec_name, os_name, os_version)
+      option :force, :type => :boolean, :aliases => :f
+      desc 'analyze [--force|-f] <spec> [<os>]', 'Generates the dependency graph for the given configuration specification.'
+      def analyze(spec_name, os = nil)
+        os = Citac::Model::OperatingSystem.parse os if os
+
         repo = ServiceLocator.specification_repository
         env_mgr = ServiceLocator.environment_manager
 
         spec = repo.get spec_name
 
+        oss = env_mgr.operating_systems(spec.type)
+        oss = oss.select {|o| o.matches? os} if os
+
         analyzer = Citac::Agent::Analyzer.new repo, env_mgr
-        analyzer.run spec, os_name, os_version
+        oss.each do |os|
+          analyzer.run spec, os, :force => options[:force]
+        end
       end
     end
   end

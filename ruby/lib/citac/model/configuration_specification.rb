@@ -1,27 +1,5 @@
 module Citac
-  module Data
-    class OperatingSystem
-      def self.parse(os_string)
-        pieces = os_string.split '-', 2
-        OperatingSystem.new pieces[0], pieces[1]
-      end
-
-      attr_reader :name, :version
-
-      def initialize(name, version)
-        @name = name
-        @version = version
-      end
-
-      def to_s
-        @version ? "#{@name}-#{@version}" : "#{@name}-*"
-      end
-
-      def inspect
-        to_s
-      end
-    end
-
+  module Model
     class ConfigurationSpecification
       attr_reader :id, :name, :type, :type_metadata, :operating_systems
 

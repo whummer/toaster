@@ -1,7 +1,7 @@
 require 'fileutils'
 
 require_relative 'common'
-require_relative 'model'
+require_relative '../model'
 require_relative '../docker'
 
 module Citac
@@ -39,9 +39,9 @@ module Citac
         return nil unless docker_image.name.start_with? 'citac/'
 
         spec_runner = docker_image.name.split('/', 2).last
-        os = docker_image.tag.split '-', 2
+        os = Citac::Model::OperatingSystem.parse docker_image.tag
 
-        Environment.new docker_image.id, os.first, os.last, [spec_runner]
+        Citac::Model::Environment.new docker_image.id, os, [spec_runner]
       end
     end
   end
