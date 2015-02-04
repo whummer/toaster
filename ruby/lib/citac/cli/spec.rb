@@ -1,6 +1,7 @@
 require 'thor'
 require_relative 'ioc'
 require_relative '../agent/analyzation'
+require_relative '../agent/runner'
 require_relative '../model'
 
 module Citac
@@ -47,6 +48,24 @@ module Citac
         analyzer = Citac::Agent::Analyzer.new repo, env_mgr
         oss.each do |os|
           analyzer.run spec, os, :force => options[:force]
+        end
+      end
+
+      desc 'exec <spec> [<os>]', 'Runs the given configuration specification.'
+      def exec(spec_name, os = nil)
+        os = Citac::Model::OperatingSystem.parse os if os
+
+        repo = ServiceLocator.specification_repository
+        env_mgr = ServiceLocator.environment_manager
+
+        spec = repo.get spec_name
+
+        oss = env_mgr.operating_systems(spec.type)
+        oss = oss.select {|o| o.matches? os} if os
+
+        runner = Citac::Agent::Runner.new repo, env_mgr
+        oss.each do |os|
+          runner.run spec, os
         end
       end
     end

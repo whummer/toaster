@@ -5,15 +5,13 @@ require_relative '../logging'
 
 module Citac
   module Agent
-    class Analyzer
+    class Runner
       def initialize(repository, env_manager)
         @repository = repository
         @env_manager = env_manager
       end
 
-      def run(spec, operating_system, options = {})
-        raise "Operating system '#{operating_system}' not specific" unless operating_system.specific?
-
+      def run(spec, operating_system)
         log_info 'agent', "Running configuration specification '#{spec}' on operating system '#{operating_system}'..."
 
         provider = Citac::Providers.get spec.type
@@ -32,7 +30,7 @@ module Citac
             f.puts 'cd /tmp/citac'
 
             provider.write_preparation_code f, spec
-            provider.write_dependency_graph_code f, script_name, 'dependencies.graphml'
+            provider.write_run_code f, script_name
           end
 
           run_script_contents = IO.read run_script_path, :encoding => 'UTF-8'
@@ -41,19 +39,13 @@ module Citac
           script_path = File.join(dir, script_name)
           IO.write script_path, script_contents, :encoding => 'UTF-8'
 
-          log_debug 'agent', "Analyzation script '#{script_path}':\n--EOF--\n#{script_contents}\n--EOF--"
+          log_debug 'agent', "Configuration run script '#{script_path}':\n--EOF--\n#{script_contents}\n--EOF--"
 
           env = @env_manager.find :operating_system => operating_system, :spec_runner => spec.type
 
-          log_info 'agent', "Running analyzation in environment '#{env}'..."
+          log_info 'agent', "Running configuration specification in environment '#{env}'..."
           output = @env_manager.run env, run_script_path
-          log_debug 'agent', "Run script output:\n--EOF--\n#{output}\n--EOF--"
-
-          dependencies_graphml = IO.read File.join(dir, 'dependencies.graphml'), :encoding => 'UTF-8'
-          dependencies = Citac::Utils::Graphs::Graph.from_graphml dependencies_graphml
-
-          log_info 'agent', "Saving generated dependency graph for '#{spec}' to repository..."
-          @repository.save_dependency_graph spec, operating_system, dependencies
+          puts output
         end
       end
     end

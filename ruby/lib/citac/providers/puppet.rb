@@ -24,7 +24,10 @@ module Citac
         generated_graph_name = "#{File.basename script_name, '.*'}.expanded_relationships.graphml"
 
         io.puts "citac puppet graph \"#{script_name}\" && mv \"#{generated_graph_name}\" \"#{graph_name}\""
-        #io.puts ""
+      end
+
+      def self.write_run_code(io, script_name)
+        io.puts "puppet apply \"#{script_name}\""
       end
     end
 
