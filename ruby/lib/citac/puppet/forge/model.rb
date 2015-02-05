@@ -31,10 +31,12 @@ module Citac
         def versions; @json['releases'].map{|x| x['version']}.to_a; end;
 
         def operating_systems
+          return [] unless @json['current_release'] && @json['current_release']['metadata']
+
           oss = []
-          @json['current_release']['metadata']['operatingsystem_support'].each do |os|
+          (@json['current_release']['metadata']['operatingsystem_support'] || []).each do |os|
             name = os['operatingsystem'].downcase
-            os['operatingsystemrelease'].each do |version|
+            (os['operatingsystemrelease'] || []).each do |version|
               oss << Citac::Model::OperatingSystem.new(name, version)
             end
           end

@@ -59,7 +59,8 @@ module Citac
             }
         }
 
-        IO.write File.join(spec_dir, 'metadata.json'), JSON.pretty_generate(metadata), :encoding => 'UTF-8'
+        metadata_path = File.join(spec_dir, 'metadata.json')
+        IO.write metadata_path, JSON.pretty_generate(metadata), :encoding => 'UTF-8'
 
         script_path = File.join(spec_dir, 'scripts', 'default.pp')
         IO.write script_path, "# #{mod.forge_url}\nTODO", :encoding => 'UTF-8'
@@ -75,6 +76,7 @@ module Citac
         puts 'Done.'
         puts
         puts "IMPORTANT: Remember to edit '#{script_path}' to include the module properly.".yellow
+        puts "WARN: No supported operating system has been detected. Edit '#{metadata_path}' manually".yellow if mod.operating_systems.empty?
       rescue
         FileUtils.rm_rf spec_dir
         raise
