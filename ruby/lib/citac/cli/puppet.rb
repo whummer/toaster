@@ -75,6 +75,9 @@ module Citac
         puts 'Done.'
         puts
         puts "IMPORTANT: Remember to edit '#{script_path}' to include the module properly.".yellow
+      rescue
+        FileUtils.rm_rf spec_dir
+        raise
       end
     end
 
