@@ -17,7 +17,11 @@ module Citac
             FileUtils.rm_rf graphdir if Dir.exist? graphdir
             FileUtils.makedirs graphdir
 
-            Citac::Utils::Exec.run "citac-puppet apply --noop --graph \"#{manifest_path}\""
+            args = ['--noop', '--graph']
+            args += ['--modulepath', options[:modulepath]] if options[:modulepath]
+            args << manifest_path
+
+            Citac::Utils::Exec.run 'citac-puppet apply', :args => args
 
             manifest_name = File.basename manifest_path, '.*' # file name without extension
 

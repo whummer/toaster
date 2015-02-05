@@ -3,31 +3,27 @@ require_relative 'registry'
 module Citac
   module Providers
     class PuppetProvider
-      def self.script_extension
-        '.pp'
-      end
+      class << self
+        def script_extension; '.pp'; end
 
-      def self.write_preparation_code(io, spec)
-        required_modules = spec.type_metadata['required-modules'] || []
-        required_modules.each do |mod|
-          name = mod['name']
-          version = mod['version']
+        def prepare_for_dependency_graph_generation(repository, spec, directory, run_script_io)
+          copy_modules repository, spec, directory
 
-          options = ''
-          options << " --version #{version}" if version
-
-          io.puts "puppet module install #{options} #{name}"
+          run_script_io.puts 'citac puppet graph --modulepath modules script.pp'
+          run_script_io.puts 'mv script.expanded_relationships.graphml dependencies.graphml'
         end
-      end
 
-      def self.write_dependency_graph_code(io, script_name, graph_name)
-        generated_graph_name = "#{File.basename script_name, '.*'}.expanded_relationships.graphml"
+        def prepare_for_run(repository, spec, directory, run_script_io)
+          copy_modules repository, spec, directory
 
-        io.puts "citac puppet graph \"#{script_name}\" && mv \"#{generated_graph_name}\" \"#{graph_name}\""
-      end
+          run_script_io.puts 'puppet apply --modulepath modules script.pp'
+        end
 
-      def self.write_run_code(io, script_name)
-        io.puts "puppet apply \"#{script_name}\""
+        private
+
+        def copy_modules(respository, spec, directory)
+          respository.get_additional_files spec, directory
+        end
       end
     end
 

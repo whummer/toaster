@@ -31,8 +31,7 @@ module Citac
             f.puts '#!/bin/sh'
             f.puts 'cd /tmp/citac'
 
-            provider.write_preparation_code f, spec
-            provider.write_dependency_graph_code f, script_name, 'dependencies.graphml'
+            provider.prepare_for_dependency_graph_generation @repository, spec, dir, f
           end
 
           run_script_contents = IO.read run_script_path, :encoding => 'UTF-8'

@@ -73,6 +73,11 @@ module Citac
         IO.read path, :encoding => 'UTF-8'
       end
 
+      def get_additional_files(spec, target_dir)
+        dir = additional_files_dir spec
+        FileUtils.cp_r "#{dir}/.", target_dir if Dir.exist? dir
+      end
+
       private
 
       def spec_dir(spec)
@@ -84,6 +89,10 @@ module Citac
         raise "Operating system '#{operating_system}' is not fully specified" unless operating_system.specific?
 
         File.join spec_dir(spec), 'graphs', "#{operating_system}"
+      end
+
+      def additional_files_dir(spec)
+        File.join spec_dir(spec), 'files'
       end
 
       def script_path(spec, operating_system)

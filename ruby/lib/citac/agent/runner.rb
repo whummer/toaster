@@ -29,8 +29,7 @@ module Citac
             f.puts '#!/bin/sh'
             f.puts 'cd /tmp/citac'
 
-            provider.write_preparation_code f, spec
-            provider.write_run_code f, script_name
+            provider.prepare_for_run @repository, spec, dir, f
           end
 
           run_script_contents = IO.read run_script_path, :encoding => 'UTF-8'

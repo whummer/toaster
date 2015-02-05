@@ -81,11 +81,17 @@ module Citac
     class Puppet < Thor
       desc 'graph [--dot|-d] <file> <file> <file...>', 'Generates dependency graphs for the given Puppet manifests.'
       option :dot, :type => :boolean, :aliases => :d, :desc => 'Generates DOT files as well if specified.'
+      option :modulepath, :desc => 'Specifies the path from which Puppet should load modules from.'
       def graph(*files)
         files.each do |file|
           begin
             puts "Generating graphs for '#{file}' ..."
-            Citac::Puppet::Utils::GraphGeneration.generate_graphs file, :generate_dot => options[:dot]
+
+            opts = {
+                :generate_dot => options[:dot],
+                :modulepath => options[:modulepath]
+            }
+            Citac::Puppet::Utils::GraphGeneration.generate_graphs file, opts
           rescue StandardError => e
             STDERR.puts "Failed to generate graphs for '#{file}': #{e}"
           end
