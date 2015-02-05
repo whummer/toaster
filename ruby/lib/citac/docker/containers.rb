@@ -10,11 +10,16 @@ module Citac
       mounts.each {|(s,t,w)| parameters << " -v \"#{s}:#{t}:#{w ? 'rw' : 'ro'}\""}
 
       container_id = Citac::Utils::Exec.run("docker run -d #{parameters} #{image_id} #{command}").strip
-      exit_code = Citac::Utils::Exec.run("docker wait #{container_id}").strip.to_i
-      output = Citac::Utils::Exec.run "docker logs #{container_id}"
+      if options[:output] == :passthrough
+        output = nil
+        Citac::Utils::Exec.run "docker logs -f #{container_id}", :stdout => :passthrough
+        exit_code = Citac::Utils::Exec.run("docker wait #{container_id}").strip.to_i
+      else
+        exit_code = Citac::Utils::Exec.run("docker wait #{container_id}").strip.to_i
+        output = Citac::Utils::Exec.run "docker logs #{container_id}"
+      end
 
       raise "Running '#{command}' on '#{image}' failed with exit code #{exit_code}: #{output}" unless exit_code == 0
-
       output
     ensure
       Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if container_id

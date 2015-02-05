@@ -43,8 +43,7 @@ module Citac
           env = @env_manager.find :operating_system => operating_system, :spec_runner => spec.type
 
           log_info 'agent', "Running configuration specification in environment '#{env}'..."
-          output = @env_manager.run env, run_script_path
-          puts output
+          @env_manager.run env, run_script_path, :output => :passthrough
         end
       end
     end

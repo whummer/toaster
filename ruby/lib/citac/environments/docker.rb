@@ -14,7 +14,7 @@ module Citac
         @envs
       end
 
-      def run(env, script_path)
+      def run(env, script_path, options = {})
         executable = File.executable? script_path
         FileUtils.chmod '+x', script_path unless executable
 
@@ -27,7 +27,7 @@ module Citac
         mounts << [citac_dir, '/opt/citac', false]
         mounts << [script_dir, '/tmp/citac', true]
 
-        output = Citac::Docker.run env.id, "/tmp/citac/#{script_name}", :mounts => mounts
+        output = Citac::Docker.run env.id, "/tmp/citac/#{script_name}", :mounts => mounts, :output => options[:output]
         FileUtils.chmod '-x', script_path unless executable
 
         output
