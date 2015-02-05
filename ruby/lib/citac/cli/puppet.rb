@@ -1,6 +1,10 @@
+require 'fileutils'
+require 'json'
 require 'thor'
 require_relative '../puppet/utils/graph_generation'
 require_relative '../puppet/forge/client'
+require_relative '../utils/exec'
+require_relative '../utils/colorize'
 
 module Citac
   module CLI
@@ -22,14 +26,55 @@ module Citac
 
         count = 0
 
-        client = Citac::Puppet::Forge::PuppetForgeClient.new
-        client.each_module query, query_options do |mod|
-          puts "#{mod.full_name}\t#{mod.downloads} downloads\t#{mod.versions.length} versions"
+        puts "downloads\tversions\tmodule"
+        puts "---------\t--------\t------"
+        Citac::Puppet::Forge::PuppetForgeClient.each_module query, query_options do |mod|
+          puts "#{mod.downloads.to_s.rjust(9)}\t#{mod.versions.length.to_s.rjust(8)}\t#{mod.full_name}"
           count += 1
         end
 
         puts
-        puts "#{count} modules found"
+        puts "#{count} modules found."
+      end
+
+      desc 'spec <module name>', 'Generates a file based test case stub for the given puppet module. The script needs to be edited.'
+      def spec(module_name, version = nil)
+        puts 'Setting up file structure...'
+
+        spec_dir = "#{module_name}.spec"
+        module_dir = File.join(spec_dir, 'files', 'modules')
+
+        FileUtils.mkdir_p spec_dir
+        FileUtils.mkdir_p File.join(spec_dir, 'scripts')
+        FileUtils.mkdir_p module_dir
+
+        puts 'Generating metadata...'
+
+        mod = Citac::Puppet::Forge::PuppetForgeClient.get_module module_name
+        metadata = {
+            'type' => 'puppet',
+            'operating-systems' => mod.operating_systems.map{|os| os.to_s},
+            'puppet' => {
+                'required-modules' => [module_name]
+            }
+        }
+
+        IO.write File.join(spec_dir, 'metadata.json'), JSON.pretty_generate(metadata), :encoding => 'UTF-8'
+
+        script_path = File.join(spec_dir, 'scripts', 'default.pp')
+        IO.write script_path, "# #{mod.forge_url}\nTODO", :encoding => 'UTF-8'
+
+        puts 'Fetching puppet modules...'
+
+        arguments = ['--modulepath', module_dir]
+        arguments += ['--version', version] if version
+        arguments << module_name
+
+        Citac::Utils::Exec.run 'puppet module install', :args => arguments, :stdout => :passthrough
+
+        puts 'Done.'
+        puts
+        puts "IMPORTANT: Remember to edit '#{script_path}' to include the module properly.".yellow
       end
     end
 

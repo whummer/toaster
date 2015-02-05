@@ -7,11 +7,9 @@ module Citac
   module Puppet
     module Forge
       class PuppetForgeClient
-        def initialize
-          @modules = RestClient::Resource.new 'https://forgeapi.puppetlabs.com/v3/modules'
-        end
+        BASE_URL = 'https://forgeapi.puppetlabs.com/v3'
 
-        def each_module(query, options = {})
+        def self.each_module(query, options = {})
           query ||= PuppetForgeModuleQuery.new
           page_size = options[:page_size] || 100
           sort_by = options[:sort_by] || 'downloads'
@@ -23,7 +21,7 @@ module Citac
             params = {:limit => page_size, :offset => offset, :sort_by => sort_by}
             params.merge! query.to_params
 
-            response = @modules.get :params => params
+            response = RestClient.get "#{BASE_URL}/modules", :params => params
             json = JSON.parse response.to_str
 
             json['results'].each do |module_json|
@@ -39,6 +37,11 @@ module Citac
               break
             end
           end
+        end
+
+        def self.get_module(module_name)
+          json = RestClient.get "#{BASE_URL}/modules/#{module_name}"
+          PuppetForgeModule.new JSON.parse(json)
         end
       end
     end
