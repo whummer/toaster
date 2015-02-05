@@ -1,0 +1,22 @@
+<Plugin "apache">
+<% @instances.each do |name,values| -%>
+  <Instance "<%= name %>">
+    URL "<%= values['url'] %>"
+<% if values['user'] -%>
+    User "<%= values['user'] %>"
+<% end -%>
+<% if values['password'] -%>
+    Password "<%= values['password'] %>"
+<% end -%>
+<% unless values['verifypeer'].nil? -%>
+    VerifyPeer "<%= values['verifypeer'] %>"
+<% end -%>
+<% unless values['verifyhost'].nil? -%>
+    VerifyHost "<%= values['verifyhost'] %>"
+<% end -%>
+<% if values['cacert'] -%>
+    CACert "<%= values['cacert'] %>"
+<% end -%>
+  </Instance>
+<% end -%>
+</Plugin>

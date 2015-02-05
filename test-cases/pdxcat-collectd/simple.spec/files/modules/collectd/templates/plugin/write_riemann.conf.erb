@@ -1,0 +1,9 @@
+<Plugin "write_riemann">
+  <Node "default">
+    Host "<%= @riemann_host  %>"
+    Port "<%= @riemann_port  %>"
+    Protocol <%= @protocol %>
+    StoreRates <%= @store_rates %>
+    AlwaysAppendDS <%= @always_append_ds %>
+  </Node>
+</Plugin>

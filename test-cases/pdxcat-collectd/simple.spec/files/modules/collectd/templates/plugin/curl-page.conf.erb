@@ -1,0 +1,32 @@
+<Plugin curl>
+  <Page "<%= @plugininstance %>">
+    URL "<%= @url %>"
+<% if @user -%>
+    User "<%= @user %>"
+<% end -%>
+<% if @password -%>
+    Password "<%= @password %>"
+<% end -%>
+<% unless @verifypeer.nil? -%>
+    VerifyPeer <%= @verifypeer %>
+<% end -%>
+<% unless @verifyhost.nil? -%>
+    VerifyHost <%= @verifyhost %>
+<% end -%>
+<% if @cacert -%>
+    CACert "<%= @cacert %>"
+<% end -%>
+<% if @header and @collectd_version and (scope.function_versioncmp([@collectd_version, '5.3']) >= 0) -%>
+    Header "<%= @header %>"
+<% end -%>
+<% if @post and @collectd_version and (scope.function_versioncmp([@collectd_version, '5.3']) >= 0) -%>
+    Post "<%= @post %>"
+<% end -%>
+<% unless @measureresponsetime.nil? -%>
+    MeasureResponseTime <%= @measureresponsetime %>
+<% end -%>
+<% if @matches -%>
+<%= scope.function_template(["collectd/plugin/match.tpl.erb"]) %>
+<% end -%>
+  </Page>
+</Plugin>

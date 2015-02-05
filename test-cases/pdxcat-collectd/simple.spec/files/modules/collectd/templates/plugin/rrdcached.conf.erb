@@ -1,0 +1,28 @@
+<Plugin rrdcached>
+  DaemonAddress "<%= @daemonaddress %>"
+  DataDir "<%= @datadir %>"
+<% unless @createfiles.nil? -%>
+  CreateFiles "<%= @createfiles %>"
+<% end -%>
+<% unless @createfilesasync.nil? -%>
+  CreateFilesAsync "<%= @createfilesasync %>"
+<% end -%>
+<% if @stepsize -%>
+  StepSize "<%= @stepsize %>"
+<% end -%>
+<% if @heartbeat -%>
+  HeartBeat "<%= @heartbeat %>"
+<% end -%>
+<% if @rrarows -%>
+  RRARows "<%= @rrarows %>"
+<% end -%>
+<% @rratimespan.each do |timespan| -%>
+  RRATimespan "<%= timespan %>"
+<% end -%>
+<% if @xff -%>
+  XFF "<%= @xff %>"
+<% end -%>
+<% unless @collectstatistics.nil? -%>
+  CollectStatistics "<%= @collectstatistics %>"
+<% end -%>
+</Plugin>

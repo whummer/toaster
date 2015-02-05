@@ -1,0 +1,9 @@
+<Plugin varnish>
+<% @instances.each do |instance,params| -%>
+  <Instance "<%= instance %>">
+<% params.sort.each do |k,v| -%>
+    <%= k %> <%= v %>
+<% end -%>
+  </Instance>
+<% end -%>
+</Plugin>

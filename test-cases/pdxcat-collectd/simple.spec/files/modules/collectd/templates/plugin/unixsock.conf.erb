@@ -1,0 +1,8 @@
+<Plugin unixsock>
+  SocketFile  "<%= @socketfile %>"
+  SocketGroup "<%= @socketgroup %>"
+  SocketPerms "<%= @socketperms %>"
+<% if @collectd_version and (scope.function_versioncmp([@collectd_version, '5']) >= 0) -%>
+  DeleteSocket "<%= @deletesocket %>"
+<% end -%>
+</Plugin>

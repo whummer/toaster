@@ -1,0 +1,22 @@
+<% if @processes or @process_matches -%>
+<Plugin "processes">
+<% 
+if @processes 
+  @processes.each do |process| 
+-%>
+  Process "<%= process %>"
+<%
+  end
+end
+-%>
+<% 
+if @process_matches
+  @process_matches.each do |match| 
+-%>
+  ProcessMatch "<%= match['name'] %>" "<%= match['regex'] %>"
+<% 
+  end
+end 
+-%>
+</Plugin>
+<% end -%>

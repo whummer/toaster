@@ -1,0 +1,18 @@
+<Plugin nginx>
+  URL "<%= @url %>"
+<% if @user -%>
+  User "<%= @user %>"
+<% end -%>
+<% if @password -%>
+  Password "<%= @password %>"
+<% end -%>
+<% unless @verifypeer.nil? -%>
+  VerifyPeer <%= @verifypeer %>
+<% end -%>
+<% unless @verifyhost.nil? -%>
+  VerifyHost <%= @verifyhost %>
+<% end -%>
+<% if @cacert -%>
+  CACert "<%= @cacert %>"
+<% end -%>
+</Plugin>

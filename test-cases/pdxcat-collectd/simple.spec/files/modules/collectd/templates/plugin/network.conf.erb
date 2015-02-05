@@ -1,0 +1,15 @@
+<Plugin network>
+<% if @timetolive -%>
+    TimeToLive <%= @timetolive %>
+<% end -%>
+<% if @maxpacketsize -%>
+    MaxPacketSize <%= @maxpacketsize %>
+<% end -%>
+<% unless @forward.nil? -%>
+    Forward "<%= @forward %>"
+<% end -%>
+<% unless @reportstats.nil? -%>
+    ReportStats "<%= @reportstats %>"
+<% end -%>
+  
+</Plugin>

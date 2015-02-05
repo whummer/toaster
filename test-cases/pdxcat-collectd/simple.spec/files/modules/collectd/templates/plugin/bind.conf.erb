@@ -1,0 +1,28 @@
+<Plugin bind>
+  URL "<%= @url %>"
+  ParseTime <%= @parsetime %>
+  OpCodes <%= @opcodes %>
+  QTypes <%= @qtypes %>
+  ServerStats <%= @serverstats %>
+  ZoneMaintStats <%= @zonemaintstats %>
+  ResolverStats <%= @resolverstats %>
+  MemoryStats <%= @memorystats %>
+<% @views.each do |view| -%>
+  <View "<%= view['name'] %>">
+<% unless view['qtypes'].nil? -%>
+    QTypes <%= view['qtypes'] %>
+<% end -%>
+<% unless view['resolverstats'].nil? -%>
+    ResolverStats <%= view['resolverstats'] %>
+<% end -%>
+<% unless view['cacherrsets'].nil? -%>
+    CacheRRSets <%= view['cacherrsets'] %>
+<% end -%>
+<% if view['zones'] -%>
+<% view['zones'].each do |zone| -%>
+    Zone "<%= zone %>"
+<% end -%>
+<% end -%>
+  </View>
+<% end -%>
+</Plugin>

@@ -1,0 +1,12 @@
+<Plugin rrdtool>
+  DataDir "<%= @datadir %>"
+  CreateFilesAsync <%= @createfilesasync %>
+  RRARows <%= @rrarows %>
+<% @rratimespan.each do |timespan| -%>
+  RRATimeSpan <%= timespan %>
+<% end -%>
+  XFF <%= @xff %>
+  CacheFlush <%= @cacheflush %>
+  CacheTimeout <%= @cachetimeout %>
+  WritesPerSecond <%= @writespersecond %>
+</Plugin>

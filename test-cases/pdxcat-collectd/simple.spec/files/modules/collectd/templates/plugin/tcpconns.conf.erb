@@ -1,0 +1,16 @@
+<Plugin tcpconns>
+
+<% if @listening -%>
+  ListeningPorts <%= @listening %>
+<% end -%>
+<% if @localports -%>
+<%   @localports.each do |localport| -%>
+  LocalPort "<%= localport %>"
+<%   end -%>
+<% end -%>
+<% if @remoteports -%>
+<%   @remoteports.each do |remoteport| -%>
+  RemotePort "<%= remoteport %>"
+<%   end -%>
+<% end -%>
+</Plugin>
