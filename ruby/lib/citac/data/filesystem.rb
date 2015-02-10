@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'json'
 require_relative '../model'
 require_relative '../providers'
 require_relative '../utils/file'
@@ -51,7 +52,7 @@ module Citac
         File.exist? path
       end
 
-      def dependency_graph(spec, os_name, os_version)
+      def dependency_graph(spec, operating_system)
         dir = graph_dir spec, operating_system
         path = File.join dir, 'dependencies.graphml'
         return nil unless File.exist? path
@@ -78,11 +79,38 @@ module Citac
         FileUtils.cp_r "#{dir}/.", target_dir if Dir.exist? dir
       end
 
+      def save_run(spec, operating_system, output, start_time, duration)
+        base_dir = run_dir spec
+        FileUtils.makedirs base_dir
+
+        ids = Dir.entries(base_dir).reject { |e| e == '.' || e == '..' }.map { |e| e.to_i }.to_a
+        ids << 0
+
+        new_id = ids.max + 1
+        dir = File.join base_dir, new_id.to_s.rjust(4, '0')
+        FileUtils.makedirs dir
+
+        metadata = {
+            'operating-system' => operating_system.to_s,
+            'start-time' => start_time,
+            'duration' => duration
+        }
+
+        metadata_json = JSON.pretty_generate metadata
+
+        IO.write File.join(dir, 'metadata.json'), metadata_json, :encoding => 'UTF-8'
+        IO.write File.join(dir, 'output.txt'), output, :encoding => 'UTF-8'
+      end
+
       private
 
       def spec_dir(spec)
         id = spec.respond_to?(:id) ? spec.id : spec.to_s
         File.join @root, "#{id}.spec"
+      end
+
+      def run_dir(spec)
+        File.join spec_dir(spec), 'runs'
       end
 
       def graph_dir(spec, operating_system)

@@ -1,6 +1,7 @@
 require 'fileutils'
 require_relative '../providers'
 require_relative '../utils/graph'
+require_relative '../utils/colorize'
 require_relative '../logging'
 
 module Citac
@@ -43,7 +44,11 @@ module Citac
           env = @env_manager.find :operating_system => operating_system, :spec_runner => spec.type
 
           log_info 'agent', "Running configuration specification in environment '#{env}'..."
-          @env_manager.run env, run_script_path, :output => :passthrough
+          start_time = Time.now
+          output = @env_manager.run env, run_script_path, :output => :passthrough
+          duration = Time.now - start_time
+
+          @repository.save_run spec, operating_system, output.no_colors, start_time, duration
         end
       end
     end
