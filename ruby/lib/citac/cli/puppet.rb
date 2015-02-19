@@ -16,7 +16,8 @@ module Citac
       option :tag, :aliases => :t
       option :owner, :aliases => :o
       option :limit, :aliases => :n
-      desc 'search [--os <os>] [--tag|-t <tag>] [--owner|-o <owner>] [--limit|-n <count>] [<search keyword>]', 'Searches for Puppet modules.'
+      option :quiet, :aliases => :q
+      desc 'search [--os <os>] [--tag|-t <tag>] [--owner|-o <owner>] [--limit|-n <count>] [--quiet|-q] [<search keyword>]', 'Searches for Puppet modules.'
       def search(search_keyword = nil)
         query = Citac::Puppet::Forge::PuppetForgeModuleQuery.new
         query.os = options[:os]
@@ -27,17 +28,26 @@ module Citac
         query_options = {}
         query_options[:limit] = options[:limit].to_i if options[:limit]
 
-        count = 0
+        unless options[:quiet]
+          count = 0
 
-        puts "downloads\tversions\tmodule"
-        puts "---------\t--------\t------"
-        Citac::Puppet::Forge::PuppetForgeClient.each_module query, query_options do |mod|
-          puts "#{mod.downloads.to_s.rjust(9)}\t#{mod.versions.length.to_s.rjust(8)}\t#{mod.full_name}"
-          count += 1
+          puts "downloads\tversions\tmodule"
+          puts "---------\t--------\t------"
         end
 
-        puts
-        puts "#{count} modules found."
+        Citac::Puppet::Forge::PuppetForgeClient.each_module query, query_options do |mod|
+          if options[:quiet]
+            puts mod.full_name
+          else
+            puts "#{mod.downloads.to_s.rjust(9)}\t#{mod.versions.length.to_s.rjust(8)}\t#{mod.full_name}"
+            count += 1
+          end
+        end
+
+        unless options[:quiet]
+          puts
+          puts "#{count} modules found."
+        end
       end
     end
 
