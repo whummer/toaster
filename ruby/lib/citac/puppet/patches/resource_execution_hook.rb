@@ -14,7 +14,12 @@ class Puppet::Transaction
     intercepted = __citac_intercepted_resource? resource
     puts "[citac] Transaction: applying '#{resource}'...".yellow if intercepted
 
-    return_value = __citac_original_apply resource, ancestor
+    # Resource application is completely skipped if --noop flag is specified because Service resources
+    # fail due to missing init scripts during a dry run on blank machines. Skipped application however
+    # does not affect graph generation, which is the primary purpose of the dry runs.
+
+    return_value = nil
+    return_value = __citac_original_apply resource, ancestor unless intercepted && resource.noop?
 
     if intercepted
       failed = report.resource_statuses[resource.to_s].failed?

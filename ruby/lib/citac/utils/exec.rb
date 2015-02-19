@@ -34,7 +34,7 @@ module Citac
         if $?.exitstatus == 0 || !raise_on_failure
           RunResult.new (output || '').no_colors, $?.exitstatus
         else
-          raise "Command '#{cmdline}' failed: #{output || '<no output>'}"
+          raise "Command '#{cmdline}' failed with exit code #{$?.exitstatus}: #{output || '<no output>'}"
         end
       end
     end
