@@ -1,8 +1,11 @@
 require 'fileutils'
 require 'json'
 require 'thor'
+require_relative 'ioc'
 require_relative '../puppet/utils/graph_generation'
 require_relative '../puppet/forge/client'
+require_relative '../puppet/tasks/manifest_spec_generator'
+require_relative '../puppet/tasks/module_spec_generator'
 require_relative '../utils/exec'
 require_relative '../utils/colorize'
 
@@ -36,51 +39,6 @@ module Citac
         puts
         puts "#{count} modules found."
       end
-
-      desc 'spec <module name>', 'Generates a file based test case stub for the given puppet module. The script needs to be edited.'
-      def spec(module_name, version = nil)
-        puts 'Setting up file structure...'
-
-        spec_dir = "#{module_name}.spec"
-        module_dir = File.join(spec_dir, 'files', 'modules')
-
-        FileUtils.mkdir_p spec_dir
-        FileUtils.mkdir_p File.join(spec_dir, 'scripts')
-        FileUtils.mkdir_p module_dir
-
-        puts 'Generating metadata...'
-
-        mod = Citac::Puppet::Forge::PuppetForgeClient.get_module module_name
-        metadata = {
-            'type' => 'puppet',
-            'operating-systems' => mod.operating_systems.map{|os| os.to_s},
-            'puppet' => {
-                'required-modules' => [module_name]
-            }
-        }
-
-        metadata_path = File.join(spec_dir, 'metadata.json')
-        IO.write metadata_path, JSON.pretty_generate(metadata), :encoding => 'UTF-8'
-
-        script_path = File.join(spec_dir, 'scripts', 'default.pp')
-        IO.write script_path, "# #{mod.forge_url}\nTODO", :encoding => 'UTF-8'
-
-        puts 'Fetching puppet modules...'
-
-        arguments = ['--modulepath', module_dir]
-        arguments += ['--version', version] if version
-        arguments << module_name
-
-        Citac::Utils::Exec.run 'puppet module install', :args => arguments, :stdout => :passthrough
-
-        puts 'Done.'
-        puts
-        puts "IMPORTANT: Remember to edit '#{script_path}' to include the module properly.".yellow
-        puts "WARN: No supported operating system has been detected. Edit '#{metadata_path}' manually".yellow if mod.operating_systems.empty?
-      rescue
-        FileUtils.rm_rf spec_dir
-        raise
-      end
     end
 
     class Puppet < Thor
@@ -100,6 +58,18 @@ module Citac
           rescue StandardError => e
             STDERR.puts "Failed to generate graphs for '#{file}': #{e}"
           end
+        end
+      end
+
+      desc 'spec <module or manifest>', 'Generates a file based test case stub for the given puppet module or manifest.'
+      def spec(module_name_or_manifest_path, version = nil)
+        if module_name_or_manifest_path.end_with? '.pp'
+          env_mgr = ServiceLocator.environment_manager
+          generator = Citac::Puppet::Tasks::ManifestSpecificationGenerator.new env_mgr
+          generator.generate module_name_or_manifest_path
+        else
+          generator = Citac::Puppet::Tasks::ModuleSpecificationGenerator.new
+          generator.generate module_name_or_manifest_path, version
         end
       end
 
