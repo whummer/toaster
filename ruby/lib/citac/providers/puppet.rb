@@ -16,7 +16,7 @@ module Citac
         def prepare_for_run(repository, spec, directory, run_script_io)
           copy_modules repository, spec, directory
 
-          run_script_io.puts 'puppet apply --modulepath modules script.pp'
+          run_script_io.puts 'citac-puppet apply --modulepath modules script.pp'
         end
 
         private
