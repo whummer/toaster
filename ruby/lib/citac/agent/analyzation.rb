@@ -13,6 +13,7 @@ module Citac
 
       def run(spec, operating_system, options = {})
         raise "Operating system '#{operating_system}' not specific" unless operating_system.specific?
+        return if @repository.has_dependency_graph?(spec, operating_system) && !options[:force]
 
         log_info 'agent', "Running configuration specification '#{spec}' on operating system '#{operating_system}'..."
 
