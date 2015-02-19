@@ -57,6 +57,7 @@ module Citac
             Citac::Puppet::Utils::GraphGeneration.generate_graphs file, opts
           rescue StandardError => e
             STDERR.puts "Failed to generate graphs for '#{file}': #{e}"
+            exit 1
           end
         end
       end

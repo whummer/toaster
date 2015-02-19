@@ -27,7 +27,11 @@ module Citac
         mounts << [citac_dir, '/opt/citac', false]
         mounts << [script_dir, '/tmp/citac', true]
 
-        output = Citac::Docker.run env.id, "/tmp/citac/#{script_name}", :mounts => mounts, :output => options[:output]
+        output = Citac::Docker.run env.id, "/tmp/citac/#{script_name}",
+                                   :mounts => mounts,
+                                   :output => options[:output],
+                                   :raise_on_failure => options[:raise_on_failure]
+
         FileUtils.chmod '-x', script_path unless executable
 
         output

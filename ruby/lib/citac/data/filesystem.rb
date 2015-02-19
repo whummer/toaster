@@ -79,7 +79,7 @@ module Citac
         FileUtils.cp_r "#{dir}/.", target_dir if Dir.exist? dir
       end
 
-      def save_run(spec, operating_system, output, start_time, duration)
+      def save_run(spec, operating_system, result, start_time, duration)
         base_dir = run_dir spec
         FileUtils.makedirs base_dir
 
@@ -93,13 +93,14 @@ module Citac
         metadata = {
             'operating-system' => operating_system.to_s,
             'start-time' => start_time,
-            'duration' => duration
+            'duration' => duration,
+            'exit-code' => result.exit_code
         }
 
         metadata_json = JSON.pretty_generate metadata
 
         IO.write File.join(dir, 'metadata.json'), metadata_json, :encoding => 'UTF-8'
-        IO.write File.join(dir, 'output.txt'), output, :encoding => 'UTF-8'
+        IO.write File.join(dir, 'output.txt'), result.output, :encoding => 'UTF-8'
       end
 
       private

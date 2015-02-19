@@ -45,8 +45,8 @@ module Citac
           env = @env_manager.find :operating_system => operating_system, :spec_runner => spec.type
 
           log_info 'agent', "Running analyzation in environment '#{env}'..."
-          output = @env_manager.run env, run_script_path
-          log_debug 'agent', "Run script output:\n--EOF--\n#{output}\n--EOF--"
+          result = @env_manager.run env, run_script_path
+          log_debug 'agent', "Run script output:\n--EOF--\n#{result.output}\n--EOF--"
 
           dependencies_graphml = IO.read File.join(dir, 'dependencies.graphml'), :encoding => 'UTF-8'
           dependencies = Citac::Utils::Graphs::Graph.from_graphml dependencies_graphml

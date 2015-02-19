@@ -51,33 +51,33 @@ module Citac
 
           def graphdir
             unless @graphdir
-              output = Citac::Utils::Exec.run 'citac-puppet config print graphdir', :stderr => :discard
-              @graphdir = output.strip
+              result = Citac::Utils::Exec.run 'citac-puppet config print graphdir', :stderr => :discard
+              @graphdir = result.output.strip
             end
 
             @graphdir
           end
 
-          def cleanup_graph(graph_name, target_path)
-            graph_type = File.basename source_file, '.*'
-
-            graph = Citac::Utils::Graphs::Graph.from_graphml IO.read(source_file)
-
-            cleanup_method_name = "cleanup_#{graph_name}"
-            if GraphCleanup.respond_to? cleanup_method_name
-              GraphCleanup.send cleanup_method_name, graph
-
-              graphml_path = target_path.sub_ext('.clean.graphml')
-              dot_path = target_path.sub_ext('.clean.dot')
-              dot_reduced_path = target_path.sub_ext('.clean.reduced.dot')
-
-              IO.write graphml_path, graph.to_graphml
-              IO.write dot_path, graph.to_dot(:direction => 'TB')
-
-              dot_reduced = Citac::Utils::Exec.run "tred \"#{dot_path}\""
-              IO.write dot_reduced_path, dot_reduced
-            end
-          end
+          # def cleanup_graph(graph_name, target_path)
+          #   graph_type = File.basename source_file, '.*'
+          #
+          #   graph = Citac::Utils::Graphs::Graph.from_graphml IO.read(source_file)
+          #
+          #   cleanup_method_name = "cleanup_#{graph_name}"
+          #   if GraphCleanup.respond_to? cleanup_method_name
+          #     GraphCleanup.send cleanup_method_name, graph
+          #
+          #     graphml_path = target_path.sub_ext('.clean.graphml')
+          #     dot_path = target_path.sub_ext('.clean.dot')
+          #     dot_reduced_path = target_path.sub_ext('.clean.reduced.dot')
+          #
+          #     IO.write graphml_path, graph.to_graphml
+          #     IO.write dot_path, graph.to_dot(:direction => 'TB')
+          #
+          #     dot_reduced = Citac::Utils::Exec.run("tred \"#{dot_path}\"").output
+          #     IO.write dot_reduced_path, dot_reduced
+          #   end
+          # end
         end
       end
     end

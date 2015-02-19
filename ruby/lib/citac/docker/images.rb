@@ -20,8 +20,8 @@ module Citac
 
       images = []
 
-      output = Citac::Utils::Exec.run 'docker images --no-trunc'
-      output.each_line do |line|
+      result = Citac::Utils::Exec.run 'docker images --no-trunc'
+      result.output.each_line do |line|
         match = expr.match line.strip
         images << DockerImage.new(match[:id], match[:name], match[:tag]) if match
       end

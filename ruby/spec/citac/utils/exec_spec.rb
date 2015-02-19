@@ -4,8 +4,8 @@ require_relative '../../../lib/citac/utils/exec'
 describe Citac::Utils::Exec do
   describe '::run_get_output' do
     it 'should run and return output' do
-      output = Citac::Utils::Exec.run 'echo 123'
-      expect(output.strip).to eq('123')
+      result = Citac::Utils::Exec.run 'echo 123'
+      expect(result.output.strip).to eq('123')
     end
 
     it 'should raise error on failure' do
