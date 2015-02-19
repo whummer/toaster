@@ -1,0 +1,10 @@
+{
+  "type": "puppet",
+  "operating-systems": [
+    "redhat-7.0",
+    "redhat-6.0",
+    "ubuntu-14.04",
+    "ubuntu-12.04",
+    "ubuntu-10.04"
+  ]
+}

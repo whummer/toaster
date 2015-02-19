@@ -1,0 +1,25 @@
+{
+  "type": "puppet",
+  "operating-systems": [
+    "redhat-5",
+    "redhat-6",
+    "redhat-7",
+    "centos-5",
+    "centos-6",
+    "centos-7",
+    "oraclelinux-5",
+    "oraclelinux-6",
+    "oraclelinux-7",
+    "scientific-5",
+    "scientific-6",
+    "scientific-7",
+    "sles-10 SP4",
+    "sles-11 SP1",
+    "sles-12",
+    "debian-6",
+    "debian-7",
+    "ubuntu-10.04",
+    "ubuntu-12.04",
+    "ubuntu-14.04"
+  ]
+}

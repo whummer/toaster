@@ -1,0 +1,13 @@
+{
+  "type": "puppet",
+  "operating-systems": [
+    "debian-5.0",
+    "debian-6.0",
+    "redhat-5.0",
+    "redhat-6.0",
+    "redhat-7.0",
+    "ubuntu-14.04",
+    "ubuntu-12.04",
+    "ubuntu-10.04"
+  ]
+}

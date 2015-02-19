@@ -1,0 +1,8 @@
+{
+  "type": "puppet",
+  "operating-systems": [
+    "debian-7",
+    "ubuntu-12.04",
+    "ubuntu-14.04"
+  ]
+}
