@@ -9,12 +9,14 @@ class Puppet::Graph::SimpleGraph
   def write_graph(name)
     return unless Puppet[:graph]
 
-    __citac_original_write_graph name
+    return_value = __citac_original_write_graph name
 
     file = File.join Puppet[:graphdir], "#{name}.graphml"
     File.open file, 'w', :encoding => 'UTF-8' do |f|
       f.puts __citac_to_graphml
     end
+
+    return_value
   end
 
   def __citac_to_graphml
