@@ -9,7 +9,7 @@ module Citac
         def prepare_for_dependency_graph_generation(repository, spec, directory, run_script_io)
           copy_modules repository, spec, directory
 
-          run_script_io.puts 'citac puppet graph --modulepath modules script.pp'# && mv script.expanded_relationships.graphml dependencies.graphml'
+          run_script_io.puts 'citac puppet graph --modulepath modules script.pp && mv script.expanded_relationships.graphml dependencies.graphml'
         end
 
         def prepare_for_run(repository, spec, directory, run_script_io)
