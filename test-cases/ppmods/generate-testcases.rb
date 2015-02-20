@@ -10,7 +10,9 @@ blacklist = [
   'puppetlabs-stdlib', # is a support module
   'thias-sysctl', # modifies Linux kernel parameters
   'spantree-java8', # does not work (invalid APT key)
-  'puppetlabs-vcsrepo' # requires the VCS to already be present
+  'puppetlabs-vcsrepo', # requires the VCS to already be present
+  'puppetlabs-lvm', # manages LVM, not available in docker
+  'openshift-openshift_origin' # fails with some encoding error within some json code
 ]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
