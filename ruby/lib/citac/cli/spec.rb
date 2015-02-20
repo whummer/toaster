@@ -46,9 +46,13 @@ module Citac
         oss.select! {|o| spec.operating_systems.include? o}
         oss.select! {|o| o.matches? os} if os
 
-        analyzer = Citac::Agent::Analyzer.new repo, env_mgr
-        oss.each do |os|
-          analyzer.run spec, os, :force => options[:force]
+        if oss.any?
+          analyzer = Citac::Agent::Analyzer.new repo, env_mgr
+          oss.each do |os|
+            analyzer.run spec, os, :force => options[:force]
+          end
+        else
+          puts 'No compatible operating system found.'
         end
       end
 
