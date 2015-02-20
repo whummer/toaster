@@ -42,8 +42,9 @@ module Citac
 
         spec = repo.get spec_name
 
-        oss = env_mgr.operating_systems(spec.type)
-        oss = oss.select {|o| o.matches? os} if os
+        oss = env_mgr.operating_systems(spec.type).to_a
+        oss.select! {|o| spec.operating_systems.include? o}
+        oss.select! {|o| o.matches? os} if os
 
         analyzer = Citac::Agent::Analyzer.new repo, env_mgr
         oss.each do |os|
