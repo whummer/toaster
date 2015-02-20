@@ -13,15 +13,6 @@ class { 'apt':
   fancy_progress       => undef
 }
 
-apt::unattended_upgrades {
-  origins             = $::apt::params::origins,
-  blacklist           = [],
-  update              = '1',
-  download            = '1',
-  upgrade             = '1',
-  autoclean           = '7',
-}
-
 apt_key { 'puppetlabs':
   ensure => 'present',
   id     => '1054B7A24BD6EC30',

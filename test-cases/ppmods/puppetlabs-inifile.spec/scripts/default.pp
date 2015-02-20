@@ -8,8 +8,6 @@ ini_setting { "sample setting":
   value   => 'FOO!',
 }
 
-JAVA_ARGS="-Xmx192m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/pe-puppetdb/puppetdb-oom.hprof "
-
 ini_subsetting {'sample subsetting':
   ensure  => present,
   section => '',

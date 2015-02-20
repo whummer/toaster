@@ -1,3 +1,5 @@
 # https://forge.puppetlabs.com/puppetlabs/rabbitmq
 
-include '::rabbitmq'
+class { 'rabbitmq':
+    admin_enable     => false
+}

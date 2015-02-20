@@ -8,7 +8,9 @@ blacklist = [
   'garethr-docker', # installs docker
   'maestrodev-maven', # requires Maven installed
   'puppetlabs-stdlib', # is a support module
-  'thias-sysctl' # modifies Linux kernel parameters
+  'thias-sysctl', # modifies Linux kernel parameters
+  'spantree-java8', # does not work (invalid APT key)
+  'puppetlabs-vcsrepo' # requires the VCS to already be present
 ]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
