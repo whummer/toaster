@@ -45,15 +45,31 @@ module Citac
 
           env = @env_manager.find :operating_system => operating_system, :spec_runner => spec.type
 
+          puts "Analyzing #{spec} in environment '#{env}'..."
           log_info 'agent', "Running analyzation in environment '#{env}'..."
-          result = @env_manager.run env, run_script_path
+
+          start_time = Time.now
+          result = @env_manager.run env, run_script_path, :raise_on_failure => false
+          end_time = Time.now
+
           log_debug 'agent', "Run script output:\n--EOF--\n#{result.output}\n--EOF--"
+
+          @repository.save_run spec, operating_system, 'analyze', result, start_time, end_time
+
+          unless result.success?
+            errors = result.output.each_line.select{|l| l =~ /error/i}.join
+            raise "Analyzing #{spec} on #{operating_system} failed. See run output for details.#{$/}#{errors}"
+          end
 
           dependencies_graphml = IO.read File.join(dir, 'dependencies.graphml'), :encoding => 'UTF-8'
           dependencies = Citac::Utils::Graphs::Graph.from_graphml dependencies_graphml
 
+          puts "Saving generated dependency graph for #{spec} to repository..."
           log_info 'agent', "Saving generated dependency graph for '#{spec}' to repository..."
+
           @repository.save_dependency_graph spec, operating_system, dependencies
+
+          puts 'Done.'
         end
       end
     end

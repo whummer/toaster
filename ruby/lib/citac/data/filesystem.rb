@@ -79,7 +79,7 @@ module Citac
         FileUtils.cp_r "#{dir}/.", target_dir if Dir.exist? dir
       end
 
-      def save_run(spec, operating_system, result, start_time, duration)
+      def save_run(spec, operating_system, action, result, start_time, end_time)
         base_dir = run_dir spec
         FileUtils.makedirs base_dir
 
@@ -91,9 +91,11 @@ module Citac
         FileUtils.makedirs dir
 
         metadata = {
+            'action' => action,
             'operating-system' => operating_system.to_s,
             'start-time' => start_time,
-            'duration' => duration,
+            'end-time' => end_time,
+            'duration' => end_time - start_time,
             'exit-code' => result.exit_code
         }
 

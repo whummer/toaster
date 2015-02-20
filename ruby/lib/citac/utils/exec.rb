@@ -12,6 +12,10 @@ module Citac
           @output = output
           @exit_code = exit_code
         end
+
+        def success?
+          @exit_code == 0
+        end
       end
 
       def self.run(command, options = {})

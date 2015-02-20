@@ -12,33 +12,32 @@ module Citac
 
       def debug(msg, e = nil)
         fmsg = format_msg msg, e
-        @logger.debug fmsg
+        @logger.debug(@name) { fmsg }
       end
 
       def info(msg, e = nil)
         fmsg = format_msg msg, e
-        @logger.info fmsg
+        @logger.info(@name) { fmsg }
       end
 
       def warn(msg, e = nil)
         fmsg = format_msg msg, e
-        @logger.warn fmsg
+        @logger.warn(@name) { fmsg }
       end
 
       def error(msg, e = nil)
         fmsg = format_msg msg, e, true
-        @logger.error fmsg
+        @logger.error(@name) { fmsg }
       end
 
       def fatal(msg, e = nil)
         fmsg = format_msg msg, e, true
-        @logger.fatal fmsg
+        @logger.fatal(@name) { fmsg }
       end
 
       private
 
       def format_msg(msg, e, full_backtrace = false)
-        msg = "[#{@name}] #{msg}"
         if e
           msg += ": #{e}\n"
           if full_backtrace
@@ -53,7 +52,7 @@ module Citac
     end
 
     @logger = Logger.new(STDOUT)
-    @logger.level = Logger::INFO
+    @logger.level = Logger::UNKNOWN
 
     @logs = Hash.new {|h, k| h[k] = Log.new @logger, k }
 

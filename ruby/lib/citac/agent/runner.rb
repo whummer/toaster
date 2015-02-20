@@ -46,9 +46,9 @@ module Citac
           log_info 'agent', "Running configuration specification in environment '#{env}'..."
           start_time = Time.now
           result = @env_manager.run env, run_script_path, :output => :passthrough, :raise_on_failure => false
-          duration = Time.now - start_time
+          end_time = Time.now
 
-          @repository.save_run spec, operating_system, result, start_time, duration
+          @repository.save_run spec, operating_system, 'exec', result, start_time, end_time
         end
       end
     end
