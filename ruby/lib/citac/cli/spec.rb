@@ -43,7 +43,7 @@ module Citac
         spec = repo.get spec_name
 
         oss = env_mgr.operating_systems(spec.type).to_a
-        oss.select! {|o| spec.operating_systems.include? o}
+        oss.select! {|o| spec.operating_systems.include? o} unless spec.operating_systems.empty?
         oss.select! {|o| o.matches? os} if os
 
         if oss.any?
@@ -52,7 +52,7 @@ module Citac
             analyzer.run spec, os, :force => options[:force]
           end
         else
-          puts 'No compatible operating system found.'
+          puts "No compatible operating system found for #{spec}."
         end
       end
 
