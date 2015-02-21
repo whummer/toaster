@@ -49,6 +49,11 @@ module Citac
           end_time = Time.now
 
           @repository.save_run spec, operating_system, 'exec', result, start_time, end_time
+
+          unless result.success?
+            errors = result.errors.join($/)
+            raise "Execution of #{spec} on #{operating_system} failed. See run output for details.#{$/}#{errors}"
+          end
         end
       end
     end

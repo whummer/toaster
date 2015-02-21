@@ -57,20 +57,29 @@ module Citac
       end
 
       desc 'exec <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
-      def exec(spec_name, os)
-        os = Citac::Model::OperatingSystem.parse os
-
+      def exec(spec_name, os = nil)
         repo = ServiceLocator.specification_repository
         env_mgr = ServiceLocator.environment_manager
 
         spec = repo.get spec_name
 
-        unless os.specific?
-          real_os = env_mgr.operating_systems(spec.type).find{|o| o.matches? os}
-          raise "No operating system matching '#{os}' found" unless real_os
+        if os
+          os = Citac::Model::OperatingSystem.parse os
 
-          os = real_os
+          unless os.specific?
+            real_os = env_mgr.operating_systems(spec.type).find{|o| o.matches? os}
+            raise "No operating system matching '#{os}' found" unless real_os
+
+            os = real_os
+          end
+        else
+          oss = env_mgr.operating_systems spec.type
+          os = oss.first {|o| o.matches? os}
+
+          raise "No suitable environment found for executiong #{spec}" unless os
         end
+
+        puts "Executing #{spec} on #{os}..."
 
         runner = Citac::Agent::Runner.new repo, env_mgr
         runner.run spec, os

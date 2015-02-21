@@ -16,6 +16,10 @@ module Citac
         def success?
           @exit_code == 0
         end
+
+        def errors
+          @output.each_line.select{|l| l =~ /error/i}.map{|l| l.strip}
+        end
       end
 
       def self.run(command, options = {})

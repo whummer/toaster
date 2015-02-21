@@ -61,7 +61,7 @@ module Citac
           @repository.save_run spec, operating_system, 'analyze', result, start_time, end_time
 
           unless result.success?
-            errors = result.output.each_line.select{|l| l =~ /error/i}.join
+            errors = result.errors.join($/)
             raise "Analyzing #{spec} on #{operating_system} failed. See run output for details.#{$/}#{errors}"
           end
 
