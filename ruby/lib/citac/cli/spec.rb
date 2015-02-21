@@ -16,15 +16,24 @@ module Citac
 
       desc 'info <id>', 'Prints information about the stored configuration specification.'
       def info(spec_id)
+        spec_id = clean_spec_id spec_id
+
         repo = ServiceLocator.specification_repository
+
         spec = repo.get spec_id
+        run_count = repo.run_count spec
 
         puts "Id:\t#{spec.id}"
         puts "Name:\t#{spec.name}"
         puts "Type:\t#{spec.type}"
+        puts "Runs:\t#{run_count}"
 
+        env_mgr = ServiceLocator.environment_manager
+        oss = env_mgr.operating_systems spec.type
         puts 'Operating systems:'
         spec.operating_systems.each do |os|
+          next unless oss.include? os
+
           msg = "  - #{os}"
           msg << ' (analyzed)' if repo.has_dependency_graph? spec, os
 
@@ -32,9 +41,43 @@ module Citac
         end
       end
 
+      desc 'runs <id>', 'Prints all performed runs of the given configuration specification.'
+      def runs(spec_id)
+        spec_id = clean_spec_id spec_id
+
+        repo = ServiceLocator.specification_repository
+        spec = repo.get spec_id
+
+        if repo.run_count(spec) > 0
+          puts "Action\t\tExit Code\tStart Time\t\t\tDuration"
+          puts "======\t\t=========\t==========\t\t\t========"
+          repo.runs(spec).each do |run|
+            puts "#{run.action}\t\t#{run.exit_code}\t\t#{run.start_time}\t#{run.duration.round(2)} s"
+          end
+        else
+          puts "No runs of #{spec} found."
+        end
+      end
+
+      desc 'clearruns <id>', 'Clears all saved runs of the given configuration specification.'
+      def clearruns(spec_id)
+        spec_id = clean_spec_id spec_id
+
+        repo = ServiceLocator.specification_repository
+        spec = repo.get spec_id
+
+        puts "Deleting all runs of #{spec}..."
+
+        repo.runs(spec).each do |run|
+          repo.delete_run run
+        end
+      end
+
       option :force, :type => :boolean, :aliases => :f
       desc 'analyze [--force|-f] <spec> [<os>]', 'Generates the dependency graph for the given configuration specification.'
       def analyze(spec_name, os = nil)
+        spec_name = clean_spec_id spec_name
+
         os = Citac::Model::OperatingSystem.parse os if os
 
         repo = ServiceLocator.specification_repository
@@ -58,6 +101,8 @@ module Citac
 
       desc 'exec <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
       def exec(spec_name, os = nil)
+        spec_name = clean_spec_id spec_name
+
         repo = ServiceLocator.specification_repository
         env_mgr = ServiceLocator.environment_manager
 
@@ -83,6 +128,12 @@ module Citac
 
         runner = Citac::Agent::Runner.new repo, env_mgr
         runner.run spec, os
+      end
+
+      no_commands do
+        def clean_spec_id(spec_id)
+          spec_id.gsub /\.spec\/?/i, ''
+        end
       end
     end
   end

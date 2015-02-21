@@ -15,5 +15,20 @@ module Citac
         id == name ? id : "#{name} (#{id})"
       end
     end
+
+    class ConfigurationSpecificationRun
+      attr_reader :id, :spec, :action, :operating_system, :exit_code, :start_time, :end_time, :duration
+
+      def initialize(id, spec, action, operating_system, exit_code, start_time, end_time, duration)
+        @id = id
+        @spec = spec
+        @action = action
+        @operating_system = operating_system
+        @exit_code = exit_code
+        @start_time = start_time
+        @end_time = end_time
+        @duration = duration
+      end
+    end
   end
 end
