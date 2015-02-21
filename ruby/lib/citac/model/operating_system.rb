@@ -35,6 +35,10 @@ module Citac
       end
 
       alias_method :==, :eql?
+
+      def debian_based?
+        @name == 'debian' || @name == 'ubuntu'
+      end
     end
   end
 end

@@ -2,6 +2,15 @@ require_relative '../utils/exec'
 
 module Citac
   module Docker
+    class DockerRunResult < Citac::Utils::Exec::RunResult
+      attr_reader :container_id
+
+      def initialize(output, exit_code, container_id)
+        super output, exit_code
+        @container_id = container_id
+      end
+    end
+
     def self.run(image, command, options = {})
       image_id = image.respond_to?(:id) ? image.id : image.to_s
       mounts = options[:mounts] || []
@@ -17,9 +26,15 @@ module Citac
       output = Citac::Utils::Exec.run("docker logs #{container_id}").output
 
       raise "Running '#{command}' on '#{image}' failed with exit code #{exit_code}: #{output}" unless exit_code == 0 || !raise_on_failure
-      Citac::Utils::Exec::RunResult.new output, exit_code
+      DockerRunResult.new output, exit_code, container_id
     ensure
-      Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if container_id
+      keep_container = options[:keep_container] && exit_code == 0
+      Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if container_id && !keep_container
+    end
+
+    def self.commit(container_id, repository_name, tag = nil)
+      tag_suffix = tag ? ":#{tag}" : ''
+      Citac::Utils::Exec.run "docker commit #{container_id} #{repository_name}#{tag_suffix}"
     end
 
     def self.containers

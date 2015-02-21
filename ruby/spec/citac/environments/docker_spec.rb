@@ -23,7 +23,7 @@ describe Citac::Environments::DockerEnvironmentManager, :explicit => true do
         script_path = File.join dir, 'script.sh'
         IO.write script_path, "#!/bin/sh\necho Hello from the script"
 
-        output = @em.run env, script_path
+        output = @em.run(env, script_path).run_result.output
         output.strip!
 
         expect(output).to eq('Hello from the script')
@@ -37,7 +37,7 @@ describe Citac::Environments::DockerEnvironmentManager, :explicit => true do
         script_path = File.join dir, 'script.sh'
         IO.write script_path, "#!/bin/sh\nwhich citac"
 
-        output = @em.run env, script_path
+        output = @em.run(env, script_path).run_result.output
         output.strip!
 
         expect(output).to eq('/opt/citac/bin/citac')
@@ -51,7 +51,7 @@ describe Citac::Environments::DockerEnvironmentManager, :explicit => true do
         script_path = File.join dir, 'script.sh'
         IO.write script_path, "#!/usr/bin/ruby\nSTDERR.puts 'stderr'\nSTDOUT.puts 'stdout'"
 
-        output = @em.run env, script_path
+        output = @em.run(env, script_path).run_result.output
         output.strip!
 
         expect(output).to include('stderr')

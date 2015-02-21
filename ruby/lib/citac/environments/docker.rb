@@ -15,6 +15,7 @@ module Citac
       end
 
       def run(env, script_path, options = {})
+        cleanup_instance = options[:cleanup_instance].nil? || options[:cleanup_instance]
         executable = File.executable? script_path
         FileUtils.chmod '+x', script_path unless executable
 
@@ -27,14 +28,21 @@ module Citac
         mounts << [citac_dir, '/opt/citac', false]
         mounts << [script_dir, '/tmp/citac', true]
 
-        output = Citac::Docker.run env.id, "/tmp/citac/#{script_name}",
+        env_id = env.respond_to?(:id) ? env.id : env.to_s
+        output = Citac::Docker.run env_id, "/tmp/citac/#{script_name}",
                                    :mounts => mounts,
                                    :output => options[:output],
-                                   :raise_on_failure => options[:raise_on_failure]
+                                   :raise_on_failure => options[:raise_on_failure],
+                                   :keep_container => !cleanup_instance
 
         FileUtils.chmod '-x', script_path unless executable
 
-        output
+        Citac::Model::EnvironmentInstance.new output.container_id, env, output
+      end
+
+      def commit(instance, env)
+        instance_id = instance.respond_to?(:id) ? instance.id : instance.to_s
+        Citac::Docker.commit instance_id, "citac/#{env.spec_runners.first}", env.operating_system.to_s
       end
 
       private

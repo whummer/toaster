@@ -53,7 +53,8 @@ module Citac
           log_info 'agent', "Running analyzation in environment '#{env}'..."
 
           start_time = Time.now
-          result = @env_manager.run env, run_script_path, :raise_on_failure => false
+          instance = @env_manager.run env, run_script_path, :raise_on_failure => false
+          result = instance.run_result
           end_time = Time.now
 
           log_debug 'agent', "Run script output:\n--EOF--\n#{result.output}\n--EOF--"
