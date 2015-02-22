@@ -44,6 +44,7 @@ module Citac
       option :bulk, :type => :boolean, :aliases => :b
       option :quiet, :type => :boolean, :aliases => :q
       option :os, :aliases => :o
+      option :action, :aliases => :a
       option :failed, :type => :boolean, :aliases => :f
       option :successful, :type => :boolean, :aliases => :s
       desc 'runs [-b] <id>', 'Prints all performed runs of the given configuration specification.'
@@ -65,20 +66,13 @@ module Citac
         puts "Action\t\tExit Code\tOS\tStart Time\t\t\tDuration" unless options[:bulk]
         puts "======\t\t=========\t==\t==========\t\t\t========" unless options[:bulk]
 
-        prefix = options[:bulk] ? "#{spec.to_s.ljust(len)}\t" : ''
-        runs = repo.runs(spec)
-
-        if options[:os]
-          os = Citac::Model::OperatingSystem.parse options[:os]
-          runs = runs.select{|run| run.operating_system.matches? os}
-        end
-
-        runs = runs.select{|run| run.exit_code == 0} if options[:successful]
-        runs = runs.reject{|run| run.exit_code == 0} if options[:failed]
-
-        runs = runs.to_a
+        runs = repo.runs(spec).to_a
+        filter_runs! runs, options
+        runs.sort_by! {|run| run.id}
 
         if runs.size > 0
+          prefix = options[:bulk] ? "#{spec.to_s.ljust(len)}\t" : ''
+
           runs.each do |run|
             puts "#{prefix}#{run.action}\t\t#{run.exit_code}\t\t#{run.operating_system}\t#{run.start_time}\t#{run.duration.round(2).to_s.rjust(6)} s"
           end
@@ -91,18 +85,29 @@ module Citac
         end
       end
 
+      option :os, :aliases => :o
+      option :action, :aliases => :a
+      option :failed, :type => :boolean, :aliases => :f
+      option :successful, :type => :boolean, :aliases => :s
       desc 'clearruns <id>', 'Clears all saved runs of the given configuration specification.'
       def clearruns(spec_id)
         spec_id = clean_spec_id spec_id
 
         repo = ServiceLocator.specification_repository
         spec = repo.get spec_id
+        run_count = repo.run_count spec
 
-        puts "Deleting all runs of #{spec}..."
+        puts "Deleting matching runs of #{spec}..."
+        count = 0
 
-        repo.runs(spec).each do |run|
+        runs = repo.runs(spec).to_a
+        filter_runs! runs, options
+        runs.each do |run|
           repo.delete_run run
+          count += 1
         end
+
+        puts "Deleted #{count} out of #{run_count} runs."
       end
 
       option :force, :type => :boolean, :aliases => :f
@@ -158,6 +163,17 @@ module Citac
       no_commands do
         def clean_spec_id(spec_id)
           spec_id.gsub /\.spec\/?/i, ''
+        end
+
+        def filter_runs!(runs, options)
+          runs.select! {|run| run.exit_code == 0} if options[:successful]
+          runs.reject! {|run| run.exit_code == 0} if options[:failed]
+          runs.select! {|run| run.action == options[:action]} if options[:action]
+
+          if options[:os]
+            os = Citac::Model::OperatingSystem.parse options[:os]
+            runs.select!{|run| run.operating_system.matches? os}
+          end
         end
       end
     end
