@@ -1,5 +1,8 @@
 # https://forge.puppetlabs.com/puppetlabs/passenger
 
-node default {
-  class {'passenger': }
+package{ 'ruby1.9.1-dev':
+  before => Class['passenger']
 }
+
+class {'passenger': }
+
