@@ -42,8 +42,14 @@ module Citac
       end
 
       option :bulk, :type => :boolean, :aliases => :b
+      option :quiet, :type => :boolean, :aliases => :q
+      option :os, :aliases => :o
+      option :failed, :type => :boolean, :aliases => :f
+      option :successful, :type => :boolean, :aliases => :s
       desc 'runs [-b] <id>', 'Prints all performed runs of the given configuration specification.'
       def runs(spec_id)
+        raise 'Conflicting filter: failed and successful' if options[:successful] && options[:failed]
+
         spec_id = clean_spec_id spec_id
 
         repo = ServiceLocator.specification_repository
@@ -56,15 +62,27 @@ module Citac
 
         spec = repo.get spec_id
 
-        if repo.run_count(spec) > 0
-          puts "Action\t\tExit Code\tOS\tStart Time\t\t\tDuration" unless options[:bulk]
-          puts "======\t\t=========\t==\t==========\t\t\t========" unless options[:bulk]
+        puts "Action\t\tExit Code\tOS\tStart Time\t\t\tDuration" unless options[:bulk]
+        puts "======\t\t=========\t==\t==========\t\t\t========" unless options[:bulk]
 
-          prefix = options[:bulk] ? "#{spec.to_s.ljust(len)}\t" : ''
-          repo.runs(spec).each do |run|
+        prefix = options[:bulk] ? "#{spec.to_s.ljust(len)}\t" : ''
+        runs = repo.runs(spec)
+
+        if options[:os]
+          os = Citac::Model::OperatingSystem.parse options[:os]
+          runs = runs.select{|run| run.operating_system.matches? os}
+        end
+
+        runs = runs.select{|run| run.exit_code == 0} if options[:successful]
+        runs = runs.reject{|run| run.exit_code == 0} if options[:failed]
+
+        runs = runs.to_a
+
+        if runs.size > 0
+          runs.each do |run|
             puts "#{prefix}#{run.action}\t\t#{run.exit_code}\t\t#{run.operating_system}\t#{run.start_time}\t#{run.duration.round(2).to_s.rjust(6)} s"
           end
-        else
+        elsif !options[:quiet]
           if options[:bulk]
             puts "#{spec.to_s.ljust(len)}\tNo runs found."
           else
@@ -116,27 +134,20 @@ module Citac
       desc 'exec <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
       def exec(spec_name, os = nil)
         spec_name = clean_spec_id spec_name
+        os = Citac::Model::OperatingSystem.parse os if os
 
         repo = ServiceLocator.specification_repository
         env_mgr = ServiceLocator.environment_manager
 
         spec = repo.get spec_name
 
-        if os
-          os = Citac::Model::OperatingSystem.parse os
+        oss = env_mgr.operating_systems(spec.type).to_a
+        oss.select! {|o| spec.operating_systems.include? o} unless spec.operating_systems.empty?
+        oss.select! {|o| o.matches? os} if os
 
-          unless os.specific?
-            real_os = env_mgr.operating_systems(spec.type).find{|o| o.matches? os}
-            raise "No operating system matching '#{os}' found" unless real_os
+        raise "No suitable environment found for executing #{spec} on '#{os}'" if oss.empty?
 
-            os = real_os
-          end
-        else
-          oss = env_mgr.operating_systems spec.type
-          os = oss.first {|o| o.matches? os}
-
-          raise "No suitable environment found for executiong #{spec}" unless os
-        end
+        os = oss.first
 
         puts "Executing #{spec} on #{os}..."
 
