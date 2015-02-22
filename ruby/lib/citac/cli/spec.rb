@@ -41,21 +41,35 @@ module Citac
         end
       end
 
-      desc 'runs <id>', 'Prints all performed runs of the given configuration specification.'
+      option :bulk, :type => :boolean, :aliases => :b
+      desc 'runs [-b] <id>', 'Prints all performed runs of the given configuration specification.'
       def runs(spec_id)
         spec_id = clean_spec_id spec_id
 
         repo = ServiceLocator.specification_repository
+
+        if options[:bulk]
+          lens = []
+          repo.each_spec { |s| lens << s.length}
+          len = lens.max
+        end
+
         spec = repo.get spec_id
 
         if repo.run_count(spec) > 0
-          puts "Action\t\tExit Code\tStart Time\t\t\tDuration"
-          puts "======\t\t=========\t==========\t\t\t========"
+          puts "Action\t\tExit Code\tOS\tStart Time\t\t\tDuration" unless options[:bulk]
+          puts "======\t\t=========\t==\t==========\t\t\t========" unless options[:bulk]
+
+          prefix = options[:bulk] ? "#{spec.to_s.ljust(len)}\t" : ''
           repo.runs(spec).each do |run|
-            puts "#{run.action}\t\t#{run.exit_code}\t\t#{run.start_time}\t#{run.duration.round(2)} s"
+            puts "#{prefix}#{run.action}\t\t#{run.exit_code}\t\t#{run.operating_system}\t#{run.start_time}\t#{run.duration.round(2).to_s.rjust(6)} s"
           end
         else
-          puts "No runs of #{spec} found."
+          if options[:bulk]
+            puts "#{spec.to_s.ljust(len)}\tNo runs found."
+          else
+            puts "No runs of #{spec} found."
+          end
         end
       end
 

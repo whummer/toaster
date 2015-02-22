@@ -60,6 +60,8 @@ module Citac
 
           instance = run_commands env, 'apt-get update', options
           commit instance, env
+
+          #TODO cleanup environment instance / docker container
         end
       end
     end
