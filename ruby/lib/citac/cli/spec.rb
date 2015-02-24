@@ -160,6 +160,37 @@ module Citac
         runner.run spec, os
       end
 
+      option :type, :aliases => :t, :default => 'dot'
+      desc 'dg [-t <type>] <spec> [<file name>]', 'Extracts the stored dependency graph of the configuration specification.'
+      def dg(spec_name, file_name = nil)
+        spec_name = clean_spec_id spec_name
+        file_name ||= "#{spec_name.gsub('/', '_').gsub("\\", '_')}.#{options[:type]}"
+
+        repo = ServiceLocator.specification_repository
+        spec = repo.get spec_name
+
+        oss = spec.operating_systems
+        if oss.empty?
+          env_mgr = ServiceLocator.environment_manager
+          oss = env_mgr.operating_systems spec.type
+        end
+
+        oss.each do |os|
+          next unless repo.has_dependency_graph? spec, os
+
+          puts "Getting #{options[:type]} graph for #{spec} on #{os} and saving to #{file_name}..."
+          graph = repo.dependency_graph spec, os
+
+          method_name = "to_#{options[:type]}"
+          output = graph.send method_name, {:tred => true}
+
+          IO.write file_name, output
+          return
+        end
+
+        raise "No stored dependency graph found for #{spec}."
+      end
+
       no_commands do
         def clean_spec_id(spec_id)
           spec_id.gsub /\.spec\/?/i, ''
