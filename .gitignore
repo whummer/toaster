@@ -6,3 +6,7 @@
 
 *.dot
 *.graphml
+
+# Data
+
+var
