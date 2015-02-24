@@ -3,6 +3,7 @@ require 'fileutils'
 require_relative 'common'
 require_relative '../model'
 require_relative '../docker'
+require_relative '../utils/exec'
 
 module Citac
   module Environments
@@ -42,13 +43,59 @@ module Citac
 
       def commit(instance, env)
         instance_id = instance.respond_to?(:id) ? instance.id : instance.to_s
-        Citac::Docker.commit instance_id, "citac/#{env.spec_runners.first}", env.operating_system.to_s
+        Citac::Docker.commit instance_id, "citac_environments/#{env.spec_runners.first}", env.operating_system.to_s
+      end
+
+      def cache_directory
+        '/home/oliver/Projects/citac/var/cache' #TODO get real cache location
+      end
+
+      def cache_enabled?
+        #TODO implement in docker wrapper
+        Citac::Utils::Exec.run('docker ps').output.include? 'citac_services/cache:squid'
+      end
+
+      def enable_caching
+        mounts = [[cache_directory, '/var/citac/cache', true]]
+
+        Citac::Utils::Exec.run 'iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to 3128 -w'
+        Citac::Docker.start_daemon 'citac_services/cache:squid', nil, :network => :host, :mounts => mounts
+      rescue StandardError => e
+        raise "Setting up caching failed. Root privileges are required.#{$/}#{e}"
+      end
+
+      def disable_caching
+        container_id = nil
+        Citac::Utils::Exec.run('docker ps --no-trunc').output.each_line do |line|
+          next unless line.include? 'citac_services/cache:squid'
+          container_id = line.strip[0..63]
+        end
+
+        if container_id
+          Citac::Utils::Exec.run 'iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to 3128 -w'
+          Citac::Utils::Exec.run "docker stop #{container_id}" #TODO implement in docker wrapper
+          Citac::Utils::Exec.run "docker rm #{container_id}" #TODO implement in docker wrapper
+        end
+      rescue StandardError => e
+        raise "Tearing down caching failed. Root privileges are required.#{$/}#{e}"
+      end
+
+      def clear_cache
+        enabled = cache_enabled?
+        disable_caching if enabled
+
+        FileUtils.rm_rf cache_directory
+        FileUtils.makedirs cache_directory
+        FileUtils.chmod 0777, cache_directory
+
+        enable_caching if enabled
       end
 
       private
 
       def docker_image_to_environment(docker_image)
-        return nil unless docker_image.name.start_with? 'citac/'
+        return nil unless docker_image.name.start_with? 'citac_environments/'
+        return nil if docker_image.name == 'citac_environments/base'
 
         spec_runner = docker_image.name.split('/', 2).last
         os = Citac::Model::OperatingSystem.parse docker_image.tag

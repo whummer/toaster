@@ -1,4 +1,4 @@
-FROM citac:debian-7
+FROM citac_environments/base:debian-7
 
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y wget

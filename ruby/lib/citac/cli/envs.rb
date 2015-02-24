@@ -21,6 +21,45 @@ module Citac
           env_mgr.update env, :output => :passthrough
         end
       end
+
+      class Cache < Thor
+        desc 'status', 'Gets the status of the caching proxy for network traffic.'
+        def status
+          env_mgr = ServiceLocator.environment_manager
+          status = env_mgr.cache_enabled? ? 'enabled' : 'disabled'
+
+          puts status
+        end
+
+        desc 'enable', 'Enables the caching proxy for network traffic. Requires root privileges.'
+        def enable
+          env_mgr = ServiceLocator.environment_manager
+          if env_mgr.cache_enabled?
+            puts 'Cache is already enabled.'
+          else
+            puts 'Starting caching proxy...'
+            env_mgr.enable_caching
+          end
+        end
+
+        desc 'disable', 'Disables the caching proxy for network traffic. Requires root privileges.'
+        def disable
+          env_mgr = ServiceLocator.environment_manager
+          if env_mgr.cache_enabled?
+            puts 'Stopping caching proxy...'
+            env_mgr.disable_caching
+          end
+        end
+
+        desc 'clear', 'Clears the cached files. Requires root privileges.'
+        def clear
+          env_mgr = ServiceLocator.environment_manager
+          env_mgr.clear_cache
+        end
+      end
+
+      desc 'cache <command> <args...>', 'Interacts with the network traffic cache.'
+      subcommand 'cache', Cache
     end
   end
 end

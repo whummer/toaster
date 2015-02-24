@@ -1,4 +1,4 @@
-FROM citac:ubuntu-14.04
+FROM citac_environments/base:ubuntu-14.04
 
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y wget

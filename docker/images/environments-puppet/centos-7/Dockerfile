@@ -1,4 +1,4 @@
-FROM citac:centos-7
+FROM citac_environments/base:centos-7
 
 RUN yum install -y tar
 

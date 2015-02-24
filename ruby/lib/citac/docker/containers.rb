@@ -11,15 +11,26 @@ module Citac
       end
     end
 
-    def self.run(image, command, options = {})
+    def self.start_daemon(image, command = nil, options = {})
       image_id = image.respond_to?(:id) ? image.id : image.to_s
-      mounts = options[:mounts] || []
+
+      parameters = ['-d']
+      parameters += ['--net', options[:network].to_s] if options[:network]
+      parameters += mounts_to_parameters options[:mounts] if options[:mounts]
+      parameters << image_id
+      parameters << command if command
+
+      result = Citac::Utils::Exec.run('docker run', :args => parameters)
+      container_id = result.output.strip
+
+      container_id
+    end
+
+    def self.run(image, command = nil, options = {})
       raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
 
-      parameters = ''
-      mounts.each {|(s,t,w)| parameters << " -v \"#{s}:#{t}:#{w ? 'rw' : 'ro'}\""}
+      container_id = start_daemon image, command, options
 
-      container_id = Citac::Utils::Exec.run("docker run -d #{parameters} #{image_id} #{command}").output.strip
       Citac::Utils::Exec.run "docker logs -f #{container_id}", :stdout => :passthrough if options[:output] == :passthrough
 
       exit_code = Citac::Utils::Exec.run("docker wait #{container_id}").output.strip.to_i
@@ -51,6 +62,22 @@ module Citac
 
     def self.cleanup_containers
       Citac::Utils::Exec.run 'docker ps --all --quiet --filter status=exited --no-trunc | xargs docker rm'
+    end
+
+    private
+
+    def self.mounts_to_parameters(mounts)
+      result = []
+
+      mounts = mounts || []
+      mounts.each do |(s,t,w)|
+        type = w ? 'rw' : 'ro'
+
+        result << '-v'
+        result << "#{s}:#{t}:#{type}"
+      end
+
+      result
     end
   end
 end
