@@ -1,6 +1,7 @@
 {
   "type": "puppet",
   "operating-systems": [
-
+    "debian-6",
+    "debian-7"
   ]
 }

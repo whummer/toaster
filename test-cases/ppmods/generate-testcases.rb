@@ -12,7 +12,10 @@ blacklist = [
   'spantree-java8', # does not work (invalid APT key)
   'puppetlabs-vcsrepo', # requires the VCS to already be present
   'puppetlabs-lvm', # manages LVM, not available in docker
-  'openshift-openshift_origin' # fails with some encoding error within some json code
+  'openshift-openshift_origin', # fails with some encoding error within some json code
+  'puppetlabs-java_ks', # management of Java key store
+  'sensu-sensu', # service startup fails
+  'puppetlabs-passenger' # produces invalid apache config
 ]
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

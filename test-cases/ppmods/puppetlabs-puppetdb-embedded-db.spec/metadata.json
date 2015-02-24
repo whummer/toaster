@@ -1,10 +1,9 @@
 {
   "type": "puppet",
   "operating-systems": [
-    "redhat-6",
-    "redhat-7",
-    "centos-6",
-    "centos-7",
+    "debian-6",
+    "debian-7",
+    "ubuntu-10.04",
     "ubuntu-12.04",
     "ubuntu-14.04"
   ]
