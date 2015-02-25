@@ -20,10 +20,10 @@ class Puppet::Transaction
         # fail due to missing init scripts during a dry run on blank machines. Skipped application however
         # does not affect graph generation, which is the primary purpose of the dry runs.
 
-        puts "[citac] Transaction: skipping applying '#{resource}' because of noop mode.".yellow
+        puts "[citac] Transaction: skipping '#{resource}' because of noop mode.".yellow
         applied = false
       elsif $citac_apply_single && $citac_apply_single_resource_name != resource.to_s
-        puts "[citac] Transaction: skipping applying '#{resource}' because of single resource exec mode.".yellow
+        puts "[citac] Transaction: skipping '#{resource}' because of single resource exec mode.".yellow
         applied = false
       else
         puts "[citac] Transaction: applying '#{resource}'...".yellow

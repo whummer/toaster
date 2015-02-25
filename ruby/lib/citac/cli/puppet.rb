@@ -76,16 +76,26 @@ module Citac
         end
       end
 
+      option :resource, :aliases => :r, :desc => 'the single resource to execute'
       option :trace, :aliases => :t, :type => :boolean, :desc => 'enables system call tracing'
       option :tracefile, :aliases => :o, :desc => 'the file to write the trace output to (implicated -t)'
-      desc 'exec <manifest> <resource>', 'Executes a single resource of the given manifest.'
-      def exec(manifest, resource)
+      desc 'exec [-t [-o <tracefile>]] [-r <resource>] <manifest>', 'Executes a single or all resources of the given manifest.'
+      def exec(manifest)
         trace = options[:trace] || options[:tracefile]
 
         if trace
           Dir.mktmpdir do |dir|
             trace_file = File.join dir, 'citac_trace.txt'
-            Citac::Utils::Exec.run 'strace', :args => ['-f', '-o', trace_file, 'citac-puppet', 'apply-single', resource, manifest], :stdout => :passthrough
+            args = ['-f', '-o', trace_file, 'citac-puppet']
+            if options[:resource]
+              args << 'apply-single'
+              args << options[:resource]
+            else
+              args << 'apply'
+            end
+            args << manifest
+
+            Citac::Utils::Exec.run 'strace', :args => args, :stdout => :passthrough
 
             traced_resources = Citac::Puppet::Utils::TraceParser.parse_file trace_file
 
@@ -94,8 +104,8 @@ module Citac
               IO.write options[:tracefile], json, :encoding => 'UTF-8'
             end
 
-            puts
             traced_resources.each do |trace|
+              puts
               puts "#{trace.resource_name} (success = #{trace.successful?}):"
               trace.syscalls.each do |syscall|
                 puts "  #{syscall}"
