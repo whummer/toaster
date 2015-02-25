@@ -136,6 +136,7 @@ module Citac
         end
       end
 
+      option :trace, :aliases => :t, :type => :boolean, :desc => 'enables system call tracing'
       desc 'exec <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
       def exec(spec_name, os = nil)
         spec_name = clean_spec_id spec_name
@@ -157,6 +158,7 @@ module Citac
         puts "Executing #{spec} on #{os}..."
 
         runner = Citac::Agent::Runner.new repo, env_mgr
+        runner.trace = options[:trace]
         runner.run spec, os
       end
 

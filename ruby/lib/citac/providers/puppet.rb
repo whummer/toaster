@@ -12,10 +12,13 @@ module Citac
           run_script_io.puts 'citac puppet graph --modulepath modules script.pp && mv script.expanded_relationships.graphml dependencies.graphml'
         end
 
-        def prepare_for_run(repository, spec, directory, run_script_io)
+        def prepare_for_run(repository, spec, directory, run_script_io, options = {})
           copy_modules repository, spec, directory
 
-          run_script_io.puts 'citac-puppet apply --modulepath modules script.pp'
+          cmd = 'citac puppet exec --modulepath modules script.pp'
+          cmd += ' -t -o trace.json' if options[:trace]
+
+          run_script_io.puts cmd
         end
 
         private

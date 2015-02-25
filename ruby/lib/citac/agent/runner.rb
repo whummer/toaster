@@ -7,9 +7,13 @@ require_relative '../logging'
 module Citac
   module Agent
     class Runner
+      def trace?; @trace; end
+      def trace=(value); @trace = value; end
+
       def initialize(repository, env_manager)
         @repository = repository
         @env_manager = env_manager
+        @trace = false
       end
 
       def run(spec, operating_system)
@@ -30,7 +34,7 @@ module Citac
             f.puts '#!/bin/sh'
             f.puts 'cd /tmp/citac'
 
-            provider.prepare_for_run @repository, spec, dir, f
+            provider.prepare_for_run @repository, spec, dir, f, :trace => @trace
           end
 
           run_script_contents = IO.read run_script_path, :encoding => 'UTF-8'
@@ -52,6 +56,10 @@ module Citac
           @repository.save_run spec, operating_system, 'exec', result, start_time, end_time
 
           unless result.success?
+            if @trace && result.output.include?('strace')
+              puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
+            end
+
             errors = result.errors.join($/)
             raise "Execution of #{spec} on #{operating_system} failed. See run output for details.#{$/}#{errors}"
           end

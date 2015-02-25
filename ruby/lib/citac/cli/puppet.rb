@@ -79,41 +79,46 @@ module Citac
       option :resource, :aliases => :r, :desc => 'the single resource to execute'
       option :trace, :aliases => :t, :type => :boolean, :desc => 'enables system call tracing'
       option :tracefile, :aliases => :o, :desc => 'the file to write the trace output to (implicated -t)'
+      option :modulepath, :desc => 'the path from which Puppet should load modules from'
       desc 'exec [-t [-o <tracefile>]] [-r <resource>] <manifest>', 'Executes a single or all resources of the given manifest.'
       def exec(manifest)
         trace = options[:trace] || options[:tracefile]
+
+        puppet_args = []
+        if options[:resource]
+          puppet_args << 'apply-single'
+          puppet_args << options[:resource]
+        else
+          puppet_args << 'apply'
+        end
+        puppet_args += ['--modulepath', options[:modulepath]] if options[:modulepath]
+        puppet_args << manifest
 
         if trace
           Dir.mktmpdir do |dir|
             trace_file = File.join dir, 'citac_trace.txt'
             args = ['-f', '-o', trace_file, 'citac-puppet']
-            if options[:resource]
-              args << 'apply-single'
-              args << options[:resource]
-            else
-              args << 'apply'
-            end
-            args << manifest
+            args += puppet_args
 
             Citac::Utils::Exec.run 'strace', :args => args, :stdout => :passthrough
 
             traced_resources = Citac::Puppet::Utils::TraceParser.parse_file trace_file
 
             if options[:tracefile]
-              json = JSON.pretty_generate traced_resources.map!(&:to_h)
+              json = JSON.pretty_generate traced_resources.map(&:to_h).to_a
               IO.write options[:tracefile], json, :encoding => 'UTF-8'
             end
 
-            traced_resources.each do |trace|
+            traced_resources.each do |traced_resource|
               puts
-              puts "#{trace.resource_name} (success = #{trace.successful?}):"
-              trace.syscalls.each do |syscall|
+              puts "#{traced_resource.resource_name} (success = #{traced_resource.successful?}):"
+              traced_resource.syscalls.each do |syscall|
                 puts "  #{syscall}"
               end
             end
           end
         else
-          Citac::Utils::Exec.run 'citac-puppet apply-single', :args => [resource, manifest], :stdout => :passthrough
+          Citac::Utils::Exec.run 'citac-puppet', :args => puppet_args, :stdout => :passthrough
         end
       end
 
