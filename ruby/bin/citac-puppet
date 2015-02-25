@@ -8,9 +8,17 @@ def run_puppet(args = ARGV)
   cmd.execute
 end
 
-if ARGV.size > 0 && ARGV[0] == 'apply'
+if ARGV.size > 0 && ARGV[0].start_with?('apply')
   args = ARGV.dup
   args << '--detailed-exitcodes' unless args.include? '--detailed-exitcodes'
+
+  if args[0] == 'apply-single'
+    $citac_apply_single = true
+    $citac_apply_single_resource_name = args[1]
+
+    args[0] = 'apply'
+    args.delete_at 1
+  end
 
   begin
     run_puppet args
