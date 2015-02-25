@@ -1,7 +1,7 @@
 FROM debian:wheezy
 
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates ruby
+ && DEBIAN_FRONTEND=noninteractive apt-get install -qy ca-certificates ruby wget curl strace
 
 RUN gem install --no-ri --no-rdoc thor rest-client
 
