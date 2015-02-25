@@ -81,14 +81,14 @@ module Citac
       end
 
       def run_count(spec)
-        dir = run_dir spec
+        dir = runs_dir spec
         return 0 unless Dir.exist? dir
 
         Dir.entries(dir).reject { |e| e == '.' || e == '..' }.to_a.size
       end
 
       def runs(spec)
-        dir = run_dir spec
+        dir = runs_dir spec
         return [] unless Dir.exist? dir
 
         result = []
@@ -104,7 +104,7 @@ module Citac
       end
 
       def save_run(spec, operating_system, action, result, start_time, end_time)
-        base_dir = run_dir spec
+        base_dir = runs_dir spec
         FileUtils.makedirs base_dir
 
         ids = Dir.entries(base_dir).reject { |e| e == '.' || e == '..' }.map { |e| e.to_i }.to_a
@@ -127,10 +127,20 @@ module Citac
 
         IO.write File.join(dir, 'metadata.json'), metadata_json, :encoding => 'UTF-8'
         IO.write File.join(dir, 'output.txt'), result.output, :encoding => 'UTF-8'
+
+        Citac::Model::ConfigurationSpecificationRun.new(new_id, spec, action, operating_system, result.exit_code,
+                                                        start_time, end_time, end_time - start_time)
+      end
+
+      def save_run_trace(spec, run, trace)
+        id = run.respond_to?(:id) ? run.id : run.to_i
+        dir = run_dir spec, id
+
+        IO.write File.join(dir, 'trace.json'), trace, :encoding => 'UTF-8'
       end
 
       def delete_run(run)
-        base_dir = run_dir run.spec
+        base_dir = runs_dir run.spec
         dir = File.join base_dir, run.id.to_s.rjust(4, '0')
 
         FileUtils.rm_rf dir if Dir.exist? dir
@@ -143,8 +153,12 @@ module Citac
         File.join @root, "#{id}.spec"
       end
 
-      def run_dir(spec)
+      def runs_dir(spec)
         File.join spec_dir(spec), 'runs'
+      end
+
+      def run_dir(spec, run_id)
+        File.join runs_dir(spec), run_id.to_s.rjust(4, '0')
       end
 
       def graph_dir(spec, operating_system)
