@@ -1,6 +1,7 @@
 require 'fileutils'
 
 require_relative 'common'
+require_relative '../config'
 require_relative '../model'
 require_relative '../docker'
 require_relative '../utils/exec'
@@ -23,10 +24,8 @@ module Citac
         script_name = File.basename script_path
         script_dir = File.dirname script_path
 
-        citac_dir = '/home/oliver/Projects/citac/ruby' #TODO determine citac dir
-
         mounts = []
-        mounts << [citac_dir, '/opt/citac', false]
+        mounts << [Citac::Config.base_dir, '/opt/citac', false]
         mounts << [script_dir, '/tmp/citac', true]
 
         env_id = env.respond_to?(:id) ? env.id : env.to_s
@@ -47,7 +46,7 @@ module Citac
       end
 
       def cache_directory
-        '/home/oliver/Projects/citac/var/cache' #TODO get real cache location
+        Citac::Config.cache_dir
       end
 
       def cache_enabled?

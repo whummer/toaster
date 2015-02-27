@@ -1,3 +1,4 @@
+require_relative '../config'
 require_relative '../data/filesystem'
 require_relative '../environments/docker'
 
@@ -14,7 +15,7 @@ module Citac
 
       def self.specification_repository
         unless @specification_repository
-          path = '/home/oliver/Projects/citac/test-cases'  #TODO determine path
+          path = Citac::Config.spec_dir
           @specification_repository = Citac::Data::FileSystemSpecificationRepository.new path
         end
 
