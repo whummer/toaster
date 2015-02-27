@@ -17,6 +17,7 @@ module Citac
       parameters = ['-d']
       parameters += ['--net', options[:network].to_s] if options[:network]
       parameters += mounts_to_parameters options[:mounts] if options[:mounts]
+      parameters += ['--name', options[:name]] if options[:name]
       parameters << image_id
       parameters << command if command
 
@@ -43,9 +44,18 @@ module Citac
       Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if container_id && !keep_container
     end
 
+    def self.stop(container_id)
+      Citac::Utils::Exec.run 'docker stop', :args => [container_id]
+    end
+
     def self.commit(container_id, repository_name, tag = nil)
       tag_suffix = tag ? ":#{tag}" : ''
       Citac::Utils::Exec.run "docker commit #{container_id} #{repository_name}#{tag_suffix}"
+    end
+
+    def self.container_running?(container_id)
+      result = Citac::Utils::Exec.run 'docker ps'
+      result.output.include? container_id
     end
 
     def self.containers

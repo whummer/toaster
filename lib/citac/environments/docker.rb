@@ -55,30 +55,23 @@ module Citac
       end
 
       def cache_enabled?
-        #TODO implement in docker wrapper
-        Citac::Utils::Exec.run('docker ps').output.include? 'citac_services/cache:squid'
+        Citac::Docker.container_running? 'citac-service-cache'
       end
 
       def enable_caching
         mounts = [[cache_directory, '/var/citac/cache', true]]
 
         Citac::Utils::Exec.run 'iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to 3128 -w'
-        Citac::Docker.start_daemon 'citac_services/cache:squid', nil, :network => :host, :mounts => mounts
+        Citac::Docker.start_daemon 'citac_services/cache:squid', nil, :network => :host, :mounts => mounts, :name => 'citac-service-cache'
       rescue StandardError => e
         raise "Setting up caching failed. Root privileges are required.#{$/}#{e}"
       end
 
       def disable_caching
-        container_id = nil
-        Citac::Utils::Exec.run('docker ps --no-trunc').output.each_line do |line|
-          next unless line.include? 'citac_services/cache:squid'
-          container_id = line.strip[0..63]
-        end
-
-        if container_id
+        if cache_enabled?
           Citac::Utils::Exec.run 'iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to 3128 -w'
-          Citac::Utils::Exec.run "docker stop #{container_id}" #TODO implement in docker wrapper
-          Citac::Utils::Exec.run "docker rm #{container_id}" #TODO implement in docker wrapper
+          Citac::Docker.stop 'citac-service-cache'
+          Citac::Docker.remove 'citac-service-cache'
         end
       rescue StandardError => e
         raise "Tearing down caching failed. Root privileges are required.#{$/}#{e}"
