@@ -54,7 +54,7 @@ module Citac
           end_time = Time.now
 
           run = @repository.save_run spec, operating_system, 'exec', result, start_time, end_time
-          if @trace
+          if result.success? && @trace
             trace_json = IO.read File.join(dir, 'trace.json'), :encoding => 'UTF-8'
             @repository.save_run_trace spec, run, trace_json
           end
