@@ -6,3 +6,5 @@ RUN wget https://apt.puppetlabs.com/puppetlabs-release-trusty.deb 2>&1 \
 
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -qy puppet-common
+
+RUN sed -i -e "/^templatedir=/ d" /etc/puppet/puppet.conf
