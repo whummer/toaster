@@ -45,6 +45,11 @@ module Citac
         Citac::Docker.commit instance_id, "citac_environments/#{env.spec_runners.first}", env.operating_system.to_s
       end
 
+      def cleanup(instance)
+        instance_id = instance.respond_to?(:id) ? instance.id : instance.to_s
+        Citac::Docker.remove instance_id
+      end
+
       def cache_directory
         Citac::Config.cache_dir
       end

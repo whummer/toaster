@@ -35,7 +35,7 @@ module Citac
 
       def run_commands(env, commands, options = {})
         Dir.mktmpdir do |dir|
-          script_path = File.join(dir, 'script.sh')
+          script_path = File.join(dir, 'run.sh')
           File.open script_path, 'w', :encoding => 'UTF-8' do |f|
             f.puts '#!/bin/sh'
             f.puts 'cd /tmp/citac'
@@ -58,10 +58,12 @@ module Citac
         if defined? cmds
           options[:cleanup_instance] = false
 
-          instance = run_commands env, 'apt-get update', options
-          commit instance, env
-
-          #TODO cleanup environment instance / docker container
+          begin
+            instance = run_commands env, cmds, options
+            commit instance, env
+          ensure
+            cleanup instance if instance
+          end
         end
       end
     end

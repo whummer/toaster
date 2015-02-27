@@ -64,6 +64,10 @@ module Citac
       Citac::Utils::Exec.run 'docker ps --all --quiet --filter status=exited --no-trunc | xargs docker rm'
     end
 
+    def self.remove(container_id)
+      Citac::Utils::Exec.run 'docker rm', :args => [container_id]
+    end
+
     private
 
     def self.mounts_to_parameters(mounts)
