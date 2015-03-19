@@ -19,7 +19,7 @@ module Citac
       parameters += mounts_to_parameters options[:mounts] if options[:mounts]
       parameters += ['--name', options[:name]] if options[:name]
       parameters << image_id
-      parameters << command if command
+      parameters += command.respond_to?(:to_a) ? command.to_a : [command] if command
 
       result = Citac::Utils::Exec.run('docker run', :args => parameters)
       container_id = result.output.strip

@@ -1,5 +1,5 @@
 require_relative '../../helper'
-require_relative '../../../lib/citac/core/core'
+require_relative '../../../lib/citac/core'
 
 describe Citac::Core::DependencyGraph do
   describe '::parse' do

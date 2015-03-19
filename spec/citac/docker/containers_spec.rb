@@ -6,9 +6,9 @@ describe Citac::Docker, :explicit => true do
   describe '::run' do
     it 'should run docker image in container' do
       image = Citac::Docker.images.first
-      output = Citac::Docker.run image, 'echo Hello World'
+      output = Citac::Docker.run image, ['echo', 'Hello World']
 
-      expect(output.strip).to eq('Hello World')
+      expect(output.output.strip).to eq('Hello World')
     end
 
     it 'should delete container' do
@@ -41,8 +41,8 @@ describe Citac::Docker, :explicit => true do
       file = File.basename __FILE__
 
       image = Citac::Docker.images.first
-      output = Citac::Docker.run image, 'ls -l /asdf', :mounts => [[directory, '/asdf', false]]
-      expect(output).to include(file)
+      output = Citac::Docker.run image, ['ls', '-l', '/asdf'], :mounts => [[directory, '/asdf', false]]
+      expect(output.output).to include(file)
     end
   end
 end

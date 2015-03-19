@@ -4,6 +4,7 @@ require_relative 'dg'
 require_relative 'envs'
 require_relative 'puppet'
 require_relative 'spec'
+require_relative 'test'
 require_relative '../version'
 
 module Citac
@@ -20,6 +21,9 @@ module Citac
 
       desc 'spec <command> <args...>', 'Configuration specification related commands'
       subcommand 'spec', Spec
+
+      desc 'test <command> <args...>', 'Test execution related commands'
+      subcommand 'test', Test
 
       desc 'version', 'Prints the version number.'
       def version
