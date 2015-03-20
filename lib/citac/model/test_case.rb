@@ -23,6 +23,17 @@ module Citac
       alias_method :==, :eql?
     end
 
+
+    class TestStepResult
+      attr_reader :step, :result, :output
+
+      def initialize(step, result, output)
+        @step = step
+        @result = result
+        @output = output
+      end
+    end
+
     class TestCase
       attr_reader :type, :resources, :steps
 
@@ -58,6 +69,37 @@ module Citac
 
       def inspect
         "TestCase(#{to_s})"
+      end
+    end
+
+    class TestCaseResult
+      attr_reader :test_case, :step_results
+
+      def success?
+        @success
+      end
+
+      def initialize(test_case)
+        @test_case = test_case
+        @step_results = []
+      end
+
+      def add_step_result(step, success, output)
+        raise 'All results already added' if @step_results.size == @test_case.steps.size
+
+        expected_step = @test_case.steps[@step_results.size]
+        raise "Cannot add step result because '#{expected_step.name}' is expected instead of '#{step.name}'" unless step == expected_step
+
+        result = success ? :success : :failure
+        @step_results << TestStepResult.new(step, result, output)
+      end
+
+      def finish
+        while @step_results.size < @test_case.steps.size
+          @step_results << TestStepResult.new(@test_case.steps[@step_results.size], :skipped, nil)
+        end
+
+        @success = @step_results.last.result == :success
       end
     end
   end

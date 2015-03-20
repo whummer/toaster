@@ -1,3 +1,4 @@
+require_relative '../utils/colorize'
 require_relative '../utils/exec'
 
 module Citac
@@ -36,6 +37,10 @@ module Citac
 
       exit_code = Citac::Utils::Exec.run("docker wait #{container_id}").output.strip.to_i
       output = Citac::Utils::Exec.run("docker logs #{container_id}").output
+
+      if exit_code != 0 && output.include?('strace')
+        puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
+      end
 
       raise "Running '#{command}' on '#{image}' failed with exit code #{exit_code}: #{output}" unless exit_code == 0 || !raise_on_failure
       DockerRunResult.new output, exit_code, container_id

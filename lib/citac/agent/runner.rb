@@ -60,10 +60,6 @@ module Citac
           end
 
           unless result.success?
-            if @trace && result.output.include?('strace')
-              puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
-            end
-
             errors = result.errors.join($/)
             raise "Execution of #{spec} on #{operating_system} failed. See run output for details.#{$/}#{errors}"
           end

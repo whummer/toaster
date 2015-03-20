@@ -2,6 +2,7 @@ require 'fileutils'
 require 'json'
 require 'tempfile'
 require 'thor'
+require 'yaml'
 require_relative 'ioc'
 require_relative '../puppet/utils/graph_generation'
 require_relative '../puppet/utils/trace_parser'
@@ -10,6 +11,7 @@ require_relative '../puppet/tasks/manifest_spec_generator'
 require_relative '../puppet/tasks/module_spec_generator'
 require_relative '../utils/exec'
 require_relative '../utils/colorize'
+require_relative '../model'
 
 module Citac
   module CLI
@@ -120,6 +122,41 @@ module Citac
         else
           Citac::Utils::Exec.run 'citac-puppet', :args => puppet_args, :stdout => :passthrough
         end
+      end
+
+      option :modulepath, :desc => 'the path from which Puppet should load modules from'
+      desc 'testexec <manifest> <test case>', 'Executed the given test case based on the specified manifest.'
+      def testexec(manifest, test_case)
+        test_case = YAML.load_file test_case
+
+        default_args = []
+        default_args += ['--modulepath', options[:modulepath]] if options[:modulepath]
+        default_args << manifest
+
+        test_case_result = Citac::Model::TestCaseResult.new test_case
+        test_case.steps.each_with_index do |step, index|
+          print "Executing step #{index + 1} / #{test_case.steps.size}: #{step}... "
+
+          args = ['apply-single', step.resource]
+          args += default_args
+
+          #TODO add assert handling with change tracking
+
+          result = Citac::Utils::Exec.run 'citac-puppet', :args => args, :raise_on_failure => false
+          test_case_result.add_step_result step, result.success?, result.output
+
+          if result.success?
+            puts 'ok.'
+          else
+            puts 'failed.'
+            STDERR.puts result.output
+            break
+          end
+        end
+
+        test_case_result.finish
+
+        IO.write 'test_case_result.yml', test_case_result.to_yaml, :encoding => 'UTF-8'
       end
 
       desc 'spec <module or manifest>', 'Generates a file based test case stub for the given puppet module or manifest.'
