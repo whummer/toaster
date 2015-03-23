@@ -26,8 +26,8 @@ module Citac
 
           REXML::XPath.each doc, '/graphml/graph/node', nsm do |node|
             id = node.attributes['id']
-            label = REXML::XPath.first node, 'data[@key = $all or @key = $node]/text()', nsm, lim
-            label = label ? label.to_s : id
+            label = REXML::XPath.first node, 'data[@key = $all or @key = $node]', nsm, lim
+            label = label ? label.text.to_s : id
 
             nodes[id] = graph.add_node label
           end
@@ -36,7 +36,8 @@ module Citac
             source_id = edge.attributes['source']
             target_id = edge.attributes['target']
 
-            label = REXML::XPath.first edge, 'data[@key = $all or @key = $edge]/text()', nsm, lim
+            label = REXML::XPath.first edge, 'data[@key = $all or @key = $edge]', nsm, lim
+            label = label.text if label
 
             graph.add_edge nodes[source_id], nodes[target_id], label
           end
