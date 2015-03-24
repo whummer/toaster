@@ -38,7 +38,7 @@ module Toaster
     def get_globally_executed_tasks()
       exec_tasks = Task.
           joins(:task_executions => {:automation_run => :automation}).
-          where("automation_runs.automation_id = #{self.id}").
+          where("automation_runs.automation_id = #{self.uuid}").
           distinct()
       return exec_tasks if !exec_tasks.empty?
       return tasks
@@ -72,7 +72,7 @@ module Toaster
 
     def get_all_test_cases()
       TestCase.joins(:automation_run => :automation).where(
-        "automations.id = #{self.id}")
+        "automations.id = #{self.uuid}")
     end
 
     def is_chef?
