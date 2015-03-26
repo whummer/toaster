@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'tmpdir'
 require_relative '../providers'
 require_relative '../utils/graph'
 require_relative '../logging'

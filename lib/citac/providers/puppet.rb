@@ -21,10 +21,11 @@ module Citac
           run_script_io.puts cmd
         end
 
-        def prepare_for_test_case_execution(repository, spec, directory, run_script_io)
+        def prepare_for_test_case_execution(repository, spec, directory, run_script_io, options = {})
           copy_modules repository, spec, directory
 
-          cmd = 'citac puppet testexec --modulepath modules script.pp test_case.yml'
+          print = options[:print] ? '--print' : ''
+          cmd = "citac puppet testexec --modulepath modules #{print} script.pp test_case.yml"
 
           run_script_io.puts cmd
         end

@@ -42,6 +42,7 @@ module Citac
         puts test_case.to_yaml
       end
 
+      option :print, :aliases => :p
       desc 'exec <spec> <os> <case>', 'Executes the specified test case for the given configuration specification.'
       def exec(spec_id, os, case_id)
         os = Citac::Model::OperatingSystem.parse os
@@ -51,7 +52,7 @@ module Citac
         test_case = test_suite[case_id - 1]
 
         tce = Citac::Agent::TestCaseExecutor.new @repo, @env_mgr
-        tce.run spec, os, test_case
+        tce.run spec, os, test_case, options
       end
 
       no_commands do

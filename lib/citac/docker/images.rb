@@ -28,5 +28,10 @@ module Citac
 
       images
     end
+
+    def self.remove_image(image_or_id)
+      id = image_or_id.respond_to?(:id) ? image_or_id.id : image_or_id.to_s
+      Citac::Utils::Exec.run 'docker rmi', :args => [id]
+    end
   end
 end

@@ -125,9 +125,10 @@ module Citac
       end
 
       option :modulepath, :desc => 'the path from which Puppet should load modules from'
+      option :print, :desc => 'flag whether puppet output should be printed to stdout or not', :aliases => :p, :type => :boolean
       desc 'testexec <manifest> <test case>', 'Executed the given test case based on the specified manifest.'
-      def testexec(manifest, test_case)
-        test_case = YAML.load_file test_case
+      def testexec(manifest, test_case_path)
+        test_case = YAML.load_file test_case_path
 
         default_args = []
         default_args += ['--modulepath', options[:modulepath]] if options[:modulepath]
@@ -135,20 +136,22 @@ module Citac
 
         test_case_result = Citac::Model::TestCaseResult.new test_case
         test_case.steps.each_with_index do |step, index|
-          print "Executing step #{index + 1} / #{test_case.steps.size}: #{step}... "
+          puts "Executing step #{index + 1} / #{test_case.steps.size}: #{step}... "
 
-          args = ['apply-single', step.resource]
-          args += default_args
+          args = ['apply-single', step.resource] + default_args
 
-          #TODO add assert handling with change tracking
+          cmd = 'citac-puppet'
+          cmd = 'citac-changetracker ' + cmd if step.type == :assert
 
-          result = Citac::Utils::Exec.run 'citac-puppet', :args => args, :raise_on_failure => false
+          stdout = options[:print] ? :passthrough : :redirect
+          result = Citac::Utils::Exec.run cmd, :args => args, :raise_on_failure => false, :stdout => stdout
+
           test_case_result.add_step_result step, result.success?, result.output
 
           if result.success?
             puts 'ok.'
           else
-            puts 'failed.'
+            puts 'fail.'
             STDERR.puts result.output
             break
           end
@@ -156,7 +159,8 @@ module Citac
 
         test_case_result.finish
 
-        IO.write 'test_case_result.yml', test_case_result.to_yaml, :encoding => 'UTF-8'
+        test_case_result_path = "#{File.basename(test_case_path, '.*')}_result.yml"
+        IO.write test_case_result_path, test_case_result.to_yaml, :encoding => 'UTF-8'
       end
 
       desc 'spec <module or manifest>', 'Generates a file based test case stub for the given puppet module or manifest.'

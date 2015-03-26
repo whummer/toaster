@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+require_relative '../../lib/citac/docker/changetracker'
+
+begin
+    cmd = ARGV.join(' ')
+    puts "Executing '#{ARGV.join(' ')}' and tracking its changes..."
+
+    Citac::Docker::ChangeTracker.track_changes cmd, :stdout => :passthrough
+
+    puts "Execution of '#{ARGV.join(' ')}' finished."
+rescue StandardError => e
+    STDERR.puts e.to_s
+    exit 1
+end

@@ -1,4 +1,5 @@
 require 'fileutils'
+require 'tmpdir'
 require 'yaml'
 require_relative '../providers'
 require_relative '../utils/graph'
@@ -13,7 +14,7 @@ module Citac
         @env_manager = env_manager
       end
 
-      def run(spec, operating_system, test_case)
+      def run(spec, operating_system, test_case, options = {})
         log_info 'agent', "Running '#{test_case}' for '#{spec}' on '#{operating_system}'..."
         puts "Running test '#{test_case.name}' for '#{spec}' on '#{operating_system}'...".yellow
 
@@ -28,7 +29,7 @@ module Citac
             f.puts '#!/bin/sh'
             f.puts 'cd /tmp/citac'
 
-            provider.prepare_for_test_case_execution @repository, spec, dir, f
+            provider.prepare_for_test_case_execution @repository, spec, dir, f, :print => options[:print]
           end
 
           script_name = "script#{provider.script_extension}"
@@ -51,6 +52,7 @@ module Citac
           run = @repository.save_run spec, operating_system, 'test', result, start_time, end_time
 
           test_case_result = YAML.load_file File.join(dir, 'test_case_result.yml')
+          #puts IO.read File.join(dir, 'test_case_result.yml'), :encoding => 'UTF-8'
           #TODO save test_case_result with run
 
           if result.success?

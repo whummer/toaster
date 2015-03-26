@@ -33,6 +33,8 @@ module Citac
 
         log_debug 'exec', "Executing command '#{cmdline}'..."
         if options[:stdout] == :passthrough
+          #TODO implement output collection with tee
+
           output = nil
           system cmdline
         else

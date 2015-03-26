@@ -5,4 +5,6 @@ RUN apt-get update \
 
 RUN gem install --no-ri --no-rdoc thor rest-client
 
-ENV PATH /opt/citac/bin:$PATH
+RUN curl -sSL https://get.docker.com/ | sh
+
+ENV PATH /opt/citac/bin:/opt/citac/bin/docker:$PATH

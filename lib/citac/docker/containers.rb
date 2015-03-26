@@ -1,5 +1,6 @@
 require_relative '../utils/colorize'
 require_relative '../utils/exec'
+require_relative 'images'
 
 module Citac
   module Docker
@@ -55,7 +56,10 @@ module Citac
 
     def self.commit(container_id, repository_name, tag = nil)
       tag_suffix = tag ? ":#{tag}" : ''
-      Citac::Utils::Exec.run "docker commit #{container_id} #{repository_name}#{tag_suffix}"
+      result = Citac::Utils::Exec.run "docker commit #{container_id} #{repository_name}#{tag_suffix}"
+      id = result.output.strip
+
+      DockerImage.new id, repository_name, tag
     end
 
     def self.container_running?(container_id)

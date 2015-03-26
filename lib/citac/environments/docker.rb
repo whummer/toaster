@@ -26,6 +26,7 @@ module Citac
 
         mounts = []
         mounts << [Citac::Config.base_dir, '/opt/citac', false]
+        mounts << ['/var/run/docker.sock', '/var/run/docker.sock', false]
         mounts << [script_dir, '/tmp/citac', true]
 
         env_id = env.respond_to?(:id) ? env.id : env.to_s
