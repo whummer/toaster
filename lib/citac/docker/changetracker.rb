@@ -1,4 +1,5 @@
 require 'securerandom'
+require 'etc'
 require_relative 'containers'
 require_relative 'images'
 require_relative '../utils/file_access_tracking'
@@ -9,15 +10,107 @@ require_relative '../logging'
 module Citac
   module Docker
     module ChangeTracker
+      class FileStatus
+        attr_reader :name, :size, :mode, :owner, :group
+
+        def exists?
+          @existing
+        end
+
+        def initialize(name, existing, size = nil, mode = nil, owner = nil, group = nil)
+          @name = name
+          @existing = existing
+          @size = size
+          @mode = mode
+          @owner = owner
+          @group = group
+        end
+
+        def eql?(other)
+          #TODO add mode
+          @name == other.name && @size == other.size && @owner == other.owner && @group == other.group
+        end
+
+        alias_method :==, :eql?
+
+        def to_s
+          "#{@name}, exists: #{@existing}, size: #{@size}, mode: #{@mode}, owner: #{@owner}, group: #{@group}"
+        end
+      end
+
       class << self
         def track_changes(command, options = {})
           snapshot_image = create_snapshot_image
-          modified_files = Citac::Utils::FileAccessTracking.track_modified_files command, options
 
-          pre_files = get_pre_existing_files snapshot_image, modified_files
-          post_files = get_post_existing_files modified_files
+          accessed_files, written_files = Citac::Utils::FileAccessTracking.track command, options
 
-          new_files = post_files.reject{|f| pre_files.include? f}.to_a
+          #TODO generalize filter
+          accessed_files.reject! {|f| f.start_with?('/opt/citac') || f.start_with?('/tmp/citac') || f.start_with?('/var/lib/puppet')}
+          written_files.reject! {|f| f.start_with?('/opt/citac') || f.start_with?('/tmp/citac') || f.start_with?('/var/lib/puppet')}
+
+          #puts 'WRITTEN FILES:' #TODO remove
+          #written_files.each {|f| puts f} #TODO remove
+
+          pre_states = get_pre_file_states snapshot_image, accessed_files
+          post_states = get_post_file_states accessed_files
+
+          #puts 'PRESTATES:' #TODO remove
+          #pre_states.each {|fn, fs| puts "#{fn}: #{fs}"} #TODO remove
+          #puts 'POSTSTATES:' #TODO remove
+          #post_states.each {|fn, fs| puts "#{fn}: #{fs}"} #TODO remove
+
+          new_files = []
+          existing_files = []
+          deleted_files = []
+          temp_files = []
+          changed_files = []
+          touched_files = []
+          read_files = []
+
+          accessed_files.each do |accessed_file|
+            pre = pre_states[accessed_file]
+            post = post_states[accessed_file]
+
+            if post.exists?
+              if pre.exists?
+                existing_files << accessed_file
+              else
+                new_files << accessed_file
+              end
+            else
+              if pre.exists?
+                deleted_files << accessed_file
+              else
+                temp_files << accessed_file
+              end
+            end
+          end
+
+          hash_compare_files = []
+          existing_files.each do |existing_file|
+            if written_files.include? existing_file
+              if pre_states[existing_file] != post_states[existing_file]
+                #puts "STATE MISMATCH '#{existing_file}': '#{pre_states[existing_file]}' vs. '#{post_states[existing_file]}'" #TODO remove
+                changed_files << existing_file
+              else
+                hash_compare_files << existing_file
+              end
+            else
+              read_files << existing_file
+            end
+          end
+
+          pre_hashes = get_pre_hashes snapshot_image, hash_compare_files
+          post_hashes = get_post_hashes hash_compare_files
+          hash_compare_files.each do |hash_compare_file|
+            if pre_hashes[hash_compare_file] == post_hashes[hash_compare_file]
+              touched_files << hash_compare_file
+            else
+              #puts "HASH MISMATCH '#{hash_compare_file}': '#{pre_hashes[hash_compare_file]}' vs. '#{post_hashes[hash_compare_file]}'" #TODO remove
+              changed_files << hash_compare_file
+            end
+          end
+
           unless new_files.empty?
             puts 'New files:'
             new_files.each do |new_file|
@@ -25,39 +118,20 @@ module Citac
             end
           end
 
-          changed_files = post_files.select{|f| pre_files.include? f}.to_a
           unless changed_files.empty?
-            pre_sizes = get_pre_file_sizes snapshot_image, changed_files
-            post_sizes = get_post_file_sizes changed_files
-
-            same_size_files = changed_files.select{|f| pre_sizes[f] == post_sizes[f]}
-            different_size_files = changed_files - same_size_files
-
-            pre_hashes = get_pre_hashes snapshot_image, same_size_files
-            post_hashes = get_post_hashes same_size_files
-
-            same_hash_files = same_size_files.select{|f| pre_hashes[f] == post_hashes[f]}.to_a
-            different_hash_files = same_size_files - same_hash_files
-
-            touched_files = same_hash_files
-            changed_files = different_size_files + different_hash_files
-
-            unless changed_files.empty?
-              puts 'Changed files:'
-              changed_files.each do |changed_file|
-                puts " - #{changed_file}"
-              end
-            end
-
-            unless touched_files.empty?
-              puts 'Touched files (content same, but written to):'
-              touched_files.each do |touched_file|
-                puts " - #{touched_file}"
-              end
+            puts 'Changed files:'
+            changed_files.each do |changed_file|
+              puts " - #{changed_file}"
             end
           end
 
-          deleted_files = pre_files.reject{|f| post_files.include? f}.to_a
+          unless touched_files.empty?
+            puts 'Touched files (content same, but written to):'
+            touched_files.each do |touched_file|
+              puts " - #{touched_file}"
+            end
+          end
+
           unless deleted_files.empty?
             puts 'Deleted files:'
             deleted_files.each do |deleted_file|
@@ -65,18 +139,71 @@ module Citac
             end
           end
 
-          temp_files = modified_files.reject{|f| pre_files.include? f}.reject{|f| post_files.include? f}.to_a
           unless temp_files.empty?
             puts 'Temporary files (created and deleted):'
             temp_files.each do |temporary_file|
               puts " - #{temporary_file}"
             end
           end
+
+          # unless read_files.empty?
+          #   puts 'Read files (only read access):'
+          #   read_files.each do |read_file|
+          #     puts " - #{read_file}"
+          #   end
+          # end
         ensure
           remove_snapshot_image snapshot_image
         end
 
         private
+
+        def get_pre_file_states(snapshot_image, accessed_files)
+          escaped_file_names = accessed_files.map { |f| f.gsub ' ', '\ ' }.to_a
+          cmd = ['xargs', '-n', '100', 'stat', '-c', '%n:%s:%A:%U:%G']
+          result = Citac::Docker.run snapshot_image, cmd, :stdin => escaped_file_names, :raise_on_failure => false
+
+          states = Hash.new
+          result.stdout.each_line do |line|
+            pieces = line.strip.split ':'
+            filename = pieces[0]
+            size = pieces[1].to_i
+            mode = pieces[2] #TODO use numeric mode
+            owner = pieces[3]
+            group = pieces[4]
+
+            states[filename] = FileStatus.new filename, true, size, mode, owner, group
+          end
+
+          accessed_files.each do |accessed_file|
+            unless states.include? accessed_file
+              #puts "Considering '#{accessed_file}' as not existing" #TODO remove
+              states[accessed_file] = FileStatus.new accessed_file, false
+            end
+          end
+
+          states
+        end
+
+        def get_post_file_states(accessed_files)
+          users = Hash.new
+          groups = Hash.new
+
+          Etc.passwd {|u| users[u.uid] = u.name}
+          Etc.group {|g| groups[g.gid] = g.name}
+
+          states = Hash.new
+          accessed_files.each do |accessed_file|
+            if File.exists? accessed_file
+              stat = File.stat accessed_file
+              states[accessed_file] = FileStatus.new accessed_file, true, stat.size, stat.mode, users[stat.uid], groups[stat.gid]
+            else
+              states[accessed_file] = FileStatus.new accessed_file, false
+            end
+          end
+
+          states
+        end
 
         def get_pre_existing_files(snapshot_image, modified_files)
           modified_directories = Hash.new {|h, k| h[k] = []}

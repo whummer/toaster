@@ -1,4 +1,5 @@
 require 'thor'
+require 'tmpdir'
 require_relative 'ioc'
 require_relative '../core'
 require_relative '../model'
@@ -53,6 +54,26 @@ module Citac
 
         tce = Citac::Agent::TestCaseExecutor.new @repo, @env_mgr
         tce.run spec, os, test_case, options
+      end
+
+      desc 'hugo', 'Does the hugo'
+      def hugo
+        result = Citac::Docker.run 'ubuntu', 'cat', :stdin => ['foo', 'bar']
+        puts result.output.inspect
+      end
+
+      desc 'beutlin', 'Does the beutlin'
+      def beutlin(cmd)
+        Dir.mktmpdir do |dir|
+          script_path = File.join dir, 'run.sh'
+          File.open script_path, 'w' do |f|
+            f.puts '#!/bin/sh'
+            f.puts cmd
+          end
+
+          env = @env_mgr.environments.first
+          @env_mgr.run env, script_path, :output => :passthrough
+        end
       end
 
       no_commands do

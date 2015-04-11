@@ -1,3 +1,4 @@
+require 'tmpdir'
 require_relative '../utils/colorize'
 require_relative '../utils/exec'
 require_relative 'images'
@@ -7,8 +8,8 @@ module Citac
     class DockerRunResult < Citac::Utils::Exec::RunResult
       attr_reader :container_id
 
-      def initialize(output, exit_code, container_id)
-        super output, exit_code
+      def initialize(output, exit_code, stdout, stderr, container_id)
+        super output, exit_code, stdout, stderr
         @container_id = container_id
       end
     end
@@ -17,6 +18,7 @@ module Citac
       image_id = image.respond_to?(:id) ? image.id : image.to_s
 
       parameters = ['-d']
+      parameters << '-i' if options[:stdin]
       parameters += ['--net', options[:network].to_s] if options[:network]
       parameters += mounts_to_parameters options[:mounts] if options[:mounts]
       parameters += ['--name', options[:name]] if options[:name]
@@ -30,24 +32,37 @@ module Citac
     end
 
     def self.run(image, command = nil, options = {})
-      raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
+      Dir.mktmpdir do |dir|
+        raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
+        cidfile = File.join dir, 'cid'
 
-      container_id = start_daemon image, command, options
+        image_id = image.respond_to?(:id) ? image.id : image.to_s
 
-      Citac::Utils::Exec.run "docker logs -f #{container_id}", :stdout => :passthrough if options[:output] == :passthrough
+        parameters = ['-i']
+        parameters << '--rm' unless options[:keep_container]
+        parameters += ['--cidfile', cidfile]
+        parameters += mounts_to_parameters options[:mounts] if options[:mounts]
+        parameters << image_id
+        parameters += command.respond_to?(:to_a) ? command.to_a : [command] if command
 
-      exit_code = Citac::Utils::Exec.run("docker wait #{container_id}").output.strip.to_i
-      output = Citac::Utils::Exec.run("docker logs #{container_id}").output
+        exec_options = options.clone
+        exec_options[:raise_on_failure] = false
+        exec_options[:args] = parameters
 
-      if exit_code != 0 && output.include?('strace')
-        puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
+        result = Citac::Utils::Exec.run 'docker run', exec_options
+        container_id = IO.read(cidfile).strip
+
+        if (result.exit_code != 0 || result.output.include?('PTRACE_TRACEME')) && result.output.include?('strace')
+          puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
+        end
+
+        if result.exit_code != 0 && raise_on_failure
+          Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if options[:keep_container]
+          raise "Running '#{command}' on '#{image}' failed with exit code #{result.exit_code}: #{result.output}"
+        end
+
+        DockerRunResult.new result.output, result.exit_code, result.stdout, result.stderr, container_id
       end
-
-      raise "Running '#{command}' on '#{image}' failed with exit code #{exit_code}: #{output}" unless exit_code == 0 || !raise_on_failure
-      DockerRunResult.new output, exit_code, container_id
-    ensure
-      keep_container = options[:keep_container] && exit_code == 0
-      Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if container_id && !keep_container
     end
 
     def self.stop(container_id)

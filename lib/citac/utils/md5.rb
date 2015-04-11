@@ -4,6 +4,7 @@ module Citac
   module Utils
     module MD5
       def self.hash_files(files)
+        #TODO split into multiple calls or do it with stdin / xargs
         files = [files] unless files.respond_to? :each
 
         result = Citac::Utils::Exec.run 'md5sum', :args => files

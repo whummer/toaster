@@ -16,6 +16,8 @@ if ARGV.size > 0 && ARGV[0].start_with?('apply')
     $citac_apply_single = true
     $citac_apply_single_resource_name = args[1]
 
+    puts "Running only resource '#{$citac_apply_single_resource_name}'..."
+
     args[0] = 'apply'
     args.delete_at 1
   end

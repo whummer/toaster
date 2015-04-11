@@ -1,3 +1,5 @@
+require 'open3'
+require 'thread'
 require_relative '../logging'
 require_relative '../model'
 require_relative 'colorize'
@@ -6,11 +8,13 @@ module Citac
   module Utils
     module Exec
       class RunResult
-        attr_reader :output, :exit_code
+        attr_reader :output, :exit_code, :stdout, :stderr
 
-        def initialize(output, exit_code)
+        def initialize(output, exit_code, stdout, stderr)
           @output = output
           @exit_code = exit_code
+          @stdout = stdout
+          @stderr = stderr
         end
 
         def success?
@@ -22,29 +26,73 @@ module Citac
         end
       end
 
+      def self.format_args(args)
+        args.map{|a| a.gsub('"', '\"')}.map{|a| a.include?(' ') ? "\"#{a}\"" : a}.join(' ')
+      end
+
       def self.run(command, options = {})
         raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
-        stderr = case options[:stderr] when :passthrough; '' when :discard; '2> /dev/null' else '2>&1' end
+        passthrough_stdout = options[:output] == :passthrough || options[:stdout] == :passthrough
+        passthrough_stderr = options[:output] == :passthrough || options[:stderr] == :passthrough
 
         args = options[:args] || []
-        args = args.map{|a| a.include?(' ') ? "\"#{a}\"" : a}.join(' ')
+        args = format_args args
 
-        cmdline = "#{command} #{args} #{stderr}"
+        cmdline = "#{command} #{args}"
 
         log_debug 'exec', "Executing command '#{cmdline}'..."
-        if options[:stdout] == :passthrough
-          #TODO implement output collection with tee
 
-          output = nil
-          system cmdline
-        else
-          output = `#{cmdline}`
+        mutex = Mutex.new
+        captured_output = ''
+        captured_stdout = ''
+        captured_stderr = ''
+
+        puts "Executing '#{cmdline}'..." #TODO remove
+
+        status = Open3.popen3 cmdline do |stdin, stdout, stderr, wait_thr|
+          thread_stdout = Thread.new do
+            while line = stdout.gets
+              if passthrough_stdout
+                $stdout.puts line
+                $stdout.flush
+              end
+
+              line = line.no_colors
+              captured_stdout << line
+              mutex.synchronize {captured_output << line}
+            end
+          end
+
+          thread_stderr = Thread.new do
+            while line = stderr.gets
+              if passthrough_stderr
+                $stderr.puts line
+                $stderr.flush
+              end
+
+              line = line.no_colors
+              captured_stderr << line
+              mutex.synchronize {captured_output << line}
+            end
+          end
+
+          if options[:stdin]
+            options[:stdin].each do |line|
+              stdin.puts line
+            end
+          end
+          stdin.close_write
+
+          thread_stdout.join
+          thread_stderr.join
+
+          wait_thr.value
         end
 
-        if $?.exitstatus == 0 || !raise_on_failure
-          RunResult.new (output || '').no_colors, $?.exitstatus
+        if status.exitstatus == 0 || !raise_on_failure
+          RunResult.new captured_output, status.exitstatus, captured_stdout, captured_stderr
         else
-          raise "Command '#{cmdline}' failed with exit code #{$?.exitstatus}: #{output || '<no output>'}"
+          raise "Command '#{cmdline}' failed with exit code #{status.exitstatus}: #{captured_output}"
         end
       end
     end
