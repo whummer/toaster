@@ -1,33 +1,8 @@
 #!/usr/bin/env ruby
 
-require 'puppet/util/command_line'
-require_relative '../lib/citac/puppet/patches'
+$prog_name = 'citac-puppet'
 
-def run_puppet(args = ARGV)
-  cmd = Puppet::Util::CommandLine.new 'puppet', args
-  cmd.execute
-end
+require_relative '../lib/citac/puppet/cli'
+require_relative '../lib/citac/commons/utils/clirunner'
 
-if ARGV.size > 0 && ARGV[0].start_with?('apply')
-  args = ARGV.dup
-  args << '--detailed-exitcodes' unless args.include? '--detailed-exitcodes'
-
-  if args[0] == 'apply-single'
-    $citac_apply_single = true
-    $citac_apply_single_resource_name = args[1]
-
-    puts "Running only resource '#{$citac_apply_single_resource_name}'..."
-
-    args[0] = 'apply'
-    args.delete_at 1
-  end
-
-  begin
-    run_puppet args
-  rescue SystemExit => e
-    exit 0 if e.status == 2
-    exit e.status
-  end
-else
-  run_puppet
-end
+Citac::Utils::CLIRunner.run Citac::Puppet::CLI

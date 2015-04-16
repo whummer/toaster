@@ -1,24 +1,8 @@
 #!/usr/bin/env ruby
 
-require_relative '../lib/citac/logging'
-require_relative '../lib/citac/cli'
+$prog_name = 'citac-main'
 
-begin
-    $verbose = false
+require_relative '../lib/citac/main/cli'
+require_relative '../lib/citac/commons/utils/clirunner'
 
-    args = ARGV.dup
-    if args.include?('-v') || args.include?('--verbose')
-        $verbose = true
-        Citac::Logging.level = Logger::DEBUG
-
-        args.delete '-v'
-        args.delete '--verbose'
-    end
-
-    Citac::CLI::CitacCLI.start args
-rescue StandardError => e
-    log_fatal 'main', 'Unhandled exception occurred', e
-
-    STDERR.puts e.to_s
-    exit 1
-end
+Citac::Utils::CLIRunner.run Citac::Main::CLI::Main

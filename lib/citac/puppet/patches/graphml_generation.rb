@@ -1,5 +1,5 @@
 require 'puppet/graph/simple_graph'
-require_relative '../../utils/graph'
+require_relative '../../commons/utils/graph'
 
 # Extends Puppet to generate graphs in GraphML format in addition to DOT
 

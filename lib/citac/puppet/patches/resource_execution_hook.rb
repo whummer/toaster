@@ -1,11 +1,12 @@
 require 'puppet/transaction'
 require 'puppet/transaction/resource_harness'
-require_relative '../utils/graph_cleanup'
-require_relative '../../utils/colorize'
+require_relative '../../commons/integration/puppet/graph_cleanup'
+require_relative '../../commons/utils/colorize'
+require_relative '../../commons/logging'
 
 class Puppet::Transaction
   def __citac_intercepted_resource?(resource)
-    catalog.host_config? && Citac::Puppet::Utils::GraphCleanup.is_real_resource?(resource)
+    catalog.host_config? && Citac::Integration::Puppet::GraphCleanup.is_real_resource?(resource)
   end
 
   alias_method :__citac_original_apply, :apply
@@ -20,13 +21,13 @@ class Puppet::Transaction
         # fail due to missing init scripts during a dry run on blank machines. Skipped application however
         # does not affect graph generation, which is the primary purpose of the dry runs.
 
-        puts "[citac] Transaction: skipping '#{resource}' because of noop mode.".yellow
+        log_debug $prog_name, "Skipping '#{resource}' because of noop mode."
         applied = false
       elsif $citac_apply_single && $citac_apply_single_resource_name != resource.to_s
-        puts "[citac] Transaction: skipping '#{resource}' because of single resource exec mode.".yellow
+        log_debug $prog_name, "Skipping '#{resource}' because of single resource exec mode.".yellow
         applied = false
       else
-        puts "[citac] Transaction: applying '#{resource}'...".yellow
+        log_info $prog_name, "Applying '#{resource}'..."
 
         hexname = resource.to_s.encode('UTF-8').unpack('H*').first.downcase
         File.exist? "CITAC_RESOURCE_EXECUTION_START:#{hexname}:"
@@ -42,9 +43,9 @@ class Puppet::Transaction
       File.exist? "CITAC_RESOURCE_EXECUTION_END:#{!failed}:"
 
       if failed
-        puts "[citac] Transaction: failed to apply '#{resource}'.".red
+        log_error $prog_name, "Failed to apply '#{resource}'."
       else
-        puts "[citac] Transaction: applied '#{resource}'.".green
+        log_info $prog_name, "Applied '#{resource}'."
       end
     end
 

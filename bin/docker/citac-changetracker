@@ -1,17 +1,8 @@
 #!/usr/bin/env ruby
 
-require_relative '../../lib/citac/docker/changetracker'
-require_relative '../../lib/citac/utils/exec'
+$prog_name = 'citac-changetracker-docker'
 
-begin
-    cmd = Citac::Utils::Exec.format_args ARGV
-    puts "Executing '#{cmd}' and tracking its changes..."
+require_relative '../../lib/citac/changetrackers/docker/cli'
+require_relative '../../lib/citac/commons/utils/clirunner'
 
-    Citac::Docker::ChangeTracker.track_changes cmd, :stdout => :passthrough
-
-    puts "Execution of '#{cmd}' finished."
-rescue StandardError => e
-    STDERR.puts "Tracking changes for command '#{cmd}' failed."
-    STDERR.puts e.to_s
-    exit 1
-end
+Citac::Utils::CLIRunner.run Citac::ChangeTrackers::Docker::CLI
