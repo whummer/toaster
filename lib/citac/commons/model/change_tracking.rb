@@ -2,6 +2,16 @@ require 'stringio'
 
 module Citac
   module Model
+    class ChangeTrackingSettings
+      attr_accessor :exclusion_patterns, :start_markers, :end_markers
+
+      def initialize
+        @exclusion_patterns = []
+        @start_markers = []
+        @end_markers = []
+      end
+    end
+
     class ChangeSummary
       attr_reader :changes, :touches
 

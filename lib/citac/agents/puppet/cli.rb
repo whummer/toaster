@@ -30,14 +30,17 @@ module Citac
           task.execute :modulepath => 'modules', :output => :passthrough
         end
 
+        option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
         desc 'test [<dir>]', 'Executes the Puppet test case in the given directory and stores the test results in that directory.'
         def test(dir = '.')
           setup_workdir dir
 
           test_case = Citac::Utils::Serialization.load_from_file 'test_case.yml'
 
+          output = options[:passthrough] ? :passthrough : :redirect
+
           task = TestTask.new 'script', test_case, [] #TODO get exclusion patterns from somewhere
-          test_case_result = task.execute :modulepath => 'modules'
+          test_case_result = task.execute :modulepath => 'modules', :output => output
 
           Citac::Utils::Serialization.write_to_file test_case_result, 'test_case_result.yml'
         end

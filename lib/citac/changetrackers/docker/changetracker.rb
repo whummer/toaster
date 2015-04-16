@@ -5,7 +5,7 @@ require_relative '../../commons/integration/docker'
 require_relative '../../commons/integration/strace'
 require_relative '../../commons/integration/md5sum'
 require_relative '../../commons/logging'
-require_relative '../../commons/model/change_summary'
+require_relative '../../commons/model/change_tracking'
 require_relative '../../commons/utils/md5'
 require_relative '../../commons/utils/system'
 require_relative 'file_status'
@@ -15,12 +15,17 @@ module Citac
     module Docker
       module ChangeTracker
         class << self
-          def track_changes(command, exclusion_patterns, options = {})
+          def track_changes(command, settings, options = {})
+            exclusion_patterns = settings.exclusion_patterns.dup
             add_default_exclusion_patterns exclusion_patterns
 
             snapshot_image = create_snapshot_image
 
-            accessed_files, written_files, result = Citac::Integration::Strace.track_file_access command, options
+            strace_opts = options.dup
+            strace_opts[:start_markers] = settings.start_markers
+            strace_opts[:end_markers] = settings.end_markers
+
+            accessed_files, written_files, result = Citac::Integration::Strace.track_file_access command, strace_opts
 
             accessed_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
             written_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }

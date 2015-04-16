@@ -5,6 +5,7 @@ module Citac
     module Tasks
       class TestTask
         attr_reader :spec
+        attr_accessor :passthrough
 
         def type
           :test
@@ -14,6 +15,13 @@ module Citac
           @spec = spec
           @repository = repository
           @test_case = test_case
+          @passthrough = false
+        end
+
+        def additional_args
+          result = []
+          result << '-p' if @passthrough
+          result
         end
 
         def before_execution(dir, operating_system)

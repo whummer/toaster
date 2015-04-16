@@ -1,7 +1,7 @@
 require 'stringio'
 require 'tmpdir'
 require_relative '../../../commons/integration/puppet'
-require_relative '../../../commons/model/change_summary'
+require_relative '../../../commons/model/change_tracking'
 require_relative '../../../commons/utils/exec'
 require_relative '../../../commons/utils/serialization'
 
@@ -80,14 +80,19 @@ module Citac
           Dir.mktmpdir do |dir|
             change_summary_path = File.join dir, 'change_summary.yml'
 
-            exclusion_patterns_path = File.join dir, 'exclusion_patterns.yml'
-            Citac::Utils::Serialization.write_to_file @exclusion_patterns, exclusion_patterns_path
+            settings_path = File.join dir, 'settings.yml'
+            
+            change_tracking_settings = Citac::Model::ChangeTrackingSettings.new
+            change_tracking_settings.exclusion_patterns = @exclusion_patterns
+            change_tracking_settings.start_markers << /CITAC_RESOURCE_EXECUTION_START/
+            change_tracking_settings.end_markers << /CITAC_RESOURCE_EXECUTION_END/
+            Citac::Utils::Serialization.write_to_file change_tracking_settings, settings_path
 
             apply_opts = options.dup
             apply_opts[:resource] = @resource_name
 
             args = Citac::Integration::Puppet.apply_args @manifest_path, apply_opts
-            args = [change_summary_path, exclusion_patterns_path, 'citac-puppet'] + args
+            args = [change_summary_path, settings_path, 'citac-puppet'] + args
 
             exec_opts = options.dup
             exec_opts[:raise_on_failure] = false

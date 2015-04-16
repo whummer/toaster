@@ -2,6 +2,7 @@ require 'set'
 require 'tmpdir'
 require_relative 'parser'
 require_relative 'runner'
+require_relative '../../logging'
 
 module Citac
   module Integration
@@ -18,13 +19,28 @@ module Citac
         written_files = Set.new
         exec_result = nil
 
+        start_markers = options[:start_markers] || []
+        end_markers = options[:end_markers] || []
+
+        process_syscall = start_markers.empty?
+
         Strace.run command, run_opts do |trace_file, result|
           exec_result = result
 
           File.open trace_file, 'r' do |trace_io|
             parser = SyscallParser.new trace_io
             parser.each do |syscall|
+              if process_syscall && end_markers.any? {|em| syscall.line =~ em}
+                process_syscall = false
+              elsif !process_syscall && start_markers.any? {|sm| syscall.line =~ sm}
+                process_syscall = true
+                next
+              end
+
+              next unless process_syscall
               next if syscall.non_existing_file?
+
+              log_debug $prog_name, syscall.line
 
               if WRITE_SYSCALLS.include? syscall.name
                 first = syscall.file_descriptors.first

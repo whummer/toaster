@@ -1,3 +1,5 @@
+require_relative '../../commons/utils/exec'
+
 module Citac
   module Main
     module Tasks
@@ -19,7 +21,10 @@ module Citac
 
             run_script_path = File.join dir, 'run.sh'
             File.open run_script_path, 'w', :encoding => 'UTF-8' do |f|
-              flags = $verbose ? '-v' : ''
+              flags = []
+              flags << '-v' if $verbose
+              flags += task.additional_args if task.respond_to? :additional_args
+              flags = Citac::Utils::Exec.format_args flags
 
               f.puts '#!/bin/sh'
               f.puts 'cd /tmp/citac'

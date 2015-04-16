@@ -40,13 +40,14 @@ module Citac
           puts test_case.to_yaml
         end
 
-        option :print, :aliases => :p
+        option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
         desc 'exec <spec> <os> <case>', 'Executes the specified test case for the given configuration specification.'
         def exec(spec_id, os, case_id)
           spec, os, test_suite = load_test_suite spec_id, os
           test_case = test_suite[case_id.to_i - 1]
 
           task = Citac::Main::Tasks::TestTask.new @repo, spec, test_case
+          task.passthrough = options[:passthrough]
           @exec_mgr.execute task, os, :output => :passthrough
         end
 
