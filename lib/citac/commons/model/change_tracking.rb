@@ -13,11 +13,12 @@ module Citac
     end
 
     class ChangeSummary
-      attr_reader :changes, :touches
+      attr_reader :changes, :touches, :additional_data
 
       def initialize
         @changes = Array.new
         @touches = Array.new
+        @additional_data = Hash.new
       end
 
       def to_s

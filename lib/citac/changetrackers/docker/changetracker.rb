@@ -25,12 +25,13 @@ module Citac
             strace_opts[:start_markers] = settings.start_markers
             strace_opts[:end_markers] = settings.end_markers
 
-            accessed_files, written_files, result = Citac::Integration::Strace.track_file_access command, strace_opts
+            accessed_files, written_files, result, syscalls = Citac::Integration::Strace.track_file_access command, strace_opts
 
             accessed_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
             written_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
 
             change_summary = compare_files snapshot_image, accessed_files, written_files
+            change_summary.additional_data[:syscalls] = syscalls.join $/
             return change_summary, result
           ensure
             remove_snapshot_image snapshot_image

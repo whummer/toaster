@@ -40,6 +40,16 @@ module Citac
           result.puts
           result.puts @exec_result.output
 
+          @change_summary.additional_data.each do |key, data|
+            result.puts
+            result.puts '- - - - - - - - -'
+            result.puts 'Additional data'
+            result.puts key
+            result.puts '- - - - - - - - -'
+            result.puts
+            result.puts data
+          end
+
           result.string
         end
 

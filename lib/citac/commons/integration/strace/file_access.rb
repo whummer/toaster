@@ -22,6 +22,7 @@ module Citac
         start_markers = options[:start_markers] || []
         end_markers = options[:end_markers] || []
 
+        analyzed_syscalls = []
         process_syscall = start_markers.empty?
 
         Strace.run command, run_opts do |trace_file, result|
@@ -40,6 +41,7 @@ module Citac
               next unless process_syscall
               next if syscall.non_existing_file?
 
+              analyzed_syscalls << syscall.line
               log_debug $prog_name, syscall.line
 
               if WRITE_SYSCALLS.include? syscall.name
@@ -64,7 +66,7 @@ module Citac
           end
         end
 
-        return accessed_files, written_files, exec_result
+        return accessed_files, written_files, exec_result, analyzed_syscalls
       end
     end
   end
