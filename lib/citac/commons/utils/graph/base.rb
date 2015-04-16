@@ -169,7 +169,10 @@ module Citac
           @label = label
         end
 
-        #TODO override == and eql?
+        def eql?(other)
+          @source == other.source && @target == other.target && @label == other.label
+        end
+        alias_method :==, :eql?
 
         def inspect; to_s; end
         def to_s

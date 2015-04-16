@@ -11,38 +11,41 @@ module Citac
       def generate_test_suite
         test_cases = []
 
-        @dependency_graph.resources.each do |resource|
-          test_cases << generate_idempotence_test_case(resource)
+        resources = @dependency_graph.resources.sort
+        resources.each do |resource|
+          generate_idempotence_test_case test_cases, resource
 
           @dependency_graph.ancestors(resource).each do |ancestor|
-            test_cases << generate_preservation_test_case(resource, ancestor)
+            generate_preservation_test_case test_cases, resource, ancestor
           end
 
           @dependency_graph.non_related_resources(resource).each do |non_related_resource|
-            test_cases << generate_preservation_test_case(resource, non_related_resource)
+            generate_preservation_test_case test_cases, resource, non_related_resource
           end
         end
 
         test_cases
       end
 
-      def generate_idempotence_test_case(resource)
-        test_case = Citac::Model::TestCase.new :idempotence, [resource]
+      def generate_idempotence_test_case(test_cases, resource)
+        id = test_cases.size + 1
+        test_case = Citac::Model::TestCase.new id, :idempotence, [resource]
 
         add_exec_step resource, test_case
         add_assert_step resource, test_case
 
-        test_case
+        test_cases << test_case
       end
 
-      def generate_preservation_test_case(preserver, preserved)
-        test_case = Citac::Model::TestCase.new :preservation, [preserver, preserved]
+      def generate_preservation_test_case(test_cases, preserver, preserved)
+        id = test_cases.size + 1
+        test_case = Citac::Model::TestCase.new id, :preservation, [preserver, preserved]
 
         add_exec_step preserved, test_case
         add_exec_step preserver, test_case
         add_assert_step preserved, test_case
 
-        test_case
+        test_cases << test_case
       end
 
       private

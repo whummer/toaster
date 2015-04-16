@@ -22,21 +22,21 @@ module Citac
         def output
           result = StringIO.new
 
-          result.puts '=================================================================='
+          result.puts '- - - - - - - - -'
           result.puts 'Summary'
-          result.puts '=================================================================='
+          result.puts '- - - - - - - - -'
           result.puts
           result.puts status_text
           result.puts
-          result.puts '=================================================================='
+          result.puts '- - - - - - - - -'
           result.puts 'Change Summary'
-          result.puts '=================================================================='
+          result.puts '- - - - - - - - -'
           result.puts
           result.puts @change_summary
           result.puts
-          result.puts '=================================================================='
+          result.puts '- - - - - - - - -'
           result.puts 'Puppet output'
-          result.puts '=================================================================='
+          result.puts '- - - - - - - - -'
           result.puts
           result.puts @exec_result.output
 
@@ -44,7 +44,14 @@ module Citac
         end
 
         def to_s
-          status_text
+          result = status_text
+
+          unless @exec_result.success?
+            result << $/
+            result << @exec_result.output
+          end
+
+          result
         end
 
         private

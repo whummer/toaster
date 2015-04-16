@@ -4,6 +4,7 @@ require 'time'
 require_relative '../../commons/model'
 require_relative '../../commons/utils/file'
 require_relative '../../commons/utils/graph'
+require_relative '../../commons/utils/serialization'
 
 module Citac
   module Data
@@ -148,6 +149,22 @@ module Citac
         FileUtils.rm_rf dir if Dir.exist? dir
       end
 
+      def save_test_case_result(spec, test_case_result)
+        base_dir = test_case_result_dir spec
+        dir = File.join base_dir, "testcase-#{test_case_result.test_case.id.to_s.rjust(4, '0')}"
+        FileUtils.makedirs dir unless Dir.exists? dir
+
+        ids = Dir.entries(dir).reject { |e| e == '.' || e == '..' }.map { |e| e.to_i }.to_a
+        ids << 0
+
+        new_id = ids.max + 1
+        target_dir = File.join dir, new_id.to_s.rjust(4, '0')
+        FileUtils.makedirs target_dir
+
+        Citac::Utils::Serialization.write_to_file test_case_result, File.join(target_dir, 'test_case_result.yml')
+        IO.write File.join(target_dir, 'test_case_result.txt'), test_case_result.to_s, :encoding => 'UTF-8'
+      end
+
       private
 
       def clean_spec_id(id)
@@ -194,6 +211,10 @@ module Citac
         return file_path if File.exist? file_path
 
         raise "Unable to locate script file for spec '#{spec}' for os '#{operating_system}'."
+      end
+
+      def test_case_result_dir(spec)
+        File.join spec_dir(spec), 'tests-results'
       end
     end
   end

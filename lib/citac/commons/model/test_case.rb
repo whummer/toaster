@@ -1,3 +1,5 @@
+require 'stringio'
+
 module Citac
   module Model
     class TestStep
@@ -32,10 +34,14 @@ module Citac
         @result = result
         @output = output
       end
+
+      def to_s
+        "(#{result}) #{step}"
+      end
     end
 
     class TestCase
-      attr_reader :type, :resources, :steps
+      attr_reader :id, :type, :resources, :steps
 
       def executed_resources
         @steps.select { |s| s.type == :exec }.map { |s| s.resource }.to_a
@@ -49,7 +55,8 @@ module Citac
         end
       end
 
-      def initialize(type, resources, steps = [])
+      def initialize(id, type, resources, steps = [])
+        @id = id
         @type = type
         @resources = resources
         @steps = steps
@@ -100,6 +107,37 @@ module Citac
         end
 
         @success = @step_results.last.result == :success
+      end
+
+      def to_s
+        result = StringIO.new
+        result.puts '====================================================================='
+        result.puts 'Test Case Result - Overview'
+        result.puts '====================================================================='
+        result.puts
+        result.puts "Test Case: #{@test_case.name}"
+        result.puts "Result:    #{success? ? 'SUCCESS' : 'FAILURE'}"
+        result.puts
+        result.puts 'Steps:'
+        @test_case.steps.each_with_index {|s, i| result.puts "  #{i + 1}. #{s}"}
+        result.puts
+
+        @step_results.each_with_index do |step_result, index|
+          result.puts '====================================================================='
+          result.puts "#{index + 1}. #{step_result.step}"
+          result.puts '====================================================================='
+          result.puts
+          result.puts "Step result: #{step_result.result}"
+          unless step_result.result == :skipped
+            result.puts
+            result.puts '############## OUTPUT START ##############'
+            result.puts step_result.output
+            result.puts '##############  OUTPUT END  ##############'
+          end
+          result.puts
+        end
+
+        result.string
       end
     end
   end

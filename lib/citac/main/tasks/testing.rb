@@ -36,7 +36,7 @@ module Citac
           status = test_case_result.success? ? 'SUCCESS'.green : 'FAIL'.red
           puts "Test case result: #{status}"
 
-          #TODO save test case result to repository
+          @repository.save_test_case_result @spec, test_case_result
         end
       end
     end
