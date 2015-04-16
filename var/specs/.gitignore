@@ -1,2 +1,5 @@
 graphs
 runs
+
+*.txt
+*.yml
