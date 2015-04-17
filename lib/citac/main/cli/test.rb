@@ -41,14 +41,25 @@ module Citac
         end
 
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
-        desc 'exec <spec> <os> <case>', 'Executes the specified test case for the given configuration specification.'
-        def exec(spec_id, os, case_id)
+        desc 'exec <spec> <os> [<case>]', 'Executes the specified test case for the given configuration specification.'
+        def exec(spec_id, os, case_range = nil)
           spec, os, test_suite = load_test_suite spec_id, os
-          test_case = test_suite[case_id.to_i - 1]
+          case_ids = parse_case_range test_suite, case_range
+          case_ids.each do |case_id|
+            test_case = test_suite[case_id - 1]
 
-          task = Citac::Main::Tasks::TestTask.new @repo, spec, test_case
-          task.passthrough = options[:passthrough]
-          @exec_mgr.execute task, os, :output => :passthrough
+            msg = "# Test case #{test_case.id}: '#{test_case.name}'... #"
+            puts ''.ljust msg.size, '='
+            puts msg
+            puts ''.ljust msg.size, '='
+            puts
+
+            task = Citac::Main::Tasks::TestTask.new @repo, spec, test_case
+            task.passthrough = options[:passthrough]
+            @exec_mgr.execute task, os, :output => :passthrough
+
+            puts if case_ids.size > 1
+          end
         end
 
         no_commands do
@@ -62,6 +73,19 @@ module Citac
             test_suite = tcg.generate_test_suite
 
             return spec, os, test_suite
+          end
+
+          def parse_case_range(test_suite, case_range)
+            return (1..test_suite.size).to_a unless case_range || case_range == '*'
+            if case_range.include? '-'
+              pieces = case_range.to_s.split '-', 2
+              min = [1, pieces.first.to_i].max
+              max = [test_suite.size, pieces.last.to_i].min
+
+              (min..max).to_a
+            else
+              [case_range.to_i]
+            end
           end
         end
       end
