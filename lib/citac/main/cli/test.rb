@@ -2,6 +2,7 @@ require 'thor'
 require_relative '../ioc'
 require_relative '../core/test_case_generator'
 require_relative '../tasks/testing'
+require_relative '../../commons/utils/colorize'
 
 module Citac
   module Main
@@ -45,10 +46,12 @@ module Citac
         def exec(spec_id, os, case_range = nil)
           spec, os, test_suite = load_test_suite spec_id, os
           case_ids = parse_case_range test_suite, case_range
+
+          results = Hash.new
           case_ids.each do |case_id|
             test_case = test_suite[case_id - 1]
 
-            msg = "# Test case #{test_case.id}: '#{test_case.name}'... #"
+            msg = "# Test case #{test_case.id}: #{test_case.name}... #"
             puts ''.ljust msg.size, '='
             puts msg
             puts ''.ljust msg.size, '='
@@ -56,9 +59,25 @@ module Citac
 
             task = Citac::Main::Tasks::TestTask.new @repo, spec, test_case
             task.passthrough = options[:passthrough]
-            @exec_mgr.execute task, os, :output => :passthrough
+            test_case_result = @exec_mgr.execute task, os, :output => :passthrough
 
             puts if case_ids.size > 1
+
+            results[case_id] = test_case_result
+          end
+
+          if case_ids.size > 1
+            puts '==================='
+            puts '# Overall Summary #'
+            puts '==================='
+            puts
+            case_ids.each do |case_id|
+              test_case = test_suite[case_id - 1]
+              test_case_result = results[case_id]
+              status = test_case_result.success? ? 'SUCCESS'.green : 'FAILURE'.red
+
+              puts "#{status}  Test case #{case_id}: #{test_case.name}"
+            end
           end
         end
 
