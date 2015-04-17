@@ -116,7 +116,7 @@ module Citac
             return Hash.new if accessed_files.empty?
 
             escaped_file_names = accessed_files.map { |f| f.gsub ' ', '\ ' }.to_a
-            cmd = %w(xargs -n 100 stat -c %n:%s:%a:%U:%G:%F)
+            cmd = %w(xargs -n 100 stat -L -c %n:%s:%a:%U:%G:%F)
             result = Citac::Integration::Docker.run snapshot_image, cmd, :stdin => escaped_file_names, :raise_on_failure => false
 
             states = Hash.new
