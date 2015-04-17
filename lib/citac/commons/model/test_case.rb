@@ -119,7 +119,7 @@ module Citac
         result.puts "Result:    #{success? ? 'SUCCESS' : 'FAILURE'}"
         result.puts
         result.puts 'Steps:'
-        @test_case.steps.each_with_index {|s, i| result.puts "  #{i + 1}. #{s}"}
+        @step_results.each_with_index {|s, i| result.puts "  #{i + 1}. #{s}"}
         result.puts
 
         @step_results.each_with_index do |step_result, index|
