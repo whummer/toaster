@@ -30,7 +30,7 @@ module Citac
             accessed_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
             written_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
 
-            change_summary = compare_files snapshot_image, accessed_files, written_files
+            change_summary = compare_files snapshot_image, accessed_files, accessed_files
             change_summary.additional_data[:syscalls] = syscalls.join $/
             return change_summary, result
           ensure
@@ -79,11 +79,11 @@ module Citac
               if post.exists?
                 if pre.exists?
                   if written_files.include? accessed_file
-                    if pre_states[accessed_file] != post_states[accessed_file]
-                      log_info 'citac-changetracker-docker', "STATE MISMATCH '#{accessed_file}': '#{pre_states[accessed_file]}' vs. '#{post_states[accessed_file]}'"
+                    if pre != post
+                      log_info 'citac-changetracker-docker', "STATE MISMATCH '#{accessed_file}': '#{pre}' vs. '#{post}'"
                       change_summary.changes << Citac::Model::Change.new(:file, :changed, accessed_file)
                     else
-                      hash_compare_files << accessed_file
+                      hash_compare_files << accessed_file unless pre.directory? || post.directory?
                     end
                   else
                     log_debug 'citac-changetracker-docker', "READ FILE: #{accessed_file}"
