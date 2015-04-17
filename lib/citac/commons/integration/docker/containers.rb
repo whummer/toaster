@@ -2,6 +2,7 @@ require 'tmpdir'
 require_relative '../../utils/colorize'
 require_relative '../../utils/exec'
 require_relative 'images'
+require_relative '../../logging'
 
 module Citac
   module Integration
@@ -34,35 +35,52 @@ module Citac
 
       def self.run(image, command = nil, options = {})
         Dir.mktmpdir do |dir|
-          raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
-          cidfile = File.join dir, 'cid'
+          begin
+            raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
+            cidfile = File.join dir, 'cid'
 
-          image_id = image.respond_to?(:id) ? image.id : image.to_s
+            image_id = image.respond_to?(:id) ? image.id : image.to_s
 
-          parameters = ['-i']
-          parameters << '--rm' unless options[:keep_container]
-          parameters += ['--cidfile', cidfile]
-          parameters += mounts_to_parameters options[:mounts] if options[:mounts]
-          parameters << image_id
-          parameters += command.respond_to?(:to_a) ? command.to_a : [command] if command
+            parameters = ['-i']
+            parameters << '--rm' unless options[:keep_container]
+            parameters += ['--cidfile', cidfile]
+            parameters += mounts_to_parameters options[:mounts] if options[:mounts]
+            parameters << image_id
+            parameters += command.respond_to?(:to_a) ? command.to_a : [command] if command
 
-          exec_options = options.clone
-          exec_options[:raise_on_failure] = false
-          exec_options[:args] = parameters
+            exec_options = options.clone
+            exec_options[:raise_on_failure] = false
+            exec_options[:args] = parameters
 
-          result = Citac::Utils::Exec.run 'docker run', exec_options
-          container_id = IO.read(cidfile).strip
+            result = Citac::Utils::Exec.run 'docker run', exec_options
+            container_id = IO.read(cidfile).strip
 
-          if (result.exit_code != 0 || result.output.include?('PTRACE_TRACEME')) && result.output.include?('strace')
-            puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
+            if (result.exit_code != 0 || result.output.include?('PTRACE_TRACEME')) && result.output.include?('strace')
+              puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
+            end
+
+            if result.exit_code != 0 && raise_on_failure
+              remove container_id, :raise_on_failure => false if options[:keep_container]
+              raise "Running '#{command}' on '#{image}' failed with exit code #{result.exit_code}: #{result.output}"
+            end
+
+            DockerRunResult.new result.output, result.exit_code, result.stdout, result.stderr, container_id
+          ensure
+            begin
+              unless container_id
+                container_id = IO.read(cidfile).strip if cidfile && File.exists?(cidfile)
+              end
+
+              if container_id && !options[:keep_container] && containers.include?(container_id)
+                puts "Cleaning up container #{container_id}..."
+
+                kill container_id, :raise_on_failure => false
+                remove container_id, :raise_on_failure => false
+              end
+            rescue StandardError => e
+              log_warn $prog_name, 'Failed to clean up container.', e
+            end
           end
-
-          if result.exit_code != 0 && raise_on_failure
-            Citac::Utils::Exec.run "docker rm #{container_id}", :raise_on_failure => false if options[:keep_container]
-            raise "Running '#{command}' on '#{image}' failed with exit code #{result.exit_code}: #{result.output}"
-          end
-
-          DockerRunResult.new result.output, result.exit_code, result.stdout, result.stderr, container_id
         end
       end
 
@@ -79,7 +97,7 @@ module Citac
       end
 
       def self.container_running?(container_id)
-        result = Citac::Utils::Exec.run 'docker ps'
+        result = Citac::Utils::Exec.run 'docker ps --no-trunc'
         result.output.include? container_id
       end
 
@@ -99,8 +117,16 @@ module Citac
         Citac::Utils::Exec.run 'docker ps --all --quiet --filter status=exited --no-trunc | xargs docker rm'
       end
 
-      def self.remove(container_id)
-        Citac::Utils::Exec.run 'docker rm', :args => [container_id]
+      def self.kill(container_id, options = {})
+        exec_opts = options.dup
+        exec_opts[:args] = [container_id]
+        Citac::Utils::Exec.run 'docker kill', exec_opts
+      end
+
+      def self.remove(container_id, options = {})
+        exec_opts = options.dup
+        exec_opts[:args] = [container_id]
+        Citac::Utils::Exec.run 'docker rm', exec_opts
       end
 
       private
