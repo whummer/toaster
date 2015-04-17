@@ -5,6 +5,7 @@ require_relative 'cli/runs'
 require_relative 'cli/test'
 require_relative 'cli/puppet'
 require_relative 'cli/envs'
+require_relative 'cli/cache'
 require_relative '../version'
 
 module Citac
@@ -25,6 +26,9 @@ module Citac
 
         desc 'envs <command> <args...>', 'Test environments related commands.'
         subcommand 'envs', Envs
+
+        desc 'cache <command> <args...>', 'Commands for controlling the network traffic cache.'
+        subcommand 'cache', Cache
 
         desc 'version', 'Prints the application version.'
         def version

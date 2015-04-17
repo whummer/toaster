@@ -88,6 +88,28 @@ module Citac
         enable_caching if enabled
       end
 
+      def cache_last_accessed_resources(count)
+        if cache_enabled?
+          result = Citac::Utils::Exec.run 'docker exec citac-service-cache tail -n', :args => [count, '/var/log/squid3/access.log']
+          result.output.lines
+        else
+          []
+        end
+      end
+
+      def cache_stream_accessed_resources(count)
+        if cache_enabled?
+          opts = {:args => [count, '/var/log/squid3/access.log'], :output => :passthrough}
+          begin
+            Citac::Utils::Exec.run 'docker exec citac-service-cache tail -f -n', opts
+          rescue Interrupt
+            # ignore interrupt
+          end
+        else
+          raise 'Cache is not enabled'
+        end
+      end
+
       private
 
       def docker_image_to_environment(docker_image)

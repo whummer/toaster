@@ -34,7 +34,7 @@ module Citac
       end
 
       def self.format_args(args)
-        args.map{|a| a.gsub('"', '\"')}.map{|a| a.include?(' ') ? "\"#{a}\"" : a}.join(' ')
+        args.map{|a| a.to_s.gsub('"', '\"')}.map{|a| a.include?(' ') ? "\"#{a}\"" : a}.join(' ')
       end
 
       def self.run(command, options = {})
