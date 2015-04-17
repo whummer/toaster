@@ -40,12 +40,12 @@ module Citac
           private
 
           def add_default_exclusion_patterns(patterns)
-            patterns << /^\/dev\//
-            patterns << /^\/proc\//
-            patterns << /^\/sys\//
-            patterns << /^\/opt\/citac\//
-            patterns << /^\/tmp\/citac\//
-            patterns << /^\/var\/lib\/puppet\//
+            patterns << /^\/dev(\/|$)/
+            patterns << /^\/proc(\/|$)/
+            patterns << /^\/sys(\/|$)/
+            patterns << /^\/opt\/citac(\/|$)/
+            patterns << /^\/tmp\/citac(\/|$)/
+            patterns << /^\/var\/lib\/puppet(\/|$)/
           end
 
           def create_snapshot_image
