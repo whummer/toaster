@@ -26,6 +26,10 @@ module Citac
           @line =~ /\)\s+=\s+-1\s+ENOENT/
         end
 
+        def to_s
+          @line
+        end
+
         private
 
         def parse_name

@@ -26,7 +26,7 @@ module Citac
           return true unless @existing || other.exists?
           return false unless @existing && other.exists?
 
-          equal = @name == other.name && @mode == other.mode && @owner == other.owner && @group == other.group
+          equal = @name == other.name && @mode == other.mode && @owner == other.owner && @group == other.group && @directory == other.directory?
           equal = equal && @size == other.size unless @directory
 
           equal

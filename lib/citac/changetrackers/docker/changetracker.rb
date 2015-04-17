@@ -25,12 +25,12 @@ module Citac
             strace_opts[:start_markers] = settings.start_markers
             strace_opts[:end_markers] = settings.end_markers
 
-            accessed_files, written_files, result, syscalls = Citac::Integration::Strace.track_file_access command, strace_opts
+            accessed_files, result, syscalls = Citac::Integration::Strace.track_file_access command, strace_opts
+            accessed_files.each {|f| log_debug $prog_name, "Accessed file: #{f}"}
 
             accessed_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
-            written_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
 
-            change_summary = compare_files snapshot_image, accessed_files, accessed_files
+            change_summary = compare_files snapshot_image, accessed_files
             change_summary.additional_data[:syscalls] = syscalls.join $/
             return change_summary, result
           ensure
@@ -62,7 +62,7 @@ module Citac
             log_warn 'citac-changetracker-docker', "Failed to clean up snapshot image #{image}", e
           end
 
-          def compare_files(snapshot_image, accessed_files, written_files)
+          def compare_files(snapshot_image, accessed_files)
             pre_states = get_pre_file_states snapshot_image, accessed_files
             post_states = get_post_file_states accessed_files
 
@@ -78,15 +78,11 @@ module Citac
 
               if post.exists?
                 if pre.exists?
-                  if written_files.include? accessed_file
-                    if pre != post
-                      log_info 'citac-changetracker-docker', "STATE MISMATCH '#{accessed_file}': '#{pre}' vs. '#{post}'"
-                      change_summary.changes << Citac::Model::Change.new(:file, :changed, accessed_file)
-                    else
-                      hash_compare_files << accessed_file unless pre.directory? || post.directory?
-                    end
+                  if pre != post
+                    log_info $prog_name, "STATE MISMATCH '#{accessed_file}': '#{pre}' vs. '#{post}'"
+                    change_summary.changes << Citac::Model::Change.new(:file, :changed, accessed_file)
                   else
-                    log_debug 'citac-changetracker-docker', "READ FILE: #{accessed_file}"
+                    hash_compare_files << accessed_file unless pre.directory? || post.directory?
                   end
                 else
                   change_summary.changes << Citac::Model::Change.new(:file, :new, accessed_file)
@@ -103,10 +99,12 @@ module Citac
             pre_hashes = get_pre_hashes snapshot_image, hash_compare_files
             post_hashes = get_post_hashes hash_compare_files
             hash_compare_files.each do |hash_compare_file|
-              if pre_hashes[hash_compare_file] == post_hashes[hash_compare_file]
+              pre = pre_hashes[hash_compare_file]
+              post = post_hashes[hash_compare_file]
+              if pre == post
                 change_summary.touches << Citac::Model::Change.new(:file, :touched, hash_compare_file)
               else
-                log_info 'citac-changetracker-docker', "HASH MISMATCH '#{hash_compare_file}': '#{pre_hashes[hash_compare_file]}' vs. '#{post_hashes[hash_compare_file]}'"
+                log_info $prog_name, "HASH MISMATCH '#{hash_compare_file}': '#{pre}' vs. '#{post}'"
                 change_summary.changes << Citac::Model::Change.new(:file, :changed, hash_compare_file)
               end
             end
@@ -126,7 +124,7 @@ module Citac
               pieces = line.strip.split ':'
               filename = pieces[0]
               size = pieces[1].to_i
-              mode = pieces[2].to_i 8
+              mode = pieces[2].to_i(8) % 512
               owner = pieces[3]
               group = pieces[4]
               directory = pieces[5].downcase.include? 'directory'
@@ -157,8 +155,8 @@ module Citac
             accessed_files.each do |accessed_file|
               if File.exists? accessed_file
                 stat = File.stat accessed_file
-                mode = stat.mode & 511 # 511 equals 0777 in octal
-                states[accessed_file] = FileStatus.new accessed_file, true, stat.size, mode, users[stat.uid], groups[stat.gid]
+                mode = stat.mode % 512
+                states[accessed_file] = FileStatus.new accessed_file, true, stat.size, mode, users[stat.uid], groups[stat.gid], stat.directory?
               else
                 states[accessed_file] = FileStatus.new accessed_file, false
               end
