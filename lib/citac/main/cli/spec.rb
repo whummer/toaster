@@ -67,12 +67,15 @@ module Citac
           @exec_mgr.execute task, os, :output => :passthrough
         end
 
-        desc 'exec <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
+        option :stepwise, :aliases => :s, :type => :boolean, :desc => 'Enables stepwise execution.'
+        desc 'exec [-s] <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
         def exec(spec_id, os = nil)
           spec =  @repo.get spec_id
           os = Citac::Model::OperatingSystem.parse os if os
 
           task = Citac::Main::Tasks::ExecutionTask.new spec
+          task.stepwise = options[:stepwise]
+
           @exec_mgr.execute task, os, :output => :passthrough
         end
       end

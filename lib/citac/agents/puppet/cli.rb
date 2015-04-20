@@ -22,12 +22,24 @@ module Citac
         end
 
         option :resource, :aliases => :r, :desc => 'The resource to execute'
+        option :stepwise, :aliases => :s, :type => :boolean, :desc => 'Enables stepwise execution.'
         desc 'exec [-r <resource name>] [<dir>]', 'Executes the Puppet manifest in the given directory and stores the run results in that directory.'
         def exec(dir = '.')
           setup_workdir dir
 
-          task = ExecutionTask.new 'script', options[:resource]
-          task.execute :modulepath => 'modules', :output => :passthrough
+          if options[:stepwise]
+            analyzation_task = AnalyzationTask.new 'script'
+            graph = analyzation_task.execute :modulepath => 'modules'
+
+            resources = graph.toposort.map(&:label)
+            resources.each do |resource|
+              execution_task = ExecutionTask.new 'script', resource
+              execution_task.execute :modulepath => 'modules', :output => :passthrough
+            end
+          else
+            task = ExecutionTask.new 'script', options[:resource]
+            task.execute :modulepath => 'modules', :output => :passthrough
+          end
         end
 
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
