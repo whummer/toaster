@@ -14,6 +14,7 @@ module Citac
           @repo = ServiceLocator.specification_repository
           @env_mgr = ServiceLocator.environment_manager
           @exec_mgr = ServiceLocator.execution_manager
+          @spec_service = ServiceLocator.specification_service
         end
 
         desc 'list', 'Lists all stored configuration specifications.'
@@ -42,6 +43,17 @@ module Citac
             msg << ' (analyzed)' if @repo.has_dependency_graph? spec, os
 
             puts msg
+          end
+        end
+
+        desc 'resources <spec> <os>', 'Prints a list of the configuration specification resources.'
+        def resources(spec_id, os = nil)
+          spec = @repo.get spec_id
+          os = Citac::Model::OperatingSystem.parse os if os
+
+          dg = @spec_service.dependency_graph spec, os
+          dg.resources.each do |resource|
+            puts resource
           end
         end
 

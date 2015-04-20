@@ -11,7 +11,7 @@ module Citac
       end
 
       def resources
-        @graph.nodes.map(&:label).sort.to_a
+        @graph.toposort.map(&:label).to_a
       end
 
       def resource_count
