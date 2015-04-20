@@ -6,6 +6,7 @@ require_relative '../../../lib/citac/commons/utils/exec'
 
 ARGV.each do |spec_dir|
   module_name = spec_dir.gsub /\.spec\/?/, ''
+  module_name = module_name.split('-').take(2).join('-')
   modules_dir = File.join(spec_dir, 'files', 'modules')
 
   if Dir.exists?(modules_dir) && !Dir.entries(modules_dir).reject{|e| e == '.' || e == '..'}.empty?
