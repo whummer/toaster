@@ -8,10 +8,10 @@ The installation assumes that the source code is checked out to `/opt/citac`.
 
     sudo su
 
-    # install prerequisites (ruby, graphviz)    
+    # install prerequisites
 
     apt-get update
-    apt-get install -y ruby graphviz
+    apt-get install -y ruby graphviz apparmor-utils
 
     gem install --no-ri --no-rdoc thor rest-client
 
@@ -23,19 +23,6 @@ The installation assumes that the source code is checked out to `/opt/citac`.
 
     ln -s /opt/citac/bin/citac /usr/bin/citac
 
-    # enable strace in docker containers
-
-    apt-get install -y apparmor-utils
-    aa-complain /etc/apparmor.d/docker
-
     # build docker images
 
-    docker build -t citac_environments/base:centos-7 /opt/citac/ext/docker/images/environments-base/centos-7
-    docker build -t citac_environments/base:debian-7 /opt/citac/ext/docker/images/environments-base/debian-7
-    docker build -t citac_environments/base:ubuntu-14.04 /opt/citac/ext/docker/images/environments-base/ubuntu-14.04
-
-    docker build -t citac_environments/puppet:centos-7 /opt/citac/ext/docker/images/environments-puppet/centos-7
-    docker build -t citac_environments/puppet:debian-7 /opt/citac/ext/docker/images/environments-puppet/debian-7
-    docker build -t citac_environments/puppet:ubuntu-14.04 /opt/citac/ext/docker/images/environments-puppet/ubuntu-14.04
-
-    docker build -t citac_services/cache:squid /opt/citac/ext/docker/images/services-cache/squid
+    citac envs setup

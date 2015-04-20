@@ -10,6 +10,11 @@ module Citac
           @env_mgr = ServiceLocator.environment_manager
         end
 
+        desc 'setup', 'Creates all environments.'
+        def setup
+          @env_mgr.setup
+        end
+
         desc 'list', 'Lists all available environments.'
         def list
           @env_mgr.environments.each do |env|

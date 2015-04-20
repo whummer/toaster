@@ -4,12 +4,38 @@ require_relative 'common'
 require_relative '../config'
 require_relative '../../commons/model'
 require_relative '../../commons/integration/docker'
+require_relative '../../commons/utils/colorize'
 require_relative '../../commons/utils/exec'
 
 module Citac
   module Environments
     class DockerEnvironmentManager
       include EnvironmentManagerExtensions
+
+      def setup
+        image_dir = File.join Citac::Config.base_dir, 'ext', 'docker', 'images'
+        Dir.entries(image_dir).select{|d| File.directory?(File.join(image_dir, d))}.sort.each do |type_dir|
+          next if type_dir == '.' || type_dir == '..'
+
+          type, subject = type_dir.split '-', 2
+          Dir.entries(File.join(image_dir, type_dir)).each do |os_dir|
+            next if os_dir == '.' || os_dir == '..'
+
+            name = "citac_#{type}/#{subject}:#{os_dir}"
+            dir = File.join image_dir, type_dir, os_dir
+
+            puts "Setting up image '#{name}'...".yellow
+            result = Citac::Utils::Exec.run 'docker build', :args => ['-t', name, dir], :raise_on_failure => false
+            if result.success?
+              puts 'OK'.green
+            else
+              puts 'FAIL'.red
+              puts result.output
+              return
+            end
+          end
+        end
+      end
 
       def environments
         @envs ||= Citac::Integration::Docker.images.map{|i| docker_image_to_environment i}.select{|e| e}
