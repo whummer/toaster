@@ -1,8 +1,0 @@
-<Plugin "java">
-  JVMArg "-Djava.class.path=<%= @class_path %>"
-<% Array(@jvmarg).each do |jvmarg| -%>
-  JVMArg "<%= jvmarg %>"
-<% end -%>
-
-  LoadPlugin "org.collectd.java.GenericJMX"
-  <Plugin "GenericJMX">
