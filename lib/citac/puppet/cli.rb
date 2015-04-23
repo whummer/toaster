@@ -18,6 +18,16 @@ module Citac
 
               puts "Running only resource '#{$citac_apply_single_resource_name}'..."
 
+              if args[2].downcase == '--trace'
+                $citac_apply_single_trace = true
+                $citac_apply_single_trace_file = args[3]
+
+                args.delete_at 3
+                args.delete_at 2
+
+                puts "Tracing execution of '#{$citac_apply_single_resource_name}'..."
+              end
+
               args[0] = 'apply'
               args.delete_at 1
             end

@@ -25,6 +25,11 @@ module Citac
             strace_opts[:start_markers] = settings.start_markers
             strace_opts[:end_markers] = settings.end_markers
 
+            if settings.command_generated_trace_file
+              strace_opts[:run_strace] = false
+              strace_opts[:trace_file] = settings.command_generated_trace_file
+            end
+
             accessed_files, result, syscalls = Citac::Integration::Strace.track_file_access command, strace_opts
             accessed_files.each {|f| log_debug $prog_name, "Accessed file: #{f}"}
 

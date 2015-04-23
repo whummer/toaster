@@ -96,6 +96,7 @@ module Citac
         def execute(options = {})
           Dir.mktmpdir do |dir|
             change_summary_path = File.join dir, 'change_summary.yml'
+            trace_file = File.join dir, 'trace.txt'
 
             settings_path = File.join dir, 'settings.yml'
             
@@ -103,10 +104,12 @@ module Citac
             change_tracking_settings.exclusion_patterns = @exclusion_patterns
             change_tracking_settings.start_markers << /CITAC_RESOURCE_EXECUTION_START/
             change_tracking_settings.end_markers << /CITAC_RESOURCE_EXECUTION_END/
+            change_tracking_settings.command_generated_trace_file = trace_file
             Citac::Utils::Serialization.write_to_file change_tracking_settings, settings_path
 
             apply_opts = options.dup
             apply_opts[:resource] = @resource_name
+            apply_opts[:trace_file] = trace_file
 
             args = Citac::Integration::Puppet.apply_args @manifest_path, apply_opts
             args = [change_summary_path, settings_path, 'citac-puppet'] + args

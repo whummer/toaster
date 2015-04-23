@@ -11,8 +11,9 @@ module Citac
       def self.apply_args(manifest_path, options = {})
         args = []
 
-        if resource_name = options[:resource]
-          args += ['apply-single', resource_name]
+        if options[:resource]
+          args += ['apply-single', options[:resource]]
+          args += ['--trace', options[:trace_file]] if options[:trace_file]
         else
           args << 'apply'
         end
