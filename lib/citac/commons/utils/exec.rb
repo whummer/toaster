@@ -43,7 +43,7 @@ module Citac
         passthrough_stderr = options[:output] == :passthrough || options[:stderr] == :passthrough
 
         args = options[:args] || []
-        args << '-v' if $verbose && (command.start_with?('citac') || command.start_with?('strace'))
+        args << '-v' if $verbose && (command.start_with?('citac') || (command.start_with?('strace') && command.include?('citac')))
         args = format_args args
 
         cmdline = "#{command} #{args}"
@@ -55,6 +55,7 @@ module Citac
         captured_stdout = ''
         captured_stderr = ''
 
+        start_time = Time.now
         status = Open3.popen3 cmdline do |stdin, stdout, stderr, wait_thr|
           thread_stdout = Thread.new do
             while line = stdout.gets
@@ -90,6 +91,9 @@ module Citac
 
           wait_thr.value
         end
+        end_time = Time.now
+
+        log_debug 'exec', "Execution of '#{cmdline}' finished: #{end_time - start_time} seconds"
 
         if status.exitstatus == 0 || !raise_on_failure
           RunResult.new captured_output, status.exitstatus, captured_stdout, captured_stderr
