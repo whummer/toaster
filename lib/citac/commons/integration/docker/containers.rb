@@ -55,7 +55,7 @@ module Citac
             result = Citac::Utils::Exec.run 'docker run', exec_options
             container_id = IO.read(cidfile).strip
 
-            if (result.exit_code != 0 || result.output.include?('PTRACE_TRACEME')) && result.output.include?('strace')
+            if (result.exit_code != 0 || result.output.include?('PTRACE_')) && result.output.include?('strace')
               puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
             end
 
