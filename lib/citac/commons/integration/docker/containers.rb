@@ -55,10 +55,6 @@ module Citac
             result = Citac::Utils::Exec.run 'docker run', exec_options
             container_id = IO.read(cidfile).strip
 
-            if (result.exit_code != 0 || result.output.include?('PTRACE_')) && result.output.include?('strace')
-              puts "strace failed. Run 'aa-complain /etc/apparmor.d/docker' and try again.".yellow
-            end
-
             if result.exit_code != 0 && raise_on_failure
               remove container_id, :raise_on_failure => false if options[:keep_container]
               raise "Running '#{command}' on '#{image}' failed with exit code #{result.exit_code}: #{result.output}"

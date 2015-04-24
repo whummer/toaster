@@ -4,8 +4,10 @@ require_relative 'common'
 require_relative '../config'
 require_relative '../../commons/model'
 require_relative '../../commons/integration/docker'
+require_relative '../../commons/integration/sysctl'
 require_relative '../../commons/utils/colorize'
 require_relative '../../commons/utils/exec'
+require_relative '../../commons/logging'
 
 module Citac
   module Environments
@@ -13,6 +15,14 @@ module Citac
       include EnvironmentManagerExtensions
 
       def setup
+        puts 'Building docker images...'
+        setup_images
+
+        puts 'Setting up strace permissions...'
+        setup_strace_permissions
+      end
+
+      def setup_images
         image_dir = File.join Citac::Config.base_dir, 'ext', 'docker', 'images'
         Dir.entries(image_dir).select{|d| File.directory?(File.join(image_dir, d))}.sort.each do |type_dir|
           next if type_dir == '.' || type_dir == '..'
@@ -37,11 +47,37 @@ module Citac
         end
       end
 
+      def setup_strace_permissions
+        return if @setup_strace_permissions_done
+        @setup_strace_permissions_done = true
+
+        log_debug $prog_name, 'Checking if tracing is restricted to child processes...'
+        ptrace_scope = Citac::Integration::Sysctl.get_param 'kernel.yama.ptrace_scope'
+        unless ptrace_scope.nil? || ptrace_scope == '0'
+          puts 'Tracing is currently configured to only be allowed on child processes.'.yellow
+          puts 'Configuring kernel to allow tracing any process of the same user...'
+
+          Citac::Integration::Sysctl.set_param 'kernel.yama.ptrace_scope', '0'
+        end
+
+        log_debug $prog_name, 'Checking if tracing is allowed within docker dontainers...'
+        env = environments.first
+        result = Citac::Integration::Docker.run env.id, %w(strace true), :raise_on_failure => false
+        unless result.success?
+          puts 'Tracing is currently not allowed within docker containers.'.yellow
+          puts 'Configuring apparmor to allow tracing...'
+
+          Citac::Utils::Exec.run 'aa-complain', :args => ['/etc/apparmor.d/docker']
+        end
+      end
+
       def environments
         @envs ||= Citac::Integration::Docker.images.map{|i| docker_image_to_environment i}.select{|e| e}
       end
 
       def run(env, script_path, options = {})
+        setup_strace_permissions
+
         cleanup_instance = options[:cleanup_instance].nil? || options[:cleanup_instance]
         executable = File.executable? script_path
         FileUtils.chmod '+x', script_path unless executable
