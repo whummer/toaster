@@ -93,7 +93,7 @@ module Citac
         end
         end_time = Time.now
 
-        log_debug 'exec', "Execution of '#{cmdline}' finished: #{end_time - start_time} seconds"
+        log_debug 'exec', "Execution of '#{cmdline}' finished (exit code = #{status.exitstatus}): #{end_time - start_time} seconds"
 
         if status.exitstatus == 0 || !raise_on_failure
           RunResult.new captured_output, status.exitstatus, captured_stdout, captured_stderr
