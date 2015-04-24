@@ -66,5 +66,8 @@ class Puppet::Transaction
     end
 
     return_value
+  rescue StandardError => e
+    $citac_error = e
+    raise
   end
 end

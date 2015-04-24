@@ -48,6 +48,8 @@ module Citac
         def run_puppet(args)
           cmd = ::Puppet::Util::CommandLine.new 'puppet', args
           cmd.execute
+        ensure
+          raise $citac_error if $citac_error
         end
       end
     end

@@ -19,7 +19,7 @@ module Citac
         cli_class.send :start, args
       rescue StandardError => e
         STDERR.puts "#{$prog_name} failed: #{e}".red
-        STDERR.puts e.backtrace
+        STDERR.puts e.backtrace if $verbose
         exit 1
       end
     end
