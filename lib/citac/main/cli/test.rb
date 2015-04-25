@@ -16,6 +16,7 @@ module Citac
           @exec_mgr = ServiceLocator.execution_manager
         end
 
+        option :steps, :type => :boolean, :aliases => :s, :desc => 'include detailed test steps'
         desc 'list <spec> <os>', 'Prints possible test cases for the given configuration specification.'
         def list(spec_id, os)
           spec, os, test_suite = load_test_suite spec_id, os
@@ -26,7 +27,11 @@ module Citac
             case_count += 1
             step_count += test_case.steps.size
 
-            puts "#{case_count}\t#{test_case}"
+            if options[:steps]
+              puts "#{case_count}\t#{test_case}"
+            else
+              puts "#{case_count}\t#{test_case.name}"
+            end
           end
 
           puts
