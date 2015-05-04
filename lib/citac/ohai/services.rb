@@ -11,7 +11,7 @@ Ohai.plugin(:Services) do
 
       services data
     rescue StandardError => e
-      services e.to_s
+      services "ERROR #{Time.now}: #{e}"
     end
   end
 end

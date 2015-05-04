@@ -11,7 +11,7 @@ Ohai.plugin(:Packages) do
 
       packages data
     rescue StandardError => e
-      packages e.to_s
+      packages "ERROR #{Time.now}: #{e}"
     end
   end
 end
