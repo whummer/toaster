@@ -202,18 +202,18 @@ module Citac
 
         # write summary
 
-        suite_dir = test_suite_dir spec, os, test_suite
-        FileUtils.makedirs suite_dir
-
-        suite_result_path = File.join suite_dir, 'test-suite-result.yml'
-        if File.exists? suite_result_path
-          suite_result = Citac::Utils::Serialization.load_from_file suite_result_path
-        else
-          suite_result = Citac::Model::TestSuiteResult.new test_suite
+        update_test_suite_result spec, os, test_suite do |suite_result|
+          suite_result.add_test_case_result test_case_result
         end
+      end
 
-        suite_result.add_test_case_result test_case_result
-        Citac::Utils::Serialization.write_to_file suite_result, suite_result_path
+      def clear_test_case_results(spec, os, test_suite, test_case)
+        dir = test_case_dir spec, os, test_suite, test_case
+        FileUtils.rm_rf dir
+
+        update_test_suite_result spec, os, test_suite do |suite_result|
+          suite_result.test_case_results.delete test_case.id
+        end
       end
 
       def test_suite_results(spec, os, test_suite)
@@ -272,7 +272,7 @@ module Citac
       end
 
       def test_suites_dir(spec, os)
-        raise "Operating system '#{operating_system}' is not fully specified" unless os.specific?
+        raise "Operating system '#{os}' is not fully specified" unless os.specific?
         File.join spec_dir(spec), 'test-suites', os.to_s
       end
 
@@ -283,6 +283,22 @@ module Citac
 
       def test_case_dir(spec, os, test_suite, test_case)
         File.join test_suite_dir(spec, os, test_suite), "test-case-#{test_case.id.to_s.rjust(4, '0')}"
+      end
+
+      def update_test_suite_result(spec, os, test_suite)
+        suite_dir = test_suite_dir spec, os, test_suite
+        FileUtils.makedirs suite_dir
+
+        suite_result_path = File.join suite_dir, 'test-suite-result.yml'
+        if File.exists? suite_result_path
+          suite_result = Citac::Utils::Serialization.load_from_file suite_result_path
+        else
+          suite_result = Citac::Model::TestSuiteResult.new test_suite
+        end
+
+        yield suite_result
+
+        Citac::Utils::Serialization.write_to_file suite_result, suite_result_path
       end
 
       def create_next_num_dir(base_dir)

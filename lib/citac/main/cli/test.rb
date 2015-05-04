@@ -15,6 +15,7 @@ module Citac
           @repo = ServiceLocator.specification_repository
           @spec_service = ServiceLocator.specification_service
           @exec_mgr = ServiceLocator.execution_manager
+          @env_mgr = ServiceLocator.environment_manager
         end
 
         #TODO define coverage parameters
@@ -131,6 +132,31 @@ module Citac
             result = result.to_s.red if result == :failure
 
             puts "#{case_id}\t#{result}\t#{success_count}\t#{failure_count}\t#{aborted_count}"
+          end
+        end
+
+        desc 'clearresults <spec> [<os> [<suite> [<cases>]]]', 'Deletes test case results.'
+        def clearresults(spec_id, os = nil, suite_id = nil, case_range = nil)
+          spec = @repo.get spec_id
+
+          os = Citac::Model::OperatingSystem.parse os if os
+          if os
+            oss = os.specific? ? [os] : @env_mgr.operating_systems(spec.type).select{|o| o.matches? os}
+          else
+            oss = @env_mgr.operating_systems spec.type
+          end
+
+          oss.each do |os|
+            puts "Clearing results for #{os}..." if $verbose
+            test_suites = suite_id ? [@repo.test_suite(spec, os, suite_id)] : @repo.test_suites(spec, os)
+            test_suites.each do |test_suite|
+              puts "  Processing test suite '#{test_suite}'..." if $verbose
+              range = parse_case_range test_suite, case_range
+              range.each do |case_id|
+                test_case = test_suite.test_case case_id
+                @repo.clear_test_case_results spec, os, test_suite, test_case
+              end
+            end
           end
         end
 

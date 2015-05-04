@@ -24,6 +24,10 @@ module Citac
           test_case.id = idx + 1
         end
       end
+
+      def to_s
+        "#{id}/#{name}"
+      end
     end
   end
 end
