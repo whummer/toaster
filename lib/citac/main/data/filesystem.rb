@@ -110,12 +110,7 @@ module Citac
         base_dir = runs_dir spec
         FileUtils.makedirs base_dir
 
-        ids = Dir.entries(base_dir).reject { |e| e == '.' || e == '..' }.map { |e| e.to_i }.to_a
-        ids << 0
-
-        new_id = ids.max + 1
-        dir = File.join base_dir, new_id.to_s.rjust(4, '0')
-        FileUtils.makedirs dir
+        dir, new_id = create_next_num_dir base_dir
 
         metadata = {
             'action' => action,
@@ -149,20 +144,83 @@ module Citac
         FileUtils.rm_rf dir if Dir.exist? dir
       end
 
-      def save_test_case_result(spec, test_case_result)
-        base_dir = test_case_result_dir spec
-        dir = File.join base_dir, "testcase-#{test_case_result.test_case.id.to_s.rjust(4, '0')}"
-        FileUtils.makedirs dir unless Dir.exists? dir
+      def test_suite(spec, os, id)
+        base_dir = test_suites_dir spec, os
+        dir = File.join base_dir, id.to_s.rjust(4, '0')
 
-        ids = Dir.entries(dir).reject { |e| e == '.' || e == '..' }.map { |e| e.to_i }.to_a
-        ids << 0
+        if Dir.exists? dir
+          Citac::Utils::Serialization.load_from_file File.join(dir, 'test-suite.yml')
+        else
+          nil
+        end
+      end
 
-        new_id = ids.max + 1
-        target_dir = File.join dir, new_id.to_s.rjust(4, '0')
-        FileUtils.makedirs target_dir
+      def test_suites(spec, os)
+        base_dir = test_suites_dir spec, os
+        result = []
 
-        Citac::Utils::Serialization.write_to_file test_case_result, File.join(target_dir, 'test_case_result.yml')
-        IO.write File.join(target_dir, 'test_case_result.txt'), test_case_result.to_s, :encoding => 'UTF-8'
+        return result unless Dir.exists? base_dir
+
+        Dir.entries(base_dir).reject{|e| e == '.' || e == '..'}.sort.each do |dir|
+          test_suite = Citac::Utils::Serialization.load_from_file File.join(base_dir, dir, 'test-suite.yml')
+          result << test_suite
+        end
+
+        result
+      end
+
+      def save_test_suite(spec, os, test_suite)
+        base_dir = test_suites_dir spec, os
+        FileUtils.makedirs base_dir
+
+        dir, id = create_next_num_dir base_dir
+
+        test_suite.id = id
+        Citac::Utils::Serialization.write_to_file test_suite, File.join(dir, 'test-suite.yml')
+      rescue
+        FileUtils.rm_rf dir if dir && Dir.exists?(dir)
+        test_suite.id = nil
+
+        raise
+      end
+
+      def save_test_case_result(spec, os, test_suite, test_case_result)
+        # write detailed test case result
+
+        case_dir = test_case_dir spec, os, test_suite, test_case_result.test_case
+        FileUtils.makedirs case_dir
+
+        exp = /^result_(?<num>[0-9]{4})\.yml/i
+        nums = Dir.entries(case_dir).map{|e| exp.match e}.reject(&:nil?).map{|m| m[:num].to_i}
+        nums << 0
+
+        next_num = nums.max + 1
+        next_num = next_num.to_s.rjust 4, '0'
+
+        Citac::Utils::Serialization.write_to_file test_case_result, File.join(case_dir, "result_#{next_num}.yml")
+        IO.write File.join(case_dir, "result_#{next_num}.txt"), test_case_result.to_s, :encoding => 'UTF-8'
+
+        # write summary
+
+        suite_dir = test_suite_dir spec, os, test_suite
+        FileUtils.makedirs suite_dir
+
+        suite_result_path = File.join suite_dir, 'test-suite-result.yml'
+        if File.exists? suite_result_path
+          suite_result = Citac::Utils::Serialization.load_from_file suite_result_path
+        else
+          suite_result = Citac::Model::TestSuiteResult.new test_suite
+        end
+
+        suite_result.add_test_case_result test_case_result
+        Citac::Utils::Serialization.write_to_file suite_result, suite_result_path
+      end
+
+      def test_suite_results(spec, os, test_suite)
+        dir = test_suite_dir spec, os, test_suite
+        return nil unless Dir.exists? dir
+
+        Citac::Utils::Serialization.load_from_file File.join(dir, 'test-suite-result.yml')
       end
 
       private
@@ -207,14 +265,35 @@ module Citac
         file_path = File.join script_dir, "#{operating_system.name}"
         return file_path if File.exist? file_path
 
-        file_path = File.join script_dir, "default"
+        file_path = File.join script_dir, 'default'
         return file_path if File.exist? file_path
 
         raise "Unable to locate script file for spec '#{spec}' for os '#{operating_system}'."
       end
 
-      def test_case_result_dir(spec)
-        File.join spec_dir(spec), 'tests-results'
+      def test_suites_dir(spec, os)
+        raise "Operating system '#{operating_system}' is not fully specified" unless os.specific?
+        File.join spec_dir(spec), 'test-suites', os.to_s
+      end
+
+      def test_suite_dir(spec, os, test_suite)
+        base_dir = test_suites_dir spec, os
+        File.join base_dir, test_suite.id.to_s.rjust(4, '0')
+      end
+
+      def test_case_dir(spec, os, test_suite, test_case)
+        File.join test_suite_dir(spec, os, test_suite), "test-case-#{test_case.id.to_s.rjust(4, '0')}"
+      end
+
+      def create_next_num_dir(base_dir)
+        ids = Dir.entries(base_dir).reject { |e| e == '.' || e == '..' }.map { |e| e.to_i }.to_a
+        ids << 0
+
+        new_id = ids.max + 1
+        target_dir = File.join base_dir, new_id.to_s.rjust(4, '0')
+        FileUtils.makedirs target_dir
+
+        return target_dir, new_id
       end
     end
   end

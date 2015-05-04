@@ -11,9 +11,10 @@ module Citac
           :test
         end
 
-        def initialize(repository, spec, test_case)
+        def initialize(repository, spec, test_suite, test_case)
           @spec = spec
           @repository = repository
+          @test_suite = test_suite
           @test_case = test_case
           @passthrough = false
         end
@@ -38,7 +39,7 @@ module Citac
           puts
           puts "Test case result: #{status}"
 
-          @repository.save_test_case_result @spec, test_case_result
+          @repository.save_test_case_result @spec, operating_system, @test_suite, test_case_result
 
           test_case_result
         end

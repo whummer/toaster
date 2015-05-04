@@ -1,86 +1,14 @@
 require 'stringio'
+require_relative 'step_result'
 
 module Citac
   module Model
-    class TestStep
-      attr_reader :type, :resource
-
-      def initialize(type, resource)
-        @type = type
-        @resource = resource
-      end
-
-      def to_s
-        "#{type}(#{resource})"
-      end
-
-      def inspect
-        "TestStep:#{to_s}"
-      end
-
-      def eql?(other)
-        @type == other.type && @resource == other.resource
-      end
-
-      alias_method :==, :eql?
-    end
-
-
-    class TestStepResult
-      attr_reader :step, :result, :output
-
-      def initialize(step, result, output)
-        @step = step
-        @result = result
-        @output = output
-      end
-
-      def to_s
-        "(#{result}) #{step}"
-      end
-    end
-
-    class TestCase
-      attr_reader :id, :type, :resources, :steps
-
-      def executed_resources
-        @steps.select { |s| s.type == :exec }.map { |s| s.resource }.to_a
-      end
-
-      def name
-        case @type
-          when :idempotence; "idempotence of #{@resources[0]}"
-          when :preservation; "preservation of #{@resources[1]} by #{@resources[0]}"
-          else "#{@type} of #{@resources.join ','}"
-        end
-      end
-
-      def initialize(id, type, resources, steps = [])
-        @id = id
-        @type = type
-        @resources = resources
-        @steps = steps
-      end
-
-      def add_exec_step(resource)
-        @steps << TestStep.new(:exec, resource)
-      end
-
-      def add_assert_step(resource)
-        @steps << TestStep.new(:assert, resource)
-      end
-
-      def to_s
-        "#{name}: #{@steps.map { |s| s.to_s }.to_a.join ', '}"
-      end
-
-      def inspect
-        "TestCase(#{to_s})"
-      end
-    end
-
     class TestCaseResult
       attr_reader :test_case, :step_results
+
+      def result
+        @success ? :success : :failure
+      end
 
       def success?
         @success

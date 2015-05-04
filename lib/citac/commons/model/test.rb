@@ -1,0 +1,6 @@
+require_relative 'test/step'
+require_relative 'test/step_result'
+require_relative 'test/case'
+require_relative 'test/case_result'
+require_relative 'test/suite'
+require_relative 'test/suite_result'

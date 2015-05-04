@@ -121,6 +121,8 @@ module Citac
       end
 
       def enable_caching
+        #TODO check if old non-running container is still present and delete it
+
         mounts = [[cache_directory, '/var/citac/cache', true]]
 
         Citac::Utils::Exec.run 'iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to 3128 -w'
