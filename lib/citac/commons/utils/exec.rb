@@ -101,6 +101,21 @@ module Citac
           raise "Command '#{cmdline}' failed with exit code #{status.exitstatus}: #{captured_output}"
         end
       end
+
+      def self.which(executable)
+        @which_cache = Hash.new unless @which_cache
+        path = @which_cache[executable]
+
+        unless path
+          result = run 'which', :args => [executable], :raise_on_failure => false
+          raise "Executable '#{executable}' not found in path." unless result.success?
+
+          path = result.stdout.strip
+          @which_cache[executable] = path
+        end
+
+        path
+      end
     end
   end
 end

@@ -87,6 +87,7 @@ module Citac
 
         mounts = []
         mounts << [Citac::Config.base_dir, '/opt/citac', false]
+        mounts << [Citac::Utils::Exec.which('docker'), '/usr/bin/docker', false]
         mounts << ['/var/run/docker.sock', '/var/run/docker.sock', false]
         mounts << [script_dir, '/tmp/citac', true]
 

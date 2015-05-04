@@ -172,6 +172,7 @@ module Citac
           def load_test_suite(spec_id, os, suite_id)
             spec, os = load_spec spec_id, os
             test_suite = @repo.test_suite spec, os, suite_id
+            raise "Test suite with ID #{suite_id} not found for #{spec} on #{os}." unless test_suite
 
             return spec, os, test_suite
           end
