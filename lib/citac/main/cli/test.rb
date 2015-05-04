@@ -103,7 +103,7 @@ module Citac
             case_ids.each do |case_id|
               test_case = test_suite.test_case case_id
               test_case_result = results[case_id]
-              status = test_case_result.success? ? 'SUCCESS'.green : 'FAILURE'.red
+              status = test_case_result.colored_result
 
               puts "#{status}  Test case #{case_id}: #{test_case.name}"
             end

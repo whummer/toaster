@@ -34,10 +34,8 @@ module Citac
           path = File.join dir, 'test_case_result.yml'
           test_case_result = Citac::Utils::Serialization.load_from_file path
 
-          status = test_case_result.success? ? 'SUCCESS'.green : 'FAILURE'.red
-
           puts
-          puts "Test case result: #{status}"
+          puts "Test case result: #{test_case_result.colored_result}"
 
           @repository.save_test_case_result @spec, operating_system, @test_suite, test_case_result
 

@@ -1,5 +1,6 @@
 require 'stringio'
 require_relative 'step_result'
+require_relative '../../../../../lib/citac/commons/utils/colorize'
 
 module Citac
   module Model
@@ -7,7 +8,27 @@ module Citac
       attr_reader :test_case, :step_results
 
       def result
-        @success ? :success : :failure
+        last = @step_results.reverse.find{|r| r.result != :skipped}
+        return :failure unless last
+
+        return :success if last.result == :success
+        return :failure if last.result == :failure && last.step.type == :assert
+        return :aborted if last.result == :failure && last.step.type == :exec
+
+        return :unknown
+      end
+
+      def colored_result
+        case result
+          when :success
+            return 'SUCCESS'.green
+          when :failure
+            return 'FAILURE'.red
+          when :aborted
+            return 'ABORTED'.yellow
+          else
+            return result.to_s.upcase
+        end
       end
 
       def success?
@@ -44,7 +65,7 @@ module Citac
         result.puts '====================================================================='
         result.puts
         result.puts "Test Case: #{@test_case.name}"
-        result.puts "Result:    #{success? ? 'SUCCESS' : 'FAILURE'}"
+        result.puts "Result:    #{result.to_s.upcase}"
         result.puts
         result.puts 'Steps:'
         @step_results.each_with_index {|s, i| result.puts "  #{i + 1}. #{s}"}
