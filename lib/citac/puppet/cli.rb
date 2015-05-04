@@ -2,6 +2,7 @@ require 'puppet/util/command_line'
 require_relative 'patches/expanded_relationships_fix'
 require_relative 'patches/graphml_generation'
 require_relative 'patches/resource_execution_hook'
+require_relative 'patches/resource_json_output'
 
 module Citac
   module Puppet
