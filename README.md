@@ -11,9 +11,9 @@ The installation assumes that the source code is checked out to `/opt/citac`.
     # install prerequisites
 
     apt-get update
-    apt-get install -y ruby graphviz apparmor-utils
+    apt-get install -y build-essential ruby ruby-dev graphviz apparmor-utils
 
-    gem install --no-ri --no-rdoc thor rest-client
+    gem install --no-ri --no-rdoc thor rest-client hashdiff
 
     # install docker
 

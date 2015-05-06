@@ -22,7 +22,7 @@ RUN wget https://github.com/postmodern/ruby-install/archive/v0.5.0.tar.gz -O /tm
  && rm -rf /tmp/ruby-install-0.5.0 /tmp/ruby-install-0.5.0.tar.gz \
  && ruby-install --system ruby 2.1.6
 
-RUN gem install --no-ri --no-rdoc thor rest-client
+RUN gem install --no-ri --no-rdoc thor rest-client hashdiff
 RUN gem install --no-ri --no-rdoc ohai --version 8.3.0
 
 # Path Settings
