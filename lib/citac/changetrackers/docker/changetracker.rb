@@ -4,10 +4,12 @@ require 'etc'
 require_relative '../../commons/integration/docker'
 require_relative '../../commons/integration/strace'
 require_relative '../../commons/integration/md5sum'
+require_relative '../../commons/integration/ohai'
 require_relative '../../commons/logging'
 require_relative '../../commons/model/change_tracking'
 require_relative '../../commons/utils/md5'
 require_relative '../../commons/utils/system'
+require_relative '../../commons/utils/jsondiff'
 require_relative 'file_status'
 
 module Citac
@@ -20,6 +22,7 @@ module Citac
             add_default_exclusion_patterns exclusion_patterns
 
             snapshot_image = create_snapshot_image
+            transient_pre_state = capture_transient_state
 
             strace_opts = options.dup
             strace_opts[:start_markers] = settings.start_markers
@@ -35,8 +38,13 @@ module Citac
 
             accessed_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
 
+            transient_post_state = capture_transient_state
+
             change_summary = compare_files snapshot_image, accessed_files
             change_summary.additional_data[:syscalls] = syscalls.join $/
+
+            add_transient_state_changes change_summary, transient_pre_state, transient_post_state
+
             return change_summary, result
           ensure
             remove_snapshot_image snapshot_image
@@ -185,6 +193,16 @@ module Citac
             return Hash.new if changed_files.empty?
 
             Citac::Utils::MD5.hash_files changed_files
+          end
+
+          def capture_transient_state
+            Citac::Integration::Ohai.get_json :plugin_dirs => ['/opt/citac/lib/citac/ohai']
+          end
+
+          def add_transient_state_changes(change_summary, pre_state, post_state)
+            Citac::Utils::JsonDiff.diff(pre_state, post_state, :state).each do |change|
+              change_summary.changes << change
+            end
           end
         end
       end

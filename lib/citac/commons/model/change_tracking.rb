@@ -45,15 +45,29 @@ module Citac
 
     class Change
       attr_reader :category, :type, :subject
+      attr_accessor :old_value, :new_value
 
       def initialize(category, type, subject)
         @category = category
         @subject = subject
         @type = type
+
+        @old_value = nil
+        @new_value = nil
       end
 
       def to_s
-        "#{category}/#{type}: #{subject}"
+        value_diff = ''
+        value_diff = ": '#{@old_value}'" unless @old_value.nil?
+        unless @new_value.nil?
+          if @old_value.nil?
+            value_diff = ": '#{@new_value}'"
+          else
+            value_diff << " -> '#{@new_value}'"
+          end
+        end
+
+        "#{category}/#{type}: #{subject}#{value_diff}"
       end
     end
   end
