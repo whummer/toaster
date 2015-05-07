@@ -111,10 +111,22 @@ module Citac
           end
         end
 
+        option :successes, :type => :boolean, :aliases => :s, :desc => 'Prints successful test cases.'
+        option :failures, :type => :boolean, :aliases => :f, :desc => 'Prints failed test cases.'
+        option :unknowns, :type => :boolean, :aliases => :u, :desc => 'Prints unknown test cases.'
+        option :summary, :type => :boolean, :default => true, :desc => 'Printa a status summary at the end.'
         desc 'results <spec> <os> <suite> [<cases>]', 'Prints test case results.'
         def results(spec_id, os, suite_id, case_range = nil)
+          filter = options[:successes] || options[:failures] || options[:unknowns]
+          printed_results = []
+          printed_results << :success if options[:successes] || !filter
+          printed_results << :failure if options[:failures] || !filter
+          printed_results << :unknown if options[:unknowns] || !filter
+
           spec, os, test_suite = load_test_suite spec_id, os, suite_id
           suite_results = @repo.test_suite_results spec, os, test_suite
+
+          result_summary = Hash.new {|h, k| h[k] = 0}
 
           puts "Case ID\tResult\tSuccess\tFailure\tAborted"
 
@@ -122,6 +134,9 @@ module Citac
           case_ids.each do |case_id|
             test_case = test_suite.test_case case_id
             result = suite_results.overall_case_result(test_case)
+            result_summary[result] += 1
+
+            next unless printed_results.include? result
 
             results = suite_results.test_case_results[case_id] || []
             success_count = results.select{|r| r == :success}.size
@@ -132,6 +147,13 @@ module Citac
             result = result.to_s.red if result == :failure
 
             puts "#{case_id}\t#{result}\t#{success_count}\t#{failure_count}\t#{aborted_count}"
+          end
+
+          if options[:summary]
+            puts
+            puts "Successes: #{result_summary[:success]}"
+            puts "Failures:  #{result_summary[:failure]}"
+            puts "Unknowns:  #{result_summary[:unknown]}"
           end
         end
 
