@@ -7,6 +7,7 @@ require_relative 'cli/puppet'
 require_relative 'cli/envs'
 require_relative 'cli/cache'
 require_relative '../version'
+require_relative 'ioc'
 
 module Citac
   module Main
@@ -29,6 +30,19 @@ module Citac
 
         desc 'cache <command> <args...>', 'Commands for controlling the network traffic cache.'
         subcommand 'cache', Cache
+
+        desc 'clear [<spec1> <spec2> ...]', 'Clears all saved data for the given configuration specifications.'
+        def clear(*specs)
+          repo = ServiceLocator.specification_repository
+          specs = repo.specs if specs.empty?
+
+          specs.each do |spec|
+            spec = repo.get spec
+
+            puts "Clearing data for #{spec}..."
+            repo.clear spec
+          end
+        end
 
         desc 'version', 'Prints the application version.'
         def version

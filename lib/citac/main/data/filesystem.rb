@@ -48,6 +48,13 @@ module Citac
         Citac::Model::ConfigurationSpecification.new spec_id, spec_id, type, metadata[type], oss
       end
 
+      def clear(spec)
+        dir = spec_dir spec
+        FileUtils.rm_rf File.join(dir, 'graphs')
+        FileUtils.rm_rf File.join(dir, 'runs')
+        FileUtils.rm_rf File.join(dir, 'test-suites')
+      end
+
       def has_dependency_graph?(spec, operating_system)
         dir = graph_dir spec, operating_system
         path = File.join dir, 'dependencies.graphml'
