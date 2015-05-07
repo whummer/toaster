@@ -46,6 +46,8 @@ module Citac
             change_summary.additional_data[:syscalls] = syscalls.join $/
 
             add_transient_state_changes change_summary, transient_pre_state, transient_post_state, state_exclusion_patterns
+            change_summary.additional_data[:pre_state] = transient_pre_state
+            change_summary.additional_data[:post_state] = transient_post_state
 
             return change_summary, result
           ensure
