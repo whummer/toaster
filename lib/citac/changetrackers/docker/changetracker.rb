@@ -18,8 +18,10 @@ module Citac
       module ChangeTracker
         class << self
           def track_changes(command, settings, options = {})
-            exclusion_patterns = settings.exclusion_patterns.dup
-            add_default_exclusion_patterns exclusion_patterns
+            file_exclusion_patterns = (settings.file_exclusion_patterns || []).dup
+            state_exclusion_patterns = (settings.state_exclusion_patterns || []).dup
+            add_default_file_exclusion_patterns file_exclusion_patterns
+            add_default_state_exclusion_patterns state_exclusion_patterns
 
             snapshot_image = create_snapshot_image
             transient_pre_state = capture_transient_state
@@ -36,14 +38,14 @@ module Citac
             accessed_files, result, syscalls = Citac::Integration::Strace.track_file_access command, strace_opts
             accessed_files.each {|f| log_debug $prog_name, "Accessed file: #{f}"}
 
-            accessed_files.reject! { |f| exclusion_patterns.any? { |p| f =~ p } }
+            accessed_files.reject! { |f| file_exclusion_patterns.any? { |p| f =~ p } }
 
             transient_post_state = capture_transient_state
 
             change_summary = compare_files snapshot_image, accessed_files
             change_summary.additional_data[:syscalls] = syscalls.join $/
 
-            add_transient_state_changes change_summary, transient_pre_state, transient_post_state
+            add_transient_state_changes change_summary, transient_pre_state, transient_post_state, state_exclusion_patterns
 
             return change_summary, result
           ensure
@@ -52,7 +54,7 @@ module Citac
 
           private
 
-          def add_default_exclusion_patterns(patterns)
+          def add_default_file_exclusion_patterns(patterns)
             patterns << /^\/dev(\/|$)/
             patterns << /^\/proc(\/|$)/
             patterns << /^\/sys(\/|$)/
@@ -199,10 +201,19 @@ module Citac
             Citac::Integration::Ohai.get_json :plugin_dirs => ['/opt/citac/lib/citac/ohai']
           end
 
-          def add_transient_state_changes(change_summary, pre_state, post_state)
+          def add_transient_state_changes(change_summary, pre_state, post_state, exclusion_patterns)
             Citac::Utils::JsonDiff.diff(pre_state, post_state, :state).each do |change|
-              change_summary.changes << change
+              change_summary.changes << change unless exclusion_patterns.any? {|p| change.subject =~ p}
             end
+          end
+
+          def add_default_state_exclusion_patterns(patterns)
+            patterns << /^cpu/
+            patterns << /^memory/
+            patterns << /time/
+            patterns << /^counters.*network/
+            patterns << /^filesystem.*_(available)|(used)$/
+            patterns << /^network.*arp$/
           end
         end
       end

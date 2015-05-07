@@ -51,7 +51,9 @@ module Citac
 
           output = options[:passthrough] ? :passthrough : :redirect
 
-          task = TestTask.new 'script', test_case, [] #TODO get exclusion patterns from somewhere
+          task = TestTask.new 'script', test_case
+          task.file_exclusion_patterns = [] #TODO get file exclusion patterns from somewhere
+          task.state_exclusion_patterns = [] #TODO get state exclusion patterns from somewhere
           test_case_result = task.execute :modulepath => 'modules', :output => output
 
           Citac::Utils::Serialization.write_to_file test_case_result, 'test_case_result.yml'

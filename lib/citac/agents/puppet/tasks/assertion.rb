@@ -87,10 +87,13 @@ module Citac
       end
 
       class AssertionTask
-        def initialize(manifest_path, resource_name, exclusion_patterns)
+        attr_accessor :file_exclusion_patterns, :state_exclusion_patterns
+
+        def initialize(manifest_path, resource_name)
           @manifest_path = manifest_path
           @resource_name = resource_name
-          @exclusion_patterns = exclusion_patterns
+          @file_exclusion_patterns = []
+          @state_exclusion_patterns = []
         end
 
         def execute(options = {})
@@ -101,7 +104,8 @@ module Citac
             settings_path = File.join dir, 'settings.yml'
             
             change_tracking_settings = Citac::Model::ChangeTrackingSettings.new
-            change_tracking_settings.exclusion_patterns = @exclusion_patterns
+            change_tracking_settings.file_exclusion_patterns = @file_exclusion_patterns
+            change_tracking_settings.state_exclusion_patterns = @state_exclusion_patterns
             change_tracking_settings.start_markers << /CITAC_RESOURCE_EXECUTION_START/
             change_tracking_settings.end_markers << /CITAC_RESOURCE_EXECUTION_END/
             change_tracking_settings.command_generated_trace_file = trace_file

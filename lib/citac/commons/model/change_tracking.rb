@@ -3,10 +3,11 @@ require 'stringio'
 module Citac
   module Model
     class ChangeTrackingSettings
-      attr_accessor :exclusion_patterns, :start_markers, :end_markers, :command_generated_trace_file
+      attr_accessor :file_exclusion_patterns, :state_exclusion_patterns, :start_markers, :end_markers, :command_generated_trace_file
 
       def initialize
-        @exclusion_patterns = []
+        @file_exclusion_patterns = []
+        @state_exclusion_patterns = []
         @start_markers = []
         @end_markers = []
         @command_generated_trace_file = nil

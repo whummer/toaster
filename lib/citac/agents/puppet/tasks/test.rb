@@ -8,10 +8,13 @@ module Citac
   module Agents
     module Puppet
       class TestTask
-        def initialize(manifest_path, test_case, exclusion_patterns)
+        attr_accessor :file_exclusion_patterns, :state_exclusion_patterns
+
+        def initialize(manifest_path, test_case)
           @manifest_path = manifest_path
           @test_case = test_case
-          @exclusion_patterns = exclusion_patterns
+          @file_exclusion_patterns = []
+          @state_exclusion_patterns = []
         end
 
         def execute(options = {})
@@ -27,7 +30,9 @@ module Citac
                 task = ExecutionTask.new @manifest_path, step.resource
                 result = task.execute puppet_opts
               when :assert
-                task = AssertionTask.new @manifest_path, step.resource, @exclusion_patterns
+                task = AssertionTask.new @manifest_path, step.resource
+                task.file_exclusion_patterns = @file_exclusion_patterns
+                task.state_exclusion_patterns = @state_exclusion_patterns
                 result = task.execute puppet_opts
               else
                 raise "Unknown step type: #{step.type}"
