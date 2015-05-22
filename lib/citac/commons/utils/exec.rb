@@ -116,6 +116,12 @@ module Citac
 
         path
       end
+
+      def self.which_safe(executable)
+        which executable
+      rescue
+        nil
+      end
     end
   end
 end

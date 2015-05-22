@@ -169,6 +169,11 @@ module Citac
           @label = label
         end
 
+
+        def hash
+          [@source, @target, @label].hash
+        end
+
         def eql?(other)
           @source == other.source && @target == other.target && @label == other.label
         end

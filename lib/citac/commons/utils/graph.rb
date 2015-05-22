@@ -5,4 +5,4 @@ require_relative 'graph/formats/png'
 require_relative 'graph/paths'
 require_relative 'graph/reachability'
 require_relative 'graph/toposort'
-
+require_relative 'graph/dag'

@@ -1,0 +1,12 @@
+notify { '1': }
+notify { '2': }
+notify { '3': }
+notify { '4': }
+notify { '5': }
+
+Notify[1] -> Notify[2]
+Notify[1] -> Notify[3]
+Notify[1] -> Notify[4]
+Notify[1] -> Notify[5]
+
+

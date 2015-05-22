@@ -14,7 +14,6 @@ module Citac
           operating_system = env.operating_system
 
           log_debug 'exec-mgr', "Running '#{task.spec}' (#{task.type}) in environment '#{env}'..."
-          puts "Running '#{task.spec}' (#{task.type}) on '#{operating_system}'..."
 
           Dir.mktmpdir do |dir|
             @repository.get_additional_files task.spec, dir

@@ -6,6 +6,7 @@ require_relative 'cli/test'
 require_relative 'cli/puppet'
 require_relative 'cli/envs'
 require_relative 'cli/cache'
+require_relative 'cli/graphs'
 require_relative '../version'
 require_relative 'ioc'
 
@@ -30,6 +31,9 @@ module Citac
 
         desc 'cache <command> <args...>', 'Commands for controlling the network traffic cache.'
         subcommand 'cache', Cache
+
+        desc 'graphs <command> <args...>', 'Commands for generated graphs of configuration specifications.'
+        subcommand 'graphs', Graphs
 
         desc 'clear [<spec1> <spec2> ...]', 'Clears all saved data for the given configuration specifications.'
         def clear(*specs)

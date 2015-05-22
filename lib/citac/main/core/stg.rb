@@ -1,4 +1,4 @@
-require_relative '../utils/graph'
+require_relative '../../commons/utils/graph'
 require_relative 'dependency_graph'
 
 module Citac

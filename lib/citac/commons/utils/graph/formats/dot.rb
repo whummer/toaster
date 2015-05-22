@@ -21,7 +21,8 @@ module Citac
           ns.each_index do |i|
             node_indices[ns[i]] = i
 
-            label = node_label_getter.call(ns[i]).to_s.gsub '"', '\\"'
+            label = node_label_getter.call(ns[i]).to_s
+            label = label.gsub('\\', '\\\\\\').gsub('"', '\"')
             result << "    n#{i} [label = \"#{label}\"];"
           end
 
@@ -34,7 +35,7 @@ module Citac
 
               label = edge_label_getter.call edge
               if label && label.to_s.strip.length > 0
-                label = label.to_s.gsub '"', '\\"'
+                label = label.to_s.gsub('\\', '\\\\\\').gsub('"', '\"')
                 result << "    n#{source_index} -> n#{target_index} [label = \"#{label}\"];"
               else
                 result << "    n#{source_index} -> n#{target_index};"

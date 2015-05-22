@@ -45,7 +45,7 @@ module Citac
           graph
         end
 
-        def to_graphml
+        def to_graphml(options = {})
           node_indices = Hash.new
           nodes.each { |n| node_indices[n] = node_indices.size }
 
