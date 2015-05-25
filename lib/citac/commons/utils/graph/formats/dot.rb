@@ -8,6 +8,7 @@ module Citac
         def to_dot(options = {})
           node_label_getter = options[:node_label_getter] || lambda {|n| n.label}
           edge_label_getter = options[:edge_label_getter] || lambda {|e| e.label}
+          edge_attribute_getter = options[:edge_attribute_getter] || lambda {|_| Hash.new}
           direction = options[:direction] || 'TB'
 
           result = []
@@ -34,12 +35,17 @@ module Citac
               target_index = node_indices[edge.target]
 
               label = edge_label_getter.call edge
-              if label && label.to_s.strip.length > 0
-                label = label.to_s.gsub('\\', '\\\\\\').gsub('"', '\"')
-                result << "    n#{source_index} -> n#{target_index} [label = \"#{label}\"];"
-              else
-                result << "    n#{source_index} -> n#{target_index};"
+              label = label.to_s.gsub('\\', '\\\\\\').gsub('"', '\"') if label && label.to_s.strip.length > 0
+
+              attributes = edge_attribute_getter.call(edge) || {}
+              attributes_suffix = ''
+              attributes.each do |name, value|
+                next if name.to_s == 'penwidth' && value == 1
+
+                attributes_suffix << ", #{name} = #{value}"
               end
+
+              result << "    n#{source_index} -> n#{target_index} [label = \"#{label}\"#{attributes_suffix}];"
             end
           end
 
