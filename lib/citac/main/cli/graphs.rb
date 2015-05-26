@@ -61,19 +61,8 @@ module Citac
         def minstg(spec_id, os)
           dg = load_dg spec_id, os
 
-          stg_builder = Citac::Core::StgBuilder.new dg
-          dg.resources.each do |resource|
-            stg_builder.add_state [resource]
-
-            # ancestors are handled by state reaching resource
-
-            dg.non_related_resources(resource).each do |non_related_resource|
-              all = dg.ancestors(resource) + dg.ancestors(non_related_resource) + [resource, non_related_resource]
-              stg_builder.add_transition (all - [resource]), all
-              stg_builder.add_transition (all - [non_related_resource]), all
-            end
-          end
-
+          stg_builder = Citac::Main::Core::StgBuilder.new dg
+          stg_builder.add_minimal_states
           stg_builder.expand options[:expand].to_i
           stg_builder.add_missing_edges if options[:addedges]
 

@@ -14,12 +14,10 @@ module Citac
       end
 
       def add_test_case(test_case)
-        #TODO add to dep graph
         @test_cases << test_case
       end
 
       def finish
-        #TODO order topologically and assign ids
         @test_cases.each_with_index do |test_case, idx|
           test_case.id = idx + 1
         end

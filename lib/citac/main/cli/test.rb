@@ -1,6 +1,7 @@
 require 'thor'
 require_relative '../ioc'
-require_relative '../core/test_case_generator'
+require_relative '../core/test_case_generators/simple'
+require_relative '../core/test_case_generators/stg_based'
 require_relative '../tasks/testing'
 require_relative '../../commons/utils/colorize'
 require_relative '../../commons/utils/range'
@@ -18,21 +19,40 @@ module Citac
           @env_mgr = ServiceLocator.environment_manager
         end
 
-        #TODO define coverage parameters
+        option :type, :aliases => :t, :default => 'stg', :desc => 'test case generation algorithm, either "base" or "stg"'
+        option :preview, :aliases => :p, :type => :boolean, :desc => 'preview mode'
+        option :expand, :aliases => :x, :type => :numeric, :default => 0, :desc => 'number of STG expansion steps'
+        option :alledges, :aliases => :e, :type => :boolean, :desc => 'add missing edges'
+        option :coverage, :aliases => :c, :default => 'edge', :desc => 'coverage type'
+        option :edgelimit, :aliases => :l, :type => :numeric, :default => 3, :desc => 'max number of edge visits (for asserts)'
         desc 'gen <spec> <os>', 'Generates a test suite according to the given coverage parameters.'
         def gen(spec_id, os)
           spec, os = load_spec spec_id, os
-
-          #TODO remove once coverage parameters are defined
-          suites = @repo.test_suites spec, os
-          raise 'Currently only base test suite generation is supported.' unless suites.empty?
-
           dg = @spec_service.dependency_graph spec, os
 
-          tcg = Citac::Core::TestCaseGenerator.new dg
-          test_suite = tcg.generate_test_suite
+          case options[:type]
+            when 'base'
+              generator = Citac::Main::Core::TestCaseGenerators::SimpleTestCaseGenerator.new dg
+            when 'stg'
+              generator = Citac::Main::Core::TestCaseGenerators::StgBasedTestCaseGenerator.new dg
+              generator.expansion = options[:expand]
+              generator.all_edges = options[:alledges]
+              generator.coverage = options[:coverage] == 'path' ? :path : :edge
+              generator.edge_limit = options[:edgelimit]
+            else
+              raise "Unknown test case generator: #{options[:type]}"
+          end
 
-          @repo.save_test_suite spec, os, test_suite
+          test_suite = generator.generate_test_suite
+
+          print_test_suite test_suite
+
+          if options[:preview]
+            puts 'Discarding test suite because running in preview mode.'
+          else
+            @repo.save_test_suite spec, os, test_suite
+            puts "Saved test suite with ID #{test_suite.id}"
+          end
         end
 
         desc 'suites <spec> <os>', 'Lists the test suites for the given configuration specification.'
@@ -49,26 +69,10 @@ module Citac
           end
         end
 
-        option :steps, :type => :boolean, :aliases => :s, :desc => 'include detailed test steps'
         desc 'cases <spec> <os> <suite>', 'Prints the test cases of the given test suite of the configuration specification.'
         def cases(spec_id, os, suite_id)
           _, _, test_suite = load_test_suite spec_id, os, suite_id
-
-          case_count = 0
-          step_count = 0
-          test_suite.test_cases.each do |test_case|
-            case_count += 1
-            step_count += test_case.steps.size
-
-            if options[:steps]
-              puts "#{case_count}\t#{test_case}"
-            else
-              puts "#{case_count}\t#{test_case.name}"
-            end
-          end
-
-          puts
-          puts "#{test_suite.test_cases.size} test cases (#{step_count} steps)."
+          print_test_suite test_suite
         end
 
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
@@ -81,7 +85,7 @@ module Citac
           case_ids.each do |case_id|
             test_case = test_suite.test_case case_id
 
-            msg = "# Test case #{test_case.id}: #{test_case.name}... #"
+            msg = "# #{test_case.name} #"
             puts ''.ljust msg.size, '='
             puts msg
             puts ''.ljust msg.size, '='
@@ -201,6 +205,22 @@ module Citac
 
           def parse_case_range(test_suite, case_range)
             Citac::Utils::RangeParser.parse case_range, 1, test_suite.test_cases.size
+          end
+
+          def print_test_suite(test_suite)
+            step_count_by_type = Hash.new 0
+            step_count = 0
+            test_suite.test_cases.each do |test_case|
+              test_case.steps.each do |step|
+                step_count_by_type[step.type] += 1
+                step_count += 1
+              end
+
+              puts test_case
+            end
+
+            puts
+            puts "#{test_suite.test_cases.size} test cases (#{step_count} steps: #{step_count_by_type.map{|k, v| "#{v} #{k}s"}.join(', ')})"
           end
         end
       end

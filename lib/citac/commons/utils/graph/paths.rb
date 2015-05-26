@@ -7,7 +7,7 @@ module Citac
   module Utils
     module Graphs
       class Graph
-        def each_path(source_node_or_label, destination_node_or_label)
+        def each_path(source_node_or_label, destination_node_or_label = nil)
           if destination_node_or_label
             each_path_dest source_node_or_label, destination_node_or_label do |path|
               yield path
@@ -19,7 +19,7 @@ module Citac
           end
         end
 
-        def path_count(source_node_or_label, destination_node_or_label)
+        def path_count(source_node_or_label, destination_node_or_label = nil)
           count = 0
           each_path source_node_or_label, destination_node_or_label do |_|
             count += 1

@@ -23,7 +23,11 @@ module Citac
 
           test_case_result = Citac::Model::TestCaseResult.new @test_case
           @test_case.steps.each_with_index do |step, index|
-            puts "Step #{index + 1} / #{@test_case.steps.size}: #{step}...".yellow
+            if step.type == :assert
+              puts "Step #{index + 1} / #{@test_case.steps.size}: #{step}: #{step.property}...".yellow
+            else
+              puts "Step #{index + 1} / #{@test_case.steps.size}: #{step}...".yellow
+            end
 
             case step.type
               when :exec
