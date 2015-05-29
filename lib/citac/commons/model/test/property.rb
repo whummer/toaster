@@ -21,7 +21,7 @@ module Citac
       end
 
       def eql?(other)
-        @type == other.type && @resources == other.resource
+        @type == other.type && @resources == other.resources
       end
 
       alias_method :==, :eql?

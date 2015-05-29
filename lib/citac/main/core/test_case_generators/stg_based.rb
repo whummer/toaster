@@ -38,7 +38,7 @@ module Citac
           private
 
           def get_name
-            "stg (expansion = #{@expansion}, all edges = #{@all_edges}, coverage = #{@coverage}, edge limit = #{@edge_limit}"
+            "stg (expansion = #{@expansion}, all edges = #{@all_edges || false}, coverage = #{@coverage}, edge limit = #{@edge_limit})"
           end
 
           def build_stg
