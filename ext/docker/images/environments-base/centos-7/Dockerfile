@@ -1,6 +1,6 @@
 FROM centos:7
 
-RUN yum install -y make gcc gcc-c++ wget curl tar hostname bzip2 net-tools
+RUN yum install -y make gcc gcc-c++ wget curl tar hostname bzip2 net-tools redhat-lsb-core
 
 # Strace 4.10 Installation (compilation from source)
 

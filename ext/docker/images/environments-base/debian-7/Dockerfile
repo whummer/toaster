@@ -3,7 +3,7 @@ FROM debian:wheezy
 # Required Packages
 
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -qy ca-certificates wget curl build-essential net-tools
+ && DEBIAN_FRONTEND=noninteractive apt-get install -qy ca-certificates wget curl build-essential net-tools lsb-release
 
 # Strace 4.10 Installation (compilation from source)
 

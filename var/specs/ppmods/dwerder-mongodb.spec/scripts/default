@@ -1,5 +1,6 @@
 # https://forge.puppetlabs.com/dwerder/mongodb
 
+include apt
 include mongodb
 mongodb::mongod {
   'my_mongod_instanceX':
