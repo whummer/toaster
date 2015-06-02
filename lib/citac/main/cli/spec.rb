@@ -17,9 +17,13 @@ module Citac
           @spec_service = ServiceLocator.specification_service
         end
 
+        option :os, :aliases => :o, :desc => 'filter with operating system'
         desc 'list', 'Lists all stored configuration specifications.'
         def list
+          os = options[:os] ? Citac::Model::OperatingSystem.parse(options[:os]) : nil
           @repo.each_spec do |spec_name|
+            next if os && @repo.get(spec_name).operating_systems.none? {|o| o.matches? os}
+
             puts spec_name
           end
         end

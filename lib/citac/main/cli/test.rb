@@ -47,8 +47,9 @@ module Citac
           test_suite = generator.generate_test_suite
 
           print_test_suite test_suite
-          print_asserts test_suite if options[:printasserts]
+          print_asserts dg, test_suite if options[:printasserts]
 
+          puts
           if options[:preview]
             puts 'Discarding test suite because running in preview mode.'
           else
@@ -79,9 +80,9 @@ module Citac
 
         desc 'asserts <spec> <os> <suite>', 'Prints an overview of the asserts of the given test suite of the configuration specification.'
         def asserts(spec_id, os, suite_id)
-          _, _, test_suite = load_test_suite spec_id, os, suite_id
-
-          print_asserts(test_suite)
+          spec, os, test_suite = load_test_suite spec_id, os, suite_id
+          dg = @spec_service.dependency_graph spec, os
+          print_asserts dg, test_suite
         end
 
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
@@ -232,7 +233,7 @@ module Citac
             puts "#{test_suite.test_cases.size} test cases (#{step_count} steps: #{step_count_by_type.map{|k, v| "#{v} #{k}s"}.join(', ')})"
           end
 
-          def print_asserts(test_suite)
+          def print_asserts(dg, test_suite)
             properties = Hash.new 0
             test_suite.test_cases.each do |test_case|
               test_case.asserts.each do |assert_step|
@@ -242,6 +243,17 @@ module Citac
 
             properties.sort_by { |property, count| [-count, property.to_s] }.each do |property, count|
               puts "#{count}\t#{property}"
+            end
+
+            puts
+            missing_properties = dg.required_properties.reject { |p| properties.include?(p) && properties[p] > 0 }
+            if missing_properties.empty?
+              puts 'All required properties are tested.'
+            else
+              puts 'The following required properties are not tested:'
+              missing_properties.each do |missing_property|
+                puts " - #{missing_property}"
+              end
             end
           end
         end

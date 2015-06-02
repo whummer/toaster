@@ -1,4 +1,5 @@
 require_relative '../../commons/utils/graph'
+require_relative '../../commons/model/test'
 
 module Citac
   module Core
@@ -105,6 +106,21 @@ module Citac
         possible_edge_count = resource_count * (resource_count - 1) / 2
 
         actual_edge_count.to_f / possible_edge_count.to_f
+      end
+
+      def required_properties
+        result = []
+        resources.each do |resource|
+          result << Citac::Model::Property.new(:idempotence, [resource])
+          ancestors(resource).each do |ancestor|
+            result << Citac::Model::Property.new(:preservation, [resource, ancestor])
+          end
+          non_related_resources(resource).each do |non_related|
+            result << Citac::Model::Property.new(:preservation, [resource, non_related])
+          end
+        end
+
+        result
       end
 
       private
