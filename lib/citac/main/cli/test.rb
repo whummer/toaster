@@ -26,8 +26,11 @@ module Citac
         option :alledges, :aliases => :e, :type => :boolean, :desc => 'add missing edges'
         option :coverage, :aliases => :c, :default => 'edge', :desc => 'coverage type'
         option :edgelimit, :aliases => :l, :type => :numeric, :default => 3, :desc => 'max number of edge visits (for asserts)'
+        option :quiet, :aliases => :q, :type => :boolean, :desc => 'do not print test suite'
         desc 'gen <spec> <os>', 'Generates a test suite according to the given coverage parameters.'
         def gen(spec_id, os)
+          puts "Generating test suite for #{spec_id}..."
+
           spec, os = load_spec spec_id, os
           dg = @spec_service.dependency_graph spec, os
 
@@ -46,8 +49,10 @@ module Citac
 
           test_suite = generator.generate_test_suite
 
-          print_test_suite test_suite
-          print_asserts dg, test_suite if options[:printasserts]
+          unless options[:quiet]
+            print_test_suite test_suite
+            print_asserts dg, test_suite if options[:printasserts]
+          end
 
           puts
           if options[:preview]
@@ -58,6 +63,7 @@ module Citac
           end
         end
 
+        option :counts, :aliases => :c, :type => :boolean, :desc => 'display step and test case counts'
         desc 'suites <spec> <os>', 'Lists the test suites for the given configuration specification.'
         def suites(spec_id, os)
           spec, os = load_spec spec_id, os
@@ -65,6 +71,21 @@ module Citac
           suites = @repo.test_suites(spec, os)
           suites.each do |test_suite|
             puts "#{test_suite.id}\t#{test_suite.name}"
+            if options[:counts]
+              step_count_by_type = Hash.new 0
+              step_count = 0
+              test_suite.test_cases.each do |test_case|
+                test_case.steps.each do |step|
+                  step_count_by_type[step.type] += 1
+                  step_count += 1
+                end
+              end
+
+              case_count = test_suite.test_cases.size.to_s.rjust(6)
+              step_count = step_count.to_s.rjust(6)
+              steps = step_count_by_type.map { |k, v| "#{v.to_s.rjust(6)} #{k}s" }.join(', ')
+              puts "\t#{case_count} test cases\t#{step_count} steps: #{steps}"
+            end
           end
 
           if suites.empty?
