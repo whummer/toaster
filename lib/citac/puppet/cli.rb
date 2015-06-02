@@ -3,6 +3,9 @@ require_relative 'patches/expanded_relationships_fix'
 require_relative 'patches/graphml_generation'
 require_relative 'patches/resource_execution_hook'
 require_relative 'patches/resource_json_output'
+require_relative 'patches/catalog_execution_hook'
+require_relative '../commons/model/test'
+require_relative '../commons/utils/serialization'
 
 module Citac
   module Puppet
@@ -28,6 +31,13 @@ module Citac
 
                 puts "Tracing execution of '#{$citac_apply_single_resource_name}'..."
               end
+
+              args[0] = 'apply'
+              args.delete_at 1
+            end
+
+            if args[0] == 'apply-steps'
+              $__citac_steps = Citac::Utils::Serialization.load_from_file args[1]
 
               args[0] = 'apply'
               args.delete_at 1

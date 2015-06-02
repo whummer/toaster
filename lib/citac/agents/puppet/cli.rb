@@ -28,18 +28,18 @@ module Citac
           setup_workdir dir
 
           if options[:stepwise]
+            puts 'Generating dependency graph...'
             analyzation_task = AnalyzationTask.new 'script'
             graph = analyzation_task.execute :modulepath => 'modules'
 
+            puts 'Determining execution order...'
             resources = graph.toposort.map(&:label)
-            resources.each do |resource|
-              execution_task = ExecutionTask.new 'script', resource
-              execution_task.execute :modulepath => 'modules', :output => :passthrough
-            end
           else
-            task = ExecutionTask.new 'script', options[:resource]
-            task.execute :modulepath => 'modules', :output => :passthrough
+            resources = options[:resource]
           end
+
+          task = ExecutionTask.new 'script', resources
+          task.execute :modulepath => 'modules', :output => :passthrough
         end
 
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'

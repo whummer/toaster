@@ -14,6 +14,8 @@ module Citac
         if options[:resource]
           args += ['apply-single', options[:resource]]
           args += ['--trace', options[:trace_file]] if options[:trace_file]
+        elsif options[:step_file]
+          args += ['apply-steps', options[:step_file]]
         else
           args << 'apply'
         end
