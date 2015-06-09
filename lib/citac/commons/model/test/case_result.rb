@@ -40,14 +40,14 @@ module Citac
         @step_results = []
       end
 
-      def add_step_result(step, success, output)
+      def add_step_result(step, success, output, change_summary = nil)
         raise 'All results already added' if @step_results.size == @test_case.steps.size
 
         expected_step = @test_case.steps[@step_results.size]
         raise "Cannot add step result because '#{expected_step.name}' is expected instead of '#{step.name}'" unless step == expected_step
 
         result = success ? :success : :failure
-        @step_results << TestStepResult.new(step, result, output)
+        @step_results << TestStepResult.new(step, result, output, change_summary)
       end
 
       def finish

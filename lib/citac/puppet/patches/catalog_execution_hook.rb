@@ -48,9 +48,11 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
           raise "Step #{step} has unknown type: #{step.type}"
         end
 
-        success = __citac_run_step step, options
+        exit_code = __citac_run_step step, options
+        success = exit_code == 0
+        output = nil #TODO output will be captured later, but we could also fork here.
+
         if step.type == :exec
-          output = nil #TODO output cannot be captured?
           test_case_result.add_step_result step, success, output
         elsif step.type == :assert
           args = [state_file, trace_file, settings_file, summary_file]
@@ -61,7 +63,7 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
           puts change_summary unless change_summary.changes.empty?
 
           success &&= change_summary.changes.empty?
-          test_case_result.add_step_result step, success, change_summary.to_s #TODO serialize change summary
+          test_case_result.add_step_result step, success, output, change_summary
         end
 
         end_time = Time.now
@@ -93,6 +95,6 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
       exit_code = 0 if exit_code == 2
     end
 
-    exit_code == 0
+    exit_code
   end
 end
