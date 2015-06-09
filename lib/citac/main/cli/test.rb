@@ -85,6 +85,7 @@ module Citac
               step_count = step_count.to_s.rjust(6)
               steps = step_count_by_type.map { |k, v| "#{v.to_s.rjust(6)} #{k}s" }.join(', ')
               puts "\t#{case_count} test cases\t#{step_count} steps: #{steps}"
+              puts
             end
           end
 

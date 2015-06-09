@@ -38,12 +38,14 @@ module Citac
       end
 
       def self.run(command, options = {})
+        verbose = $verbose && (command.start_with?('citac') || (command.start_with?('strace') && command.include?('citac')))
+
         raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
-        passthrough_stdout = options[:output] == :passthrough || options[:stdout] == :passthrough
-        passthrough_stderr = options[:output] == :passthrough || options[:stderr] == :passthrough
+        passthrough_stdout = options[:output] == :passthrough || options[:stdout] == :passthrough || verbose
+        passthrough_stderr = options[:output] == :passthrough || options[:stderr] == :passthrough || verbose
 
         args = options[:args] || []
-        args << '-v' if $verbose && (command.start_with?('citac') || (command.start_with?('strace') && command.include?('citac')))
+        args << '-v' if verbose
         args = format_args args
 
         cmdline = "#{command} #{args}"

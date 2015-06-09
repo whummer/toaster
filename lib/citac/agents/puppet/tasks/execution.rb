@@ -23,16 +23,20 @@ module Citac
             if @resources.size == 1
               puppet_opts[:resource] = @resources[0]
             else
-              steps = []
+              test_case = Citac::Model::TestCase.new
               @resources.each do |resource|
-                steps << Citac::Model::TestStep.new(:exec, resource)
+                test_case.add_exec_step resource
               end
-              Citac::Utils::Serialization.write_to_file steps, 'steps.yml'
-              puppet_opts[:step_file] = 'steps.yml'
+              Citac::Utils::Serialization.write_to_file test_case, 'test_case.yml'
+              puppet_opts[:test_case_file] = 'test_case.yml'
+              puppet_opts[:test_case_result_file] = '/dev/null'
+              puppet_opts[:settings_file] = '/dev/null'
             end
           end
 
           Citac::Integration::Puppet.apply @manifest_path, puppet_opts
+        ensure
+          File.delete 'test_case.yml' if @resources && @resources.size > 1
         end
       end
     end

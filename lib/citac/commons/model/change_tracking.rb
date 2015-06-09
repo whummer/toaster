@@ -15,32 +15,22 @@ module Citac
     end
 
     class ChangeSummary
-      attr_reader :changes, :touches, :additional_data
+      attr_reader :changes, :additional_data
 
       def initialize
         @changes = Array.new
-        @touches = Array.new
         @additional_data = Hash.new
       end
 
       def to_s
-        result = StringIO.new
-
         if @changes.empty?
-          result.puts 'No changes.'
+          'No changes.'
         else
+          result = StringIO.new
           result.puts "#{@changes.size} changes:"
           @changes.each {|c| result.puts "  #{c}"}
+          result.string
         end
-
-        if @touches.empty?
-          result.puts 'No touches.'
-        else
-          result.puts "#{@touches.size} touches:"
-          @touches.each {|t| result.puts "  #{t}"}
-        end
-
-        result.string
       end
     end
 

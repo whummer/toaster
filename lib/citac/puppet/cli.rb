@@ -36,10 +36,14 @@ module Citac
               args.delete_at 1
             end
 
-            if args[0] == 'apply-steps'
-              $__citac_steps = Citac::Utils::Serialization.load_from_file args[1]
+            if args[0] == 'apply-test-case'
+              $__citac_test_case = Citac::Utils::Serialization.load_from_file args[1]
+              $__citac_test_case_result_file = args[2]
+              $__citac_test_case_settings_file = args[3]
 
               args[0] = 'apply'
+              args.delete_at 3
+              args.delete_at 2
               args.delete_at 1
             end
 

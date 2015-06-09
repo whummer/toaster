@@ -116,7 +116,7 @@ module Citac
             apply_opts[:trace_file] = trace_file
 
             args = Citac::Integration::Puppet.apply_args @manifest_path, apply_opts
-            args = [change_summary_path, settings_path, 'citac-puppet'] + args
+            args = ['track', change_summary_path, settings_path, 'citac-puppet'] + args
 
             exec_opts = options.dup
             exec_opts[:raise_on_failure] = false

@@ -1,6 +1,5 @@
-require_relative 'execution'
-require_relative 'assertion'
-require_relative '../../../commons/utils/colorize'
+require 'tmpdir'
+require_relative '../../../commons/utils/serialization'
 require_relative '../../../commons/integration/puppet'
 require_relative '../../../commons/model'
 
@@ -18,43 +17,30 @@ module Citac
         end
 
         def execute(options = {})
-          puppet_opts = options.dup
-          puppet_opts[:raise_on_failure] = false
+          Dir.mktmpdir do |dir|
+            test_case_file = File.join dir, 'test_case.yml'
+            test_case_result_file = File.join dir, 'test_case_result.yml'
+            settings_file = File.join dir, 'settings.yml'
 
-          test_case_result = Citac::Model::TestCaseResult.new @test_case
-          @test_case.steps.each_with_index do |step, index|
-            if step.type == :assert
-              puts "Step #{index + 1} / #{@test_case.steps.size}: #{step}: #{step.property}...".yellow
-            else
-              puts "Step #{index + 1} / #{@test_case.steps.size}: #{step}...".yellow
-            end
+            Citac::Utils::Serialization.write_to_file @test_case, test_case_file
 
-            case step.type
-              when :exec
-                task = ExecutionTask.new @manifest_path, step.resource
-                result = task.execute puppet_opts
-              when :assert
-                task = AssertionTask.new @manifest_path, step.resource
-                task.file_exclusion_patterns = @file_exclusion_patterns
-                task.state_exclusion_patterns = @state_exclusion_patterns
-                result = task.execute puppet_opts
-              else
-                raise "Unknown step type: #{step.type}"
-            end
+            change_tracking_settings = Citac::Model::ChangeTrackingSettings.new
+            change_tracking_settings.file_exclusion_patterns = @file_exclusion_patterns
+            change_tracking_settings.state_exclusion_patterns = @state_exclusion_patterns
+            change_tracking_settings.start_markers << /CITAC_RESOURCE_EXECUTION_START/
+            change_tracking_settings.end_markers << /CITAC_RESOURCE_EXECUTION_END/
+            Citac::Utils::Serialization.write_to_file change_tracking_settings, settings_file
 
-            test_case_result.add_step_result step, result.success?, result.output
-            if result.success?
-              puts 'OK'.green
-            else
-              puts 'FAIL'.red
-              $stdout.flush
-              $stderr.puts result
-              break
-            end
+            puppets_opts = options.dup
+            puppets_opts[:test_case_file] = test_case_file
+            puppets_opts[:test_case_result_file] = test_case_result_file
+            puppets_opts[:settings_file] = settings_file
+
+            Citac::Integration::Puppet.apply @manifest_path, puppets_opts
+
+            test_case_result = Citac::Utils::Serialization.load_from_file test_case_result_file
+            test_case_result
           end
-
-          test_case_result.finish
-          test_case_result
         end
       end
     end

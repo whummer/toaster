@@ -17,14 +17,45 @@ module Citac
     module Docker
       module ChangeTracker
         class << self
-          def track_changes(command, settings, options = {})
+          def capture_pre_state
+            snapshot_image = create_snapshot_image
+            transient_pre_state = capture_transient_state
+
+            return snapshot_image, transient_pre_state
+          end
+
+          def analyze(snapshot_image, transient_pre_state, accessed_files, syscalls, settings)
+            log_debug $prog_name, 'Starting to compare accessed files...'
+            start_time_file_compare = Time.now
+
             file_exclusion_patterns = (settings.file_exclusion_patterns || []).dup
             state_exclusion_patterns = (settings.state_exclusion_patterns || []).dup
             add_default_file_exclusion_patterns file_exclusion_patterns
             add_default_state_exclusion_patterns state_exclusion_patterns
 
-            snapshot_image = create_snapshot_image
-            transient_pre_state = capture_transient_state
+            accessed_files.reject! { |f| file_exclusion_patterns.any? { |p| f =~ p } }
+
+            change_summary = compare_files snapshot_image, accessed_files
+            change_summary.additional_data[:syscalls] = syscalls.join $/
+
+            log_debug $prog_name, "Compared accessed files: #{Time.now - start_time_file_compare} seconds"
+
+            transient_post_state = capture_transient_state
+
+            log_debug $prog_name, 'Starting to compare transient state...'
+            start_time_transient_state_compare = Time.now
+
+            add_transient_state_changes change_summary, transient_pre_state, transient_post_state, state_exclusion_patterns
+            change_summary.additional_data[:pre_state] = transient_pre_state
+            change_summary.additional_data[:post_state] = transient_post_state
+
+            log_debug $prog_name, "Compared transient state: #{Time.now - start_time_transient_state_compare} seconds"
+
+            change_summary
+          end
+
+          def track_changes(command, settings, options = {})
+            snapshot_image, transient_pre_state = capture_pre_state
 
             strace_opts = options.dup
             strace_opts[:start_markers] = settings.start_markers
@@ -38,20 +69,17 @@ module Citac
             accessed_files, result, syscalls = Citac::Integration::Strace.track_file_access command, strace_opts
             accessed_files.each {|f| log_debug $prog_name, "Accessed file: #{f}"}
 
-            accessed_files.reject! { |f| file_exclusion_patterns.any? { |p| f =~ p } }
-
-            transient_post_state = capture_transient_state
-
-            change_summary = compare_files snapshot_image, accessed_files
-            change_summary.additional_data[:syscalls] = syscalls.join $/
-
-            add_transient_state_changes change_summary, transient_pre_state, transient_post_state, state_exclusion_patterns
-            change_summary.additional_data[:pre_state] = transient_pre_state
-            change_summary.additional_data[:post_state] = transient_post_state
+            change_summary = analyze snapshot_image, transient_pre_state, accessed_files, syscalls, settings
 
             return change_summary, result
           ensure
             remove_snapshot_image snapshot_image
+          end
+
+          def remove_snapshot_image(image)
+            Citac::Integration::Docker.remove_image image if image
+          rescue StandardError => e
+            log_warn 'citac-changetracker-docker', "Failed to clean up snapshot image #{image}", e
           end
 
           private
@@ -71,12 +99,6 @@ module Citac
             tag = SecureRandom.uuid
 
             Citac::Integration::Docker.commit hostname, repository_name, tag
-          end
-
-          def remove_snapshot_image(image)
-            Citac::Integration::Docker.remove_image image if image
-          rescue StandardError => e
-            log_warn 'citac-changetracker-docker', "Failed to clean up snapshot image #{image}", e
           end
 
           def compare_files(snapshot_image, accessed_files)
@@ -108,7 +130,8 @@ module Citac
                 if pre.exists?
                   change_summary.changes << Citac::Model::Change.new(:file, :deleted, accessed_file)
                 else
-                  change_summary.touches << Citac::Model::Change.new(:file, :temp, accessed_file)
+                  # discard temporary files
+                  # change_summary.touches << Citac::Model::Change.new(:file, :temp, accessed_file)
                 end
               end
             end
@@ -119,7 +142,8 @@ module Citac
               pre = pre_hashes[hash_compare_file]
               post = post_hashes[hash_compare_file]
               if pre == post
-                change_summary.touches << Citac::Model::Change.new(:file, :touched, hash_compare_file)
+                # discard touched files
+                # change_summary.touches << Citac::Model::Change.new(:file, :touched, hash_compare_file)
               else
                 log_info $prog_name, "HASH MISMATCH '#{hash_compare_file}': '#{pre}' vs. '#{post}'"
                 change_summary.changes << Citac::Model::Change.new(:file, :changed, hash_compare_file)
@@ -205,7 +229,16 @@ module Citac
 
           def add_transient_state_changes(change_summary, pre_state, post_state, exclusion_patterns)
             Citac::Utils::JsonDiff.diff(pre_state, post_state, :state).each do |change|
-              change_summary.changes << change unless exclusion_patterns.any? {|p| change.subject =~ p}
+              exclusion_pattern_match = exclusion_patterns.any? do |p|
+                if p.is_a? Array
+                  subject_pattern, value_pattern = p
+                  (change.subject =~ subject_pattern) && ((change.old_value.to_s =~ value_pattern) || (change.new_value.to_s =~ value_pattern))
+                else
+                  change.subject =~ p
+                end
+              end
+
+              change_summary.changes << change unless exclusion_pattern_match
             end
           end
 
@@ -216,6 +249,7 @@ module Citac
             patterns << /^counters.*network/
             patterns << /^filesystem.*_(available)|(used)$/
             patterns << /^network.*arp$/
+            patterns << [/processes/, /\/opt\/citac\/bin\/docker\/citac-changetracker/]
           end
         end
       end
