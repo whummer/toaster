@@ -18,6 +18,8 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
 
   def __citac_apply_test_case(test_case, test_case_result_file, settings_file, options)
     Dir.mktmpdir do |dir|
+      settings = Citac::Utils::Serialization.load_from_file settings_file
+
       state_file = File.join dir, 'state.yml'
       trace_file = File.join dir, 'trace.txt'
       summary_file = File.join dir, 'change_summary.yml'
@@ -48,9 +50,8 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
           raise "Step #{step} has unknown type: #{step.type}"
         end
 
-        exit_code = __citac_run_step step, options
+        exit_code, output = __citac_run_step step, settings, options
         success = exit_code == 0
-        output = nil #TODO output will be captured later, but we could also fork here.
 
         if step.type == :exec
           test_case_result.add_step_result step, success, output
@@ -83,18 +84,55 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
     end
   end
 
-  def __citac_run_step(test_step, options)
-    $citac_apply_single = true
-    $citac_apply_single_resource_name = test_step.resource
+  def __citac_run_step(test_step, settings, options)
+    read_io, write_io = IO.pipe
 
-    begin
-      __citac_apply_original options
-      exit_code = 0
-    rescue SystemExit => e
-      exit_code = e.status
-      exit_code = 0 if exit_code == 2
+    cpid = fork
+    if cpid == nil
+      $stdout.reopen write_io
+      $stderr.reopen write_io
+
+      write_io = nil
+      read_io = nil
+
+      $citac_apply_single = true
+      $citac_apply_single_resource_name = test_step.resource
+
+      begin
+        __citac_apply_original options
+        exit_code = $citac_apply_single_failed ? 1 : 0
+      rescue SystemExit => e
+        exit_code = e.status
+        exit_code = 0 if exit_code == 2
+      end
+
+      exit! exit_code
+    else
+      captured_output = ''
+      capturer = Thread.new do
+        while line = read_io.gets
+          if settings.passthrough_output || $verbose
+            $stdout.puts line
+            $stdout.flush
+          end
+
+          line = line.no_colors
+          captured_output << line
+        end
+      end
+
+      _, status = Process.waitpid2 cpid
+      exit_code = status.exitstatus
+
+      write_io.close
+      write_io = nil
+
+      capturer.join
+
+      return exit_code, captured_output
     end
-
-    exit_code
+  ensure
+    write_io.close if write_io
+    read_io.close if read_io
   end
 end

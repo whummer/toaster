@@ -45,6 +45,7 @@ class Puppet::Transaction
           return_value = __citac_original_apply resource, ancestor
           failed = report.resource_statuses[resource.to_s].failed?
 
+          $citac_apply_single_failed = failed
           File.exist? "CITAC_RESOURCE_EXECUTION_END:#{!failed}:"
         end
       else
@@ -53,6 +54,7 @@ class Puppet::Transaction
         return_value = __citac_original_apply resource, ancestor
         failed = report.resource_statuses[resource.to_s].failed?
 
+        $citac_apply_single_failed = failed if intercepted
         File.exist? "CITAC_RESOURCE_EXECUTION_END:#{!failed}:" if intercepted
       end
     end

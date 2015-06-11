@@ -29,12 +29,14 @@ module Citac
             change_tracking_settings.state_exclusion_patterns = @state_exclusion_patterns
             change_tracking_settings.start_markers << /CITAC_RESOURCE_EXECUTION_START/
             change_tracking_settings.end_markers << /CITAC_RESOURCE_EXECUTION_END/
+            change_tracking_settings.passthrough_output = options[:output] == :passthrough
             Citac::Utils::Serialization.write_to_file change_tracking_settings, settings_file
 
             puppets_opts = options.dup
             puppets_opts[:test_case_file] = test_case_file
             puppets_opts[:test_case_result_file] = test_case_result_file
             puppets_opts[:settings_file] = settings_file
+            puppets_opts[:output] = :passthrough
 
             Citac::Integration::Puppet.apply @manifest_path, puppets_opts
 
