@@ -114,10 +114,10 @@ module Citac
           case_ids = parse_case_range test_suite, case_range
 
           results = Hash.new
-          case_ids.each do |case_id|
+          case_ids.each_with_index do |case_id, index|
             test_case = test_suite.test_case case_id
 
-            msg = "# #{test_case.name} #"
+            msg = "# #{test_case.name} (#{index + 1} / #{case_ids.size}) #"
             puts ''.ljust msg.size, '='
             puts msg
             puts ''.ljust msg.size, '='
@@ -142,7 +142,7 @@ module Citac
               test_case_result = results[case_id]
               status = test_case_result.colored_result
 
-              puts "#{status}  Test case #{case_id}: #{test_case.name}"
+              puts "#{status}  #{test_case.name}"
             end
           end
         end

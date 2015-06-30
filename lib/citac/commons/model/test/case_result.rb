@@ -65,7 +65,7 @@ module Citac
         result.puts '====================================================================='
         result.puts
         result.puts "Test Case: #{@test_case.name}"
-        result.puts "Result:    #{result.to_s.upcase}"
+        result.puts "Result:    #{self.result.to_s.upcase}"
         result.puts
         result.puts 'Steps:'
         @step_results.each_with_index {|s, i| result.puts "  #{i + 1}. #{s}"}
@@ -82,6 +82,13 @@ module Citac
             result.puts '############## OUTPUT START ##############'
             result.puts step_result.output
             result.puts '##############  OUTPUT END  ##############'
+          end
+
+          if step_result.change_summary
+            result.puts
+            result.puts '########## CHANGE SUMMARY START ##########'
+            result.puts step_result.change_summary
+            result.puts '##########  CHANGE SUMMARY END  ##########'
           end
           result.puts
         end
