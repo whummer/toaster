@@ -28,9 +28,14 @@ module Citac
                 test_case.add_exec_step resource
               end
               Citac::Utils::Serialization.write_to_file test_case, 'test_case.yml'
+
+              settings = Citac::Model::ChangeTrackingSettings.new
+              settings.passthrough_output = options[:output] == :passthrough
+              Citac::Utils::Serialization.write_to_file settings, 'settings.yml'
+
               puppet_opts[:test_case_file] = 'test_case.yml'
               puppet_opts[:test_case_result_file] = '/dev/null'
-              puppet_opts[:settings_file] = '/dev/null'
+              puppet_opts[:settings_file] = 'settings.yml'
             end
           end
 

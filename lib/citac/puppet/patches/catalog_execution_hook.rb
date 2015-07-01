@@ -18,7 +18,8 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
 
   def __citac_apply_test_case(test_case, test_case_result_file, settings_file, options)
     Dir.mktmpdir do |dir|
-      settings = Citac::Utils::Serialization.load_from_file settings_file
+      settings = File.exists?(settings_file) ? Citac::Utils::Serialization.load_from_file(settings_file) : nil
+      settings ||= Citac::Model::ChangeTrackingSettings.new
 
       state_file = File.join dir, 'state.yml'
       trace_file = File.join dir, 'trace.txt'
@@ -131,6 +132,9 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
 
       return exit_code, captured_output
     end
+  rescue StandardError => e
+    log_error $prog_name, "Failed to run step '#{test_step}'.", e
+    raise r
   ensure
     write_io.close if write_io
     read_io.close if read_io
