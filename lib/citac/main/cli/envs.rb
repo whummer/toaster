@@ -10,9 +10,12 @@ module Citac
           @env_mgr = ServiceLocator.environment_manager
         end
 
+        option :passthrough, :aliases => :p, :type => :boolean, :desc => 'Shows build process.'
         desc 'setup', 'Creates all environments.'
         def setup
-          @env_mgr.setup
+          opts = Hash.new
+          opts[:output] = :passthrough if options[:passthrough]
+          @env_mgr.setup opts
         end
 
         desc 'list', 'Lists all available environments.'

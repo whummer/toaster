@@ -14,15 +14,15 @@ module Citac
     class DockerEnvironmentManager
       include EnvironmentManagerExtensions
 
-      def setup
+      def setup(options = {})
         puts 'Building docker images...'
-        setup_images
+        setup_images options
 
         puts 'Setting up strace permissions...'
         setup_strace_permissions
       end
 
-      def setup_images
+      def setup_images(options = {})
         image_dir = File.join Citac::Config.base_dir, 'ext', 'docker', 'images'
         Dir.entries(image_dir).select{|d| File.directory?(File.join(image_dir, d))}.sort.each do |type_dir|
           next if type_dir == '.' || type_dir == '..'
@@ -35,7 +35,11 @@ module Citac
             dir = File.join image_dir, type_dir, os_dir
 
             puts "Setting up image '#{name}'...".yellow
-            result = Citac::Utils::Exec.run 'docker build', :args => ['-t', name, dir], :raise_on_failure => false
+            exec_opts = options.dup
+            exec_opts[:args] = ['-t', name, dir]
+            exec_opts[:raise_on_failure] = false
+
+            result = Citac::Utils::Exec.run 'docker build', exec_opts
             if result.success?
               puts 'OK'.green
             else
