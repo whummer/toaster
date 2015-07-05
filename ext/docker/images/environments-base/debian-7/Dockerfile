@@ -2,6 +2,8 @@ FROM debian:wheezy
 
 # Required Packages
 
+COPY sources.list /etc/apt/sources.list
+
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -qy ca-certificates wget curl build-essential net-tools lsb-release
 
