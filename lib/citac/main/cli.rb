@@ -7,6 +7,7 @@ require_relative 'cli/puppet'
 require_relative 'cli/envs'
 require_relative 'cli/cache'
 require_relative 'cli/graphs'
+require_relative 'cli/eval'
 require_relative '../version'
 require_relative 'ioc'
 
@@ -34,6 +35,9 @@ module Citac
 
         desc 'graphs <command> <args...>', 'Commands for generated graphs of configuration specifications.'
         subcommand 'graphs', Graphs
+
+        desc 'eval <command> <args...>', 'Large scale evaluation related commands.'
+        subcommand 'eval', Eval
 
         desc 'clear [<spec1> <spec2> ...]', 'Clears all saved data for the given configuration specifications.'
         def clear(*specs)
