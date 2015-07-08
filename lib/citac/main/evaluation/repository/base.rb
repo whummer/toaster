@@ -1,21 +1,16 @@
 require 'fileutils'
-require_relative '../config'
-require_relative '../../commons/utils/exec'
-require_relative '../../commons/utils/colorize'
-require_relative '../../commons/utils/serialization'
-require_relative 'model'
+require_relative '../../config'
+require_relative '../../../commons/utils/exec'
+require_relative '../../../commons/utils/colorize'
+require_relative '../../../commons/utils/serialization'
+require_relative '../model'
 
 module Citac
   module Main
     module Evaluation
       class TaskRepository
-        def initialize(root_dir)
-          raise "Root directory '#{root_dir}' not found." unless Dir.exists? root_dir
-          @root_dir = File.absolute_path root_dir
-        end
-
         def assign_next_task(agent_name)
-          entries = Dir.entries @root_dir
+          entries = get_directory_list
 
           alltasks = entries.map{|e| parse_task_description e}.reject{|d| d.nil?}
           tasks = alltasks.reject{|td| td.state == :cancelled || td.state == :failed}
@@ -38,17 +33,21 @@ module Citac
         end
 
         def load_spec(task_description, agent_name)
-          sync_dirs task_description, get_local_path(task_description)
+          directory_name = task_description.dir_name_running
+          local_path = get_local_path(task_description)
+
+          sync_remote_to_local directory_name, local_path
           sync_spec_status task_description, agent_name
         end
 
         def sync_spec_status(task_description, agent_name)
           local_path = get_local_path(task_description)
+          directory_name = task_description.dir_name_running
 
           status_path = File.join local_path, 'evaluation-status.yml'
           Citac::Utils::Serialization.write_to_file TaskStatus.new(Time.now, agent_name), status_path
 
-          sync_dirs local_path, task_description
+          sync_local_to_remote local_path, directory_name
         end
 
         def return_task(task_description, task_result)
@@ -94,11 +93,7 @@ module Citac
           while tasks.size > 0
             task = tasks[rand(tasks.size)]
             begin
-              source_dir = File.join @root_dir, task.dir_name
-              target_dir = File.join @root_dir, task.dir_name_running
-
-              puts "Renaming dir from '#{task.dir_name}' to '#{task.dir_name_running}'..."
-              File.rename source_dir, target_dir
+              rename_directory task.dir_name, task.dir_name_running
 
               return task
             rescue StandardError => e
@@ -110,38 +105,12 @@ module Citac
           return nil
         end
 
-        def get_path(task_description)
-          path = File.join @root_dir, task_description.dir_name_running
-          path[-1] = '' if path[-1] == '/'
-          path
-        end
-
         def get_local_path(task_description)
           File.join Citac::Config.spec_dir, "#{task_description.spec_id}.spec"
         end
 
-        def sync_dirs(source_dir, target_dir)
-          if source_dir.respond_to? :dir_name
-            source_path = get_path(source_dir) + '/'
-          else
-            source_path = source_dir.to_s
-            source_path << '/' unless source_path[-1] == '/'
-          end
-
-          if target_dir.respond_to? :dir_name
-            target_path = get_path target_dir
-          else
-            target_path = target_dir.to_s
-            target_path[-1] = '' if target_path[-1] == '/'
-          end
-
-          Citac::Utils::Exec.run 'rsync', :args => ['-a', '-v', '--delete', source_path, target_path]
-        end
-
         def finalize_task(task_description, task_result, target_name)
           local_path = get_local_path task_description
-          source_path = File.join @root_dir, task_description.dir_name_running
-          target_path = File.join @root_dir, target_name
 
           results_path = File.join local_path, 'evalulation-results.yml'
           results = File.exists?(results_path) ? Citac::Utils::Serialization.load_from_file(results_path) : []
@@ -152,7 +121,8 @@ module Citac
           File.open(results_text_path, 'a', :encoding => 'UTF-8') {|f| f.puts task_result}
 
           sync_spec_status task_description, task_result.agent_name
-          File.rename source_path, target_path
+
+          rename_directory task_description.dir_name_running, target_name
         end
       end
     end

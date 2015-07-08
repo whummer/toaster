@@ -6,7 +6,7 @@ require_relative '../tasks/testing'
 require_relative '../../commons/utils/colorize'
 require_relative '../../commons/utils/range'
 require_relative '../evaluation/agent'
-require_relative '../evaluation/task_repository'
+require_relative '../evaluation/repository'
 
 module Citac
   module Main
@@ -16,7 +16,8 @@ module Citac
           super
 
           @spec_repository = ServiceLocator.specification_repository
-          @task_repository = Citac::Main::Evaluation::TaskRepository.new '/home/oliver/Temp/evaktasks'
+          #@task_repository = Citac::Main::Evaluation::LocalTaskRepository.new '/home/oliver/Temp/evaktasks'
+          @task_repository = Citac::Main::Evaluation::SshTaskRepository.new 'citac01.cloudapp.net', 'citac', '/citac-eval'
           @env_mgr = ServiceLocator.environment_manager
           @agent = Citac::Main::Evaluation::EvaluationAgent.new @task_repository, @spec_repository, @env_mgr
           # @spec_service = ServiceLocator.specification_service
