@@ -1,4 +1,5 @@
 require_relative '../../commons/utils/exec'
+require_relative '../../commons/utils/colorize'
 
 module Citac
   module Main
@@ -47,10 +48,12 @@ module Citac
             run = @repository.save_run task.spec, operating_system, task.type, result, start_time, end_time
 
             task_result = nil
-            task_result = task.after_execution dir, operating_system, result, run if result.success? && task.respond_to?(:after_execution)
+            task_result = task.after_execution dir, operating_system, result, run if task.respond_to?(:after_execution)
 
-            unless result.success?
-              raise "Execution of '#{task.spec}' (#{task.type}) on '#{operating_system}' failed.#{$/}#{result.output}"
+            if result.success?
+              log_debug 'exec-mgr', "Execution of '#{task.spec}' (#{task.type}) on '#{operating_system}' successful."
+            else
+              log_debug 'exec-mgr', "Execution of '#{task.spec}' (#{task.type}) on '#{operating_system}' failed.#{$/}#{result.output}"
             end
 
             task_result

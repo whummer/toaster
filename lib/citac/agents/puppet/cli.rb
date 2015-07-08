@@ -2,6 +2,7 @@ require 'thor'
 require_relative '../../commons/logging'
 require_relative '../../commons/model'
 require_relative '../../commons/utils/serialization'
+require_relative '../../commons/utils/colorize'
 require_relative 'tasks/analyzation'
 require_relative 'tasks/execution'
 require_relative 'tasks/test'
@@ -18,6 +19,7 @@ module Citac
           task = AnalyzationTask.new 'script'
           graph = task.execute :modulepath => 'modules'
 
+          puts "Dependency graph generated: #{graph.nodes.size} nodes."
           IO.write 'dependencies.graphml', graph.to_graphml, :encoding => 'UTF-8'
         end
 
@@ -39,7 +41,13 @@ module Citac
           end
 
           task = ExecutionTask.new 'script', resources
-          task.execute :modulepath => 'modules', :output => :passthrough
+          success = task.execute :modulepath => 'modules', :output => :passthrough
+          if success
+            puts 'Execution of configuration specification successful.'.green
+          else
+            puts 'Execution of configuration specification failed.'.red
+            exit 1
+          end
         end
 
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'

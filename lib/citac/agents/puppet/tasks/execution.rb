@@ -39,7 +39,8 @@ module Citac
             end
           end
 
-          Citac::Integration::Puppet.apply @manifest_path, puppet_opts
+          run_result = Citac::Integration::Puppet.apply @manifest_path, puppet_opts
+          run_result.success?
         ensure
           File.delete 'test_case.yml' if @resources && @resources.size > 1
         end

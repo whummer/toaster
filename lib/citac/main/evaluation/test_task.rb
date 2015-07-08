@@ -4,11 +4,12 @@ module Citac
   module Main
     module Evaluation
       class TestTask
-        def initialize(task_description, spec_repository, task_repository, type)
+        def initialize(task_description, spec_repository, task_repository, type, agent_name)
           @spec_repository = spec_repository
           @task_repository = task_repository
           @task_description = task_description
           @type = type
+          @agent_name = agent_name
         end
 
         def execute
@@ -18,12 +19,12 @@ module Citac
             args = ['test', 'exec', spec.id, os, index]
 
             result = Citac::Utils::Exec.run 'citac', :args => args, :output => :passthrough, :raise_on_failure => false
-            @task_repository.sync_spec_progress @task_description
+            @task_repository.sync_spec_status @task_description, @agent_name
 
-            return false if result.failure?
+            return :failure if result.failure?
           end
 
-          return true
+          return :success_completed
         end
       end
     end

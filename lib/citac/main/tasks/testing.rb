@@ -31,6 +31,8 @@ module Citac
         end
 
         def after_execution(dir, operating_system, result, run)
+          raise "Testing #{@spec} (test suite #{@test_suite}, test case #{@test_case}) failed: #{result.output}" if result.failure?
+
           path = File.join dir, 'test_case_result.yml'
           test_case_result = Citac::Utils::Serialization.load_from_file path
 

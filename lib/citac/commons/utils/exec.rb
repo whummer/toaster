@@ -108,6 +108,58 @@ module Citac
         end
       end
 
+      def self.fork(options = {})
+        read_io, write_io = IO.pipe
+
+        cpid = Kernel.fork
+        if cpid == nil
+          begin
+            $stdout.reopen write_io
+            $stderr.reopen write_io
+
+            write_io = nil
+            read_io = nil
+
+            yield
+
+            exit! 0
+          rescue Exception => e
+            if $verbose
+              $stderr.puts "Fork failed: #{e.message}"
+              $stderr.puts e.backtrace
+            end
+
+            exit! 1
+          end
+        else
+          captured_output = ''
+          capturer = Thread.new do
+            while line = read_io.gets
+              if options[:output] == :passthrough || $verbose
+                $stdout.puts line
+                $stdout.flush
+              end
+
+              line = line.no_colors
+              captured_output << line
+            end
+          end
+
+          _, status = Process.waitpid2 cpid
+          exit_code = status.exitstatus
+
+          write_io.close
+          write_io = nil
+
+          capturer.join
+
+          return RunResult.new captured_output, exit_code, captured_output, nil
+        end
+      ensure
+        write_io.close if write_io
+        read_io.close if read_io
+      end
+
       def self.which(executable)
         @which_cache = Hash.new unless @which_cache
         path = @which_cache[executable]

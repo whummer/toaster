@@ -16,14 +16,14 @@ module Citac
           env.operating_system
         end
 
-        def dependency_graph(spec, operating_system)
+        def dependency_graph(spec, operating_system, options = {})
           unless operating_system && operating_system.specific?
             operating_system = get_specific_operating_system spec, operating_system
           end
 
-          unless @repository.has_dependency_graph? spec, operating_system
+          if !@repository.has_dependency_graph?(spec, operating_system) || options[:force_regeneration]
             task = Citac::Main::Tasks::AnalyzationTask.new @repository, spec
-            @execution_manager.execute task, operating_system
+            @execution_manager.execute task, operating_system, options
           end
 
           graph = @repository.dependency_graph spec, operating_system

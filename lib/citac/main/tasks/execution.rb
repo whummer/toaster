@@ -19,6 +19,10 @@ module Citac
           result << '-s' if @stepwise
           result
         end
+
+        def after_execution(dir, operating_system, result, run)
+          result
+        end
       end
     end
   end

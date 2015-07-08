@@ -67,8 +67,10 @@ module Citac
           spec = @repo.get spec_id
           os = Citac::Model::OperatingSystem.parse os if os
 
-          task = Citac::Main::Tasks::AnalyzationTask.new @repo, spec
-          @exec_mgr.execute task, os, :output => :passthrough
+          opts = {:output => :passthrough}
+          opts[:force_regeneration] = true if options[:force]
+
+          @spec_service.dependency_graph spec, os, opts
         end
 
         option :stepwise, :aliases => :s, :type => :boolean, :desc => 'Enables stepwise execution.'
@@ -80,7 +82,8 @@ module Citac
           task = Citac::Main::Tasks::ExecutionTask.new spec
           task.stepwise = options[:stepwise]
 
-          @exec_mgr.execute task, os, :output => :passthrough
+          run_result = @exec_mgr.execute task, os, :output => :passthrough
+          exit 1 if run_result.failure?
         end
       end
     end

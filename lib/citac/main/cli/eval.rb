@@ -16,8 +16,9 @@ module Citac
           super
 
           @spec_repository = ServiceLocator.specification_repository
-          @task_repository = Citac::Main::Evaluation::TaskRepository.new '/tmp/evaltasks'
-          @agent = Citac::Main::Evaluation::EvaluationAgent.new @task_repository, @spec_repository
+          @task_repository = Citac::Main::Evaluation::TaskRepository.new '/home/oliver/Temp/evaktasks'
+          @env_mgr = ServiceLocator.environment_manager
+          @agent = Citac::Main::Evaluation::EvaluationAgent.new @task_repository, @spec_repository, @env_mgr
           # @spec_service = ServiceLocator.specification_service
           # @exec_mgr = ServiceLocator.execution_manager
           # @env_mgr = ServiceLocator.environment_manager
