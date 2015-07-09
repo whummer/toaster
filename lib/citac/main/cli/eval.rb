@@ -2,6 +2,8 @@ require 'thor'
 require_relative '../ioc'
 require_relative '../evaluation/agent'
 require_relative '../evaluation/repository'
+require_relative '../../commons/utils/exec'
+require_relative '../../commons/utils/colorize'
 
 module Citac
   module Main
@@ -25,7 +27,15 @@ module Citac
             spec_repository = ServiceLocator.specification_repository
             env_mgr = ServiceLocator.environment_manager
 
+            ensure_cache_running
+
             Citac::Main::Evaluation::EvaluationAgent.new task_repository, spec_repository, env_mgr
+          end
+
+          def ensure_cache_running
+            Citac::Utils::Exec.run 'citac', :args => %w(cache enable)
+          rescue Exception => e
+            puts "Starting cache failed: #{e}".red
           end
 
           def create_repository(connection)
