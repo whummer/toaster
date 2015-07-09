@@ -9,18 +9,33 @@ require_relative 'base'
 module Citac
   module Main
     module Evaluation
-      #TODO implement retries
-
       class SshTaskRepository < TaskRepository
+        attr_accessor :retry_count, :retry_delay
+
         def initialize(host, user, root_dir)
           @host = host
           @user = user
           @root_dir = root_dir
+
+          @retry_count = 3
+          @retry_delay = 10
         end
 
         def get_directory_list
           result = Citac::Utils::Exec.run 'ssh', :args => ["#{@user}@#{@host}", 'ls', '-1', '-a', @root_dir]
-          result.stdout.lines.map{|l| l.strip}.select{|l| l.length > 0}.to_a
+          return result.stdout.lines.map{|l| l.strip}.select{|l| l.length > 0}.to_a
+        rescue StandardError => e
+          retries ||= 0
+          retries += 1
+
+          if retries < @retry_count
+            puts "Getting directory list failed: #{e.message}. Retrying in #{@retry_delay} seconds..."
+            sleep @retry_delay
+            retry
+          else
+            puts "Failed #{@retry_count} times."
+            raise e
+          end
         end
 
         def rename_directory(old_name, new_name)
@@ -30,6 +45,18 @@ module Citac
           target_dir = File.join @root_dir, new_name
 
           Citac::Utils::Exec.run 'ssh', :args => ["#{@user}@#{@host}", 'mv', source_dir, target_dir]
+        rescue StandardError => e
+          retries ||= 0
+          retries += 1
+
+          if retries < @retry_count
+            puts "Renaming directory '#{old_name}' -> '#{new_name}' failed: #{e.message}. Retrying in #{@retry_delay} seconds..."
+            sleep @retry_delay
+            retry
+          else
+            puts "Failed #{@retry_count} times."
+            raise e
+          end
         end
 
         def sync_remote_to_local(directory_name, local_path)
@@ -54,6 +81,18 @@ module Citac
           target_path[-1] = '' if target_path[-1] == '/'
 
           Citac::Utils::Exec.run 'rsync', :args => ['-a', '-z', '-v', '--delete', '-e', 'ssh', source_path, target_path]
+        rescue StandardError => e
+          retries ||= 0
+          retries += 1
+
+          if retries < @retry_count
+            puts "Syncing directories '#{source_dir}' -> '#{target_dir}' failed: #{e.message}. Retrying in #{@retry_delay} seconds..."
+            sleep @retry_delay
+            retry
+          else
+            puts "Failed #{@retry_count} times."
+            raise e
+          end
         end
       end
     end
