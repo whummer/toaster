@@ -1,10 +1,5 @@
 require 'thor'
 require_relative '../ioc'
-require_relative '../core/test_case_generators/simple'
-require_relative '../core/test_case_generators/stg_based'
-require_relative '../tasks/testing'
-require_relative '../../commons/utils/colorize'
-require_relative '../../commons/utils/range'
 require_relative '../evaluation/agent'
 require_relative '../evaluation/repository'
 
@@ -12,24 +7,43 @@ module Citac
   module Main
     module CLI
       class Eval < Thor
-        def initialize(*args)
-          super
-
-          @spec_repository = ServiceLocator.specification_repository
-          @task_repository = Citac::Main::Evaluation::LocalTaskRepository.new '/home/oliver/Temp/evaltasks'
-          #@task_repository = Citac::Main::Evaluation::SshTaskRepository.new 'citac01.cloudapp.net', 'citac', '/citac-eval'
-          @env_mgr = ServiceLocator.environment_manager
-          @agent = Citac::Main::Evaluation::EvaluationAgent.new @task_repository, @spec_repository, @env_mgr
+        desc 'once <connection>', 'Executes a single evaluation task'
+        def once(connection)
+          agent = create_agent connection
+          agent.run_once
         end
 
-        desc 'once', 'Executes a single evaluation task'
-        def once
-          @agent.run_once
+        desc 'agent <connection>', 'Executes evaluation tasks continuously.'
+        def agent(connection)
+          agent = create_agent connection
+          agent.run
         end
 
-        desc 'agent', 'Executes evaluation tasks continuously.'
-        def agent
-          @agent.run
+        no_commands do
+          def create_agent(connection)
+            task_repository = create_repository connection
+            spec_repository = ServiceLocator.specification_repository
+            env_mgr = ServiceLocator.environment_manager
+
+            Citac::Main::Evaluation::EvaluationAgent.new task_repository, spec_repository, env_mgr
+          end
+
+          def create_repository(connection)
+            case
+              when connection.start_with?('local:')
+                match = /^local:(?<path>.+)$/i.match connection
+                raise "Wrong LOCAL connection identifier: #{connection}" unless match
+                return Citac::Main::Evaluation::LocalTaskRepository.new match[:path]
+
+              when connection.start_with?('ssh:')
+                match = /^ssh:(?<user>[^@]+)@(?<host>[^:]+):(?<path>.+)$/i.match connection
+                raise "Wrong SSH connection identifier: #{connection}" unless match
+                return Citac::Main::Evaluation::SshTaskRepository.new match[:host], match[:user], match[:path]
+
+              else
+                raise "Unknown connection identifier: #{connection}"
+            end
+          end
         end
       end
     end
