@@ -1,8 +1,0 @@
-{
-  "type": "puppet",
-  "operating-systems": [
-    "ubuntu-14.04",
-    "debian-7",
-    "centos-7"
-  ]
-}
