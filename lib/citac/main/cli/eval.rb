@@ -16,13 +16,10 @@ module Citac
           super
 
           @spec_repository = ServiceLocator.specification_repository
-          #@task_repository = Citac::Main::Evaluation::LocalTaskRepository.new '/home/oliver/Temp/evaktasks'
-          @task_repository = Citac::Main::Evaluation::SshTaskRepository.new 'citac01.cloudapp.net', 'citac', '/citac-eval'
+          @task_repository = Citac::Main::Evaluation::LocalTaskRepository.new '/home/oliver/Temp/evaltasks'
+          #@task_repository = Citac::Main::Evaluation::SshTaskRepository.new 'citac01.cloudapp.net', 'citac', '/citac-eval'
           @env_mgr = ServiceLocator.environment_manager
           @agent = Citac::Main::Evaluation::EvaluationAgent.new @task_repository, @spec_repository, @env_mgr
-          # @spec_service = ServiceLocator.specification_service
-          # @exec_mgr = ServiceLocator.execution_manager
-          # @env_mgr = ServiceLocator.environment_manager
         end
 
         desc 'once', 'Executes a single evaluation task'

@@ -1,8 +1,5 @@
 require_relative '../../commons/utils/exec'
-require_relative 'execution_task'
-require_relative 'analyzation_task'
-require_relative 'generation_task'
-require_relative 'test_task'
+require_relative 'tasks'
 require_relative 'model'
 
 module Citac
@@ -27,7 +24,11 @@ module Citac
           puts 'Starting agent...'
           while true
             begin
-              run_once
+              task = run_once
+              unless task
+                puts 'No task found. Waiting 10 seconds...'
+                sleep 10
+              end
             rescue Interrupt
               puts 'Shutting down...'
               break
@@ -68,6 +69,16 @@ module Citac
                 raise "Unknown result: #{result}"
             end
           end
+
+          task_description
+        rescue Interrupt => e
+          if task_description
+            puts 'Returning task to task pool because of cancellation...'
+            task_result ||= TaskResult.new :cancelled, @name, start_time, Time.now, 'Cancelled.'
+            @task_repository.return_task task_description, task_result
+          end
+
+          raise e
         end
 
         private
@@ -75,13 +86,12 @@ module Citac
         def run_task(task_description)
           start = Time.now
 
-          puts '============================================================='.yellow
-          puts '============================================================='.yellow
-          puts "Running #{task_description}...".yellow
           puts
-          puts "Agent: #{@name}".yellow
-          puts "Start: #{start}".yellow
           puts '============================================================='.yellow
+          puts "# Running #{task_description}...".yellow
+          puts '#'.yellow
+          puts "# Agent: #{@name}".yellow
+          puts "# Start: #{start}".yellow
           puts '============================================================='.yellow
           puts
 
@@ -110,14 +120,13 @@ module Citac
 
           puts
           puts '============================================================='.yellow
+          puts "# Finished #{task_description}!".yellow
+          puts '#'.yellow
+          puts "# End:    #{finish}".yellow
+          puts "# Time:   #{finish - start} seconds".yellow
+          puts "#{'# Result: '.yellow}#{formatted_result}"
           puts '============================================================='.yellow
-          puts "Finished #{task_description}!".yellow
           puts
-          puts "End:    #{finish}".yellow
-          puts "Time:   #{finish - start} seconds".yellow
-          puts "#{'Result: '.yellow}#{formatted_result}"
-          puts '============================================================='.yellow
-          puts '============================================================='.yellow
 
           return result
         end
@@ -131,17 +140,17 @@ module Citac
               task = ExecutionTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name
               task.stepwise = true
             when :analyze
-              task = AnalyzationTask.new task_description, @spec_repository, @task_repository, @name
+              task = AnalyzationTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name
             when :analyze
-              task = AnalyzationTask.new task_description, @spec_repository, @task_repository, @name
+              task = AnalyzationTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name
             when :generate_base
-              task = GenerationTask.new task_description, @spec_repository, @task_repository, :base, @name
+              task = GenerationTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name, :base
             when :generate_stg
-              task = GenerationTask.new task_description, @spec_repository, @task_repository, :stg, @name
+              task = GenerationTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name, :stg
             when :test_base
-              task = TestTask.new task_description, @spec_repository, @task_repository, :base, @name
+              task = TestTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name, :base
             when :test_stg
-              task = TestTask.new task_description, @spec_repository, @task_repository, :stg, @name
+              task = TestTask.new task_description, @spec_repository, @task_repository, @environment_manager, @name, :stg
             else
               raise "Unknown task type: #{task_description.type}"
           end

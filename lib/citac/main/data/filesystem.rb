@@ -225,9 +225,11 @@ module Citac
 
       def test_suite_results(spec, os, test_suite)
         dir = test_suite_dir spec, os, test_suite
-        return nil unless Dir.exists? dir
+        path = File.join(dir, 'test-suite-result.yml')
 
-        Citac::Utils::Serialization.load_from_file File.join(dir, 'test-suite-result.yml')
+        update_test_suite_result(spec, os, test_suite) {} unless File.exists? path
+
+        Citac::Utils::Serialization.load_from_file path
       end
 
       private

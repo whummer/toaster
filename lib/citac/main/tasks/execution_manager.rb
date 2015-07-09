@@ -26,9 +26,11 @@ module Citac
               flags += task.additional_args if task.respond_to? :additional_args
               flags = Citac::Utils::Exec.format_args flags
 
+              command = task.respond_to?(:command) ? task.command : task.type
+
               f.puts '#!/bin/sh'
               f.puts 'cd /tmp/citac'
-              f.puts "citac-agent-#{task.spec.type} #{task.type} #{flags}"
+              f.puts "citac-agent-#{task.spec.type} #{command} #{flags}"
             end
 
             script_path = File.join dir, 'script'

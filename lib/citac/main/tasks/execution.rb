@@ -6,6 +6,10 @@ module Citac
         attr_accessor :stepwise
 
         def type
+          @stepwise ? :exec_stepwise : :exec
+        end
+
+        def command
           :exec
         end
 

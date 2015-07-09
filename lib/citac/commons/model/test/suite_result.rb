@@ -26,6 +26,15 @@ module Citac
         return :success if results.include? :success
         return :unknown
       end
+
+      def overall_suite_result
+        @test_suite.test_cases.each do |test_case|
+          test_case_result = overall_case_result test_case
+          return test_case_result if test_case_result == :failure || test_case_result == :unknown
+        end
+
+        return :success
+      end
     end
   end
 end

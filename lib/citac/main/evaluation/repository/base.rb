@@ -51,7 +51,7 @@ module Citac
         end
 
         def return_task(task_description, task_result)
-          finalize_task task_description, task_result, task_description.dir_name
+          finalize_task task_description, task_result, task_description.dir_name_pending
         end
 
         def save_completed_task(task_description, task_result)
@@ -76,6 +76,7 @@ module Citac
             type = match[:type].to_sym
             state = match[:state].to_sym
 
+            return nil if state == :running
             return TaskDescription.new type, match[:name], dir_name, state
           elsif dir_name.end_with? '.spec'
             return nil if dir_name.start_with? 'finished__'

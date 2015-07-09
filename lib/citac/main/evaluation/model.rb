@@ -18,6 +18,10 @@ module Citac
           @state = state
         end
 
+        def dir_name_pending
+          "pending__#{@type}__#{@spec_id}.spec"
+        end
+
         def dir_name_running
           "running__#{@type}__#{@spec_id}.spec"
         end

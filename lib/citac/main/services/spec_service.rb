@@ -21,7 +21,7 @@ module Citac
             operating_system = get_specific_operating_system spec, operating_system
           end
 
-          if !@repository.has_dependency_graph?(spec, operating_system) || options[:force_regeneration]
+          if (!@repository.has_dependency_graph?(spec, operating_system)) || options[:force_regeneration]
             task = Citac::Main::Tasks::AnalyzationTask.new @repository, spec
             @execution_manager.execute task, operating_system, options
           end
