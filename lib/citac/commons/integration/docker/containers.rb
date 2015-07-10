@@ -43,6 +43,7 @@ module Citac
 
             parameters = ['-i']
             parameters << '--rm' unless options[:keep_container]
+            parameters += ['-e', "LANG=#{options[:locale]}"] if options[:locale]
             parameters += ['--cidfile', cidfile]
             parameters += mounts_to_parameters options[:mounts] if options[:mounts]
             parameters << image_id

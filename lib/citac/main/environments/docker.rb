@@ -95,9 +95,18 @@ module Citac
         mounts << ['/var/run/docker.sock', '/var/run/docker.sock', false]
         mounts << [script_dir, '/tmp/citac', true]
 
+        if env.operating_system.name == 'debian' || env.operating_system.name == 'ubuntu'
+          locale = 'C.UTF-8'
+        elsif env.operating_system.name == 'centos'
+          locale = 'en_US.utf8'
+        else
+          locale = nil
+        end
+
         env_id = env.respond_to?(:id) ? env.id : env.to_s
         output = Citac::Integration::Docker.run env_id, "/tmp/citac/#{script_name}",
                                    :mounts => mounts,
+                                   :locale => locale,
                                    :output => options[:output],
                                    :raise_on_failure => options[:raise_on_failure],
                                    :keep_container => !cleanup_instance
