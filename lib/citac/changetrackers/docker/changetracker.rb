@@ -248,8 +248,9 @@ module Citac
             patterns << /time/
             patterns << /^counters.*network/
             patterns << /^filesystem.*_(available)|(used)$/
-            patterns << /^network.*arp$/
+            patterns << /^network.*arp/
             patterns << [/processes/, /\/opt\/citac\/bin\/docker\/citac-changetracker/]
+            patterns << /kernel\.modules\.aufs\.refcount/
           end
         end
       end
