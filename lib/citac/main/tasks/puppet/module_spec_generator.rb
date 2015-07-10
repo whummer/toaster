@@ -8,7 +8,10 @@ module Citac
           def generate(module_name, version = nil)
             puts 'Setting up file structure...'
 
-            spec_dir = "#{module_name}.spec"
+            mod = Citac::Puppet::Forge::PuppetForgeClient.get_module module_name
+            version ||= mod.current_version
+
+            spec_dir = "#{module_name}-#{version}.spec"
             module_dir = File.join spec_dir, 'files', 'modules'
 
             FileUtils.mkdir_p spec_dir
@@ -17,7 +20,6 @@ module Citac
 
             puts 'Generating metadata...'
 
-            mod = Citac::Puppet::Forge::PuppetForgeClient.get_module module_name
             metadata = {
                 'type' => 'puppet',
                 'operating-systems' => mod.operating_systems.map { |os| os.to_s }

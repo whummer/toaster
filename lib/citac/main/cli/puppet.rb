@@ -32,15 +32,15 @@ module Citac
           unless options[:quiet]
             count = 0
 
-            puts "downloads\tversions\tmodule"
-            puts "---------\t--------\t------"
+            puts "downloads\tversions\tcurrent version\t\tmodule"
+            puts "---------\t--------\t---------------\t\t------"
           end
 
           Citac::Puppet::Forge::PuppetForgeClient.each_module query, query_options do |mod|
             if options[:quiet]
-              puts mod.full_name
+              puts "#{mod.full_name} #{mod.current_version}"
             else
-              puts "#{mod.downloads.to_s.rjust(9)}\t#{mod.versions.length.to_s.rjust(8)}\t#{mod.full_name}"
+              puts "#{mod.downloads.to_s.rjust(9)}\t#{mod.versions.length.to_s.rjust(8)}\t#{mod.current_version.rjust(15)}\t\t#{mod.full_name}"
               count += 1
             end
           end

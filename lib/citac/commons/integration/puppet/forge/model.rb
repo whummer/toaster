@@ -28,7 +28,9 @@ module Citac
         def forge_url; "https://forge.puppetlabs.com/#{owner}/#{name}"; end
 
         def downloads; @json['downloads']; end
-        def versions; @json['releases'].map{|x| x['version']}.to_a; end;
+        def versions; @json['releases'].map{|x| x['version']}.to_a; end
+
+        def current_version; @json['current_release']['version']; end
 
         def operating_systems
           return [] unless @json['current_release'] && @json['current_release']['metadata']
