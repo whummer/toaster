@@ -34,8 +34,8 @@ module Citac
 
           def ensure_cache_running
             Citac::Utils::Exec.run 'citac', :args => %w(cache enable)
-          rescue Exception => e
-            puts "Starting cache failed: #{e}".red
+          rescue => e
+            puts "Starting cache failed: #{e}".yellow
           end
 
           def create_repository(connection)

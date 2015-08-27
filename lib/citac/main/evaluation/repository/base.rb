@@ -76,7 +76,7 @@ module Citac
             type = match[:type].to_sym
             state = match[:state].to_sym
 
-            return nil if state == :running
+            return nil if state == :running || state == :abandoned
             return TaskDescription.new type, match[:name], dir_name, state
           elsif dir_name.end_with? '.spec'
             return nil if dir_name.start_with? 'finished__'
@@ -122,6 +122,12 @@ module Citac
           File.open(results_text_path, 'a', :encoding => 'UTF-8') {|f| f.puts task_result}
 
           sync_spec_status task_description, task_result.agent_name
+
+          last_results = results.reverse.take(5)
+          if last_results.size >= 5 && last_results.all? {|r| r.task_type == task_description.type && r.result == :failure}
+            puts "Abandoning task #{task_description} because the last it failed 5 times.".yellow
+            target_name = task_description.dir_name_abandoned
+          end
 
           rename_directory task_description.dir_name_running, target_name
         end

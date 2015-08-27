@@ -52,7 +52,7 @@ module Citac
             end_time = Time.now
 
             result = EXIT_CODE_MAPPING[run_result.exit_code]
-            task_result = TaskResult.new result, @name, start_time, end_time, run_result.output
+            task_result = TaskResult.new task_description.type, result, @name, start_time, end_time, run_result.output
 
             case result
               when :success_partial
@@ -74,7 +74,7 @@ module Citac
         rescue Interrupt => e
           if task_description
             puts 'Returning task to task pool because of cancellation...'
-            task_result ||= TaskResult.new :cancelled, @name, start_time, Time.now, 'Cancelled.'
+            task_result ||= TaskResult.new task_description.type, :cancelled, @name, start_time, Time.now, 'Cancelled.'
             @task_repository.return_task task_description, task_result
           end
 

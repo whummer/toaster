@@ -41,6 +41,10 @@ module Citac
           "failed__#{@type}__#{@spec_id}.spec"
         end
 
+        def dir_name_abandoned
+          "abandoned__#{@type}__#{@spec_id}.spec"
+        end
+
         def dir_name_cancelled
           "cancelled__#{@type}__#{@spec_id}.spec"
         end
@@ -51,9 +55,10 @@ module Citac
       end
 
       class TaskResult
-        attr_accessor :result, :agent_name, :start_time, :end_time, :output
+        attr_accessor :task_type, :result, :agent_name, :start_time, :end_time, :output
 
-        def initialize(result, agent_name, start_time, end_time, output)
+        def initialize(task_type, result, agent_name, start_time, end_time, output)
+          @task_type = task_type
           @result = result
           @agent_name = agent_name
           @start_time = start_time
