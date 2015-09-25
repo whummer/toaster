@@ -157,7 +157,7 @@ module Citac
             return Hash.new if accessed_files.empty?
 
             escaped_file_names = accessed_files.map { |f| f.gsub ' ', '\ ' }.to_a
-            cmd = %w(xargs -n 100 stat -L -c %n:%s:%a:%U:%G:%F)
+            cmd = %w(xargs -n 100 stat -L -c %n:%s:%a:%U:%G:%F:%Y)
             result = Citac::Integration::Docker.run snapshot_image, cmd, :stdin => escaped_file_names, :raise_on_failure => false
 
             states = Hash.new
@@ -169,8 +169,9 @@ module Citac
               owner = pieces[3]
               group = pieces[4]
               directory = pieces[5].downcase.include? 'directory'
+              mtime = Time.at pieces[6].to_i
 
-              states[filename] = FileStatus.new filename, true, size, mode, owner, group, directory
+              states[filename] = FileStatus.new filename, true, size, mode, owner, group, directory, mtime
             end
 
             accessed_files.each do |accessed_file|
@@ -197,7 +198,7 @@ module Citac
               if File.exists? accessed_file
                 stat = File.stat accessed_file
                 mode = stat.mode % 512
-                states[accessed_file] = FileStatus.new accessed_file, true, stat.size, mode, users[stat.uid], groups[stat.gid], stat.directory?
+                states[accessed_file] = FileStatus.new accessed_file, true, stat.size, mode, users[stat.uid], groups[stat.gid], stat.directory?, stat.mtime
               else
                 states[accessed_file] = FileStatus.new accessed_file, false
               end
