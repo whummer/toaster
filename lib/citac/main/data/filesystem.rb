@@ -191,6 +191,18 @@ module Citac
         raise
       end
 
+      def test_case_results(spec, os, test_suite, test_case)
+        case_dir = test_case_dir spec, os, test_suite, test_case
+        return [] unless Dir.exists? case_dir
+
+        result = []
+        Dir.glob(File.join(case_dir, 'result_*.yml')) do |file_name|
+          result << Citac::Utils::Serialization.load_from_file(file_name)
+        end
+
+        result
+      end
+
       def save_test_case_result(spec, os, test_suite, test_case_result)
         # write detailed test case result
 

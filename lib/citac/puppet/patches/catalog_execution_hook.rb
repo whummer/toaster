@@ -54,9 +54,7 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
         exit_code, output = __citac_run_step step, settings, options
         success = exit_code == 0
 
-        if step.type == :exec
-          test_case_result.add_step_result step, success, output
-        elsif step.type == :assert
+        if step.type == :assert
           args = [state_file, trace_file, settings_file, summary_file]
           args << '--keepstate' if index + 1 < test_case.steps.size && test_case.steps[index + 1].type == :assert
           Citac::Utils::Exec.run 'citac-changetracker analyze', :args => args
@@ -65,10 +63,14 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
           puts change_summary unless change_summary.changes.empty?
 
           success &&= change_summary.changes.empty?
-          test_case_result.add_step_result step, success, output, change_summary
+        else
+          change_summary = nil
         end
 
         end_time = Time.now
+        execution_time = end_time - start_time
+
+        test_case_result.add_step_result step, success, output, execution_time, change_summary
 
         if success
           puts "OK (#{end_time - start_time} seconds)".green

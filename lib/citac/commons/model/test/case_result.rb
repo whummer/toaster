@@ -40,19 +40,19 @@ module Citac
         @step_results = []
       end
 
-      def add_step_result(step, success, output, change_summary = nil)
+      def add_step_result(step, success, output, execution_time, change_summary = nil)
         raise 'All results already added' if @step_results.size == @test_case.steps.size
 
         expected_step = @test_case.steps[@step_results.size]
         raise "Cannot add step result because '#{expected_step.name}' is expected instead of '#{step.name}'" unless step == expected_step
 
         result = success ? :success : :failure
-        @step_results << TestStepResult.new(step, result, output, change_summary)
+        @step_results << TestStepResult.new(step, result, output, execution_time, change_summary)
       end
 
       def finish
         while @step_results.size < @test_case.steps.size
-          @step_results << TestStepResult.new(@test_case.steps[@step_results.size], :skipped, nil)
+          @step_results << TestStepResult.new(@test_case.steps[@step_results.size], :skipped, -1, nil)
         end
 
         @success = @step_results.last.result == :success
@@ -76,7 +76,8 @@ module Citac
           result.puts "#{index + 1}. #{step_result.step}"
           result.puts '====================================================================='
           result.puts
-          result.puts "Step result: #{step_result.result}"
+          result.puts "Step result:    #{step_result.result}"
+          result.puts "Execution time: #{step_result.execution_time} seconds"
           unless step_result.result == :skipped
             result.puts
             result.puts '############## OUTPUT START ##############'
