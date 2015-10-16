@@ -74,7 +74,7 @@ class Puppet::Resource::Catalog < Puppet::Graph::SimpleGraph
           puts "OK (#{end_time - start_time} seconds)".green
         else
           puts "FAIL (#{end_time - start_time} seconds)".red
-          break
+          break if step.type == :exec
         end
       end
 

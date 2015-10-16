@@ -3,19 +3,20 @@ module Citac
     module Tasks
       class ExecutionTask
         attr_reader :spec
-        attr_accessor :stepwise
+        attr_accessor :stepwise, :twice
 
         def type
           @stepwise ? :exec_stepwise : :exec
         end
 
         def command
-          :exec
+          @twice ? :exec2 : :exec
         end
 
         def initialize(spec)
           @spec = spec
           @stepwise = false
+          @twice = false
         end
 
         def additional_args

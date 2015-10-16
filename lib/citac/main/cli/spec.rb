@@ -74,6 +74,7 @@ module Citac
         end
 
         option :stepwise, :aliases => :s, :type => :boolean, :desc => 'Enables stepwise execution.'
+        option :twice, :aliases => :t, :type => :boolean, :desc => 'Runs the action twice.'
         desc 'exec [-s] <spec> <os>', 'Runs the given configuration specification on the specified operating system.'
         def exec(spec_id, os = nil)
           spec =  @repo.get spec_id
@@ -81,6 +82,7 @@ module Citac
 
           task = Citac::Main::Tasks::ExecutionTask.new spec
           task.stepwise = options[:stepwise]
+          task.twice = options[:twice]
 
           run_result = @exec_mgr.execute task, os, :output => :passthrough
           exit 1 if run_result.failure?

@@ -91,6 +91,10 @@ module Citac
             patterns << /^\/opt\/citac(\/|$)/
             patterns << /^\/tmp\/citac(\/|$)/
             patterns << /^\/var\/lib\/puppet(\/|$)/
+            patterns << /^\/var\/lib\/rpm(\/|$)/
+            patterns << /^\/etc\/hosts$/
+            patterns << /^\/etc\/hostname$/
+            patterns << /^\/etc\/resolv.conf$/
           end
 
           def create_snapshot_image
@@ -120,6 +124,11 @@ module Citac
                   if pre != post
                     log_info $prog_name, "STATE MISMATCH '#{accessed_file}': '#{pre}' vs. '#{post}'"
                     change_summary.changes << Citac::Model::Change.new(:file, :changed, accessed_file)
+
+                    if $verbose
+                      log_debug $prog_name, "PRE  CONTENT: #{get_pre_file_contents(snapshot_image, accessed_file)}"
+                      log_debug $prog_name, "POST CONTENT: #{get_post_file_contents(accessed_file)}"
+                    end
                   else
                     hash_compare_files << accessed_file unless pre.directory? || post.directory?
                   end
@@ -147,6 +156,11 @@ module Citac
               else
                 log_info $prog_name, "HASH MISMATCH '#{hash_compare_file}': '#{pre}' vs. '#{post}'"
                 change_summary.changes << Citac::Model::Change.new(:file, :changed, hash_compare_file)
+
+                if $verbose
+                  log_debug $prog_name, "PRE  CONTENT: #{get_pre_file_contents(snapshot_image, hash_compare_file)}"
+                  log_debug $prog_name, "POST CONTENT: #{get_post_file_contents(hash_compare_file)}"
+                end
               end
             end
 
@@ -222,6 +236,15 @@ module Citac
             return Hash.new if changed_files.empty?
 
             Citac::Utils::MD5.hash_files changed_files
+          end
+
+          def get_pre_file_contents(snapshot_image, file_name)
+            result = Citac::Integration::Docker.run snapshot_image, ['/bin/cat', file_name], :raise_on_failure => false
+            result.stdout
+          end
+
+          def get_post_file_contents(file_name)
+            IO.read file_name
           end
 
           def capture_transient_state

@@ -1,4 +1,5 @@
 require_relative '../../../../../lib/citac/commons/integration/puppet/forge'
+require_relative '../../../commons/utils/colorize'
 
 module Citac
   module Main
@@ -6,12 +7,27 @@ module Citac
       module Puppet
         class ModuleSpecificationGenerator
           def generate(module_name, version = nil)
+            if version
+              spec_dir = "#{module_name}-#{version}.spec"
+
+              if Dir.exists?(spec_dir) && !Dir.entries(spec_dir).reject{|e| e == '.' || e == '..'}.empty?
+                puts "Spec directory #{spec_dir} already exists".yellow
+                return
+              end
+            end
+
             puts 'Setting up file structure...'
 
             mod = Citac::Puppet::Forge::PuppetForgeClient.get_module module_name
             version ||= mod.current_version
 
             spec_dir = "#{module_name}-#{version}.spec"
+
+            if Dir.exists?(spec_dir) && !Dir.entries(spec_dir).reject{|e| e == '.' || e == '..'}.empty?
+              puts "Spec directory #{spec_dir} already exists".yellow
+              return
+            end
+
             module_dir = File.join spec_dir, 'files', 'modules'
 
             FileUtils.mkdir_p spec_dir

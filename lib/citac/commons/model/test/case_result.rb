@@ -11,9 +11,9 @@ module Citac
         last = @step_results.reverse.find{|r| r.result != :skipped}
         return :failure unless last
 
+        return :failure if @step_results.find{|r| r.step.type == :assert && r.result == :failure}
         return :success if last.result == :success
-        return :failure if last.result == :failure && last.step.type == :assert
-        return :aborted if last.result == :failure && last.step.type == :exec
+        return :aborted if last.result == :failure
 
         return :unknown
       end

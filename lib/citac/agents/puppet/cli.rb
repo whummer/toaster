@@ -50,6 +50,14 @@ module Citac
           end
         end
 
+        option :resource, :aliases => :r, :desc => 'The resource to execute'
+        option :stepwise, :aliases => :s, :type => :boolean, :desc => 'Enables stepwise execution.'
+        desc 'exec2 [-r <resource name>] [<dir>]', 'Executes the Puppet manifest twice in the given directory and stores the run results in that directory.'
+        def exec2(dir = '.')
+          exec dir
+          exec dir
+        end
+
         option :passthrough, :aliases => :p, :desc => 'Enables output passthrough of test steps'
         desc 'test [<dir>]', 'Executes the Puppet test case in the given directory and stores the test results in that directory.'
         def test(dir = '.')
