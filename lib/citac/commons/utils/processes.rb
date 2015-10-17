@@ -10,6 +10,15 @@ module Citac
           @uid = uid
           @cmdline = cmdline
         end
+
+        def to_hash
+          {
+              :pid => @pid,
+              :name => @name,
+              :uid => @uid,
+              :cmd => @cmdline
+          }
+        end
       end
 
       def self.list

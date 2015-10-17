@@ -7,8 +7,8 @@ module Citac
   module Utils
     module JsonDiff
       def self.diff(json1, json2, category)
-        json1 = JSON.parse json1
-        json2 = JSON.parse json2
+        json1 = JSON.parse json1 if json1.kind_of? String
+        json2 = JSON.parse json2 if json2.kind_of? String
 
         diffs = HashDiff.diff json1, json2
         diffs.map do |diff|

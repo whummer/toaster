@@ -24,6 +24,13 @@ module Citac
           @protocol == other.protocol && @port_nr == other.port_nr
         end
         alias_method :==, :eql?
+
+        def to_hash
+          {
+              :protocol => @protocol,
+              :port => @port_nr
+          }
+        end
       end
 
       def self.get_open_ports

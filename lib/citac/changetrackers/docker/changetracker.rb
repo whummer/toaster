@@ -4,7 +4,6 @@ require 'etc'
 require_relative '../../commons/integration/docker'
 require_relative '../../commons/integration/strace'
 require_relative '../../commons/integration/md5sum'
-require_relative '../../commons/integration/ohai'
 require_relative '../../commons/logging'
 require_relative '../../commons/model/change_tracking'
 require_relative '../../commons/utils/md5'
@@ -248,10 +247,15 @@ module Citac
           end
 
           def capture_transient_state
-            Citac::Integration::Ohai.get_json :plugin_dirs => ['/opt/citac/lib/citac/ohai']
+            Citac::Utils::System.transient_state
           end
 
           def add_transient_state_changes(change_summary, pre_state, post_state, exclusion_patterns)
+            if $verbose
+              log_debug $prog_name, "TRANSIENT PRE  STATE: #{pre_state.inspect}"
+              log_debug $prog_name, "TRANSIENT POST STATE: #{post_state.inspect}"
+            end
+
             Citac::Utils::JsonDiff.diff(pre_state, post_state, :state).each do |change|
               exclusion_pattern_match = exclusion_patterns.any? do |p|
                 if p.is_a? Array
@@ -267,14 +271,7 @@ module Citac
           end
 
           def add_default_state_exclusion_patterns(patterns)
-            patterns << /^cpu/
-            patterns << /^memory/
-            patterns << /time/
-            patterns << /^counters.*network/
-            patterns << /^filesystem.*_(available)|(used)$/
-            patterns << /^network.*arp/
             patterns << [/processes/, /\/opt\/citac\/bin\/docker\/citac-changetracker/]
-            patterns << /kernel\.modules\.aufs\.refcount/
           end
         end
       end
