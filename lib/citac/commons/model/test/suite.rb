@@ -1,8 +1,42 @@
 module Citac
   module Model
     class TestSuite
+      STG_NAME_PATTERN = /^stg \(expansion = (?<expansion>[0-9]+), all edges = (?<alledges>(true)|(false)), coverage = (?<coverage>(edge)|(path)), edge limit = (?<edgelimit>[0-9]+)\)$/
+
       attr_accessor :id
       attr_reader :name, :test_cases
+
+      def type
+        @name =~ /stg/ ? :stg : :base
+      end
+
+      def stg_expansion
+        match = STG_NAME_PATTERN.match @name
+        raise "Unable to parse name: #{@name}" unless match
+
+        match[:expansion].to_i
+      end
+
+      def stg_alledges
+        match = STG_NAME_PATTERN.match @name
+        raise "Unable to parse name: #{@name}" unless match
+
+        match[:alledges] == 'true'
+      end
+
+      def stg_coverage
+        match = STG_NAME_PATTERN.match @name
+        raise "Unable to parse name: #{@name}" unless match
+
+        match[:coverage].to_sym
+      end
+
+      def stg_edgelimit
+        match = STG_NAME_PATTERN.match @name
+        raise "Unable to parse name: #{@name}" unless match
+
+        match[:edgelimit].to_i
+      end
 
       def initialize(name)
         @name = name

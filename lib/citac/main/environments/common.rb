@@ -18,7 +18,7 @@ module Citac
           (spec_runner.nil? || e.spec_runners.include?(spec_runner))
         end
 
-        raise "No suitable environment found for '#{operating_system}' and '#{spec_runner}'" unless env
+        raise "No suitable environment found for '#{operating_system}' and '#{spec_runner}'" unless env || options[:no_raise]
 
         env
       end

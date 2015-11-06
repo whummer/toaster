@@ -2,6 +2,7 @@ require 'thor'
 require_relative '../ioc'
 require_relative '../evaluation/agent'
 require_relative '../evaluation/repository'
+require_relative '../evaluation/stg/test_suite_generator'
 require_relative '../../commons/utils/exec'
 require_relative '../../commons/utils/colorize'
 
@@ -19,6 +20,15 @@ module Citac
         def agent(connection)
           agent = create_agent connection
           agent.run
+        end
+
+        desc 'stgparams', 'Creates various STG based test suites for further evaluation.'
+        def stgparams
+          repo = ServiceLocator.specification_repository
+          env_mgr = ServiceLocator.environment_manager
+
+          generator = Citac::Main::Evaluation::STG::TestSuiteGenerator.new repo, env_mgr
+          generator.run
         end
 
         no_commands do

@@ -244,6 +244,18 @@ module Citac
         Citac::Utils::Serialization.load_from_file path
       end
 
+      def delete_test_suite(spec, os, test_suite)
+        dir = test_suite_dir spec, os, test_suite
+        FileUtils.rm_rf dir
+      end
+
+      def clear_test_suites(spec, os)
+        suites = test_suites spec, os
+        suites.each do |test_suite|
+          delete_test_suite spec, os, test_suite
+        end
+      end
+
       private
 
       def clean_spec_id(id)
