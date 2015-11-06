@@ -82,7 +82,8 @@ module Citac
           end
 
           def print_graph(stg, options)
-            edge_cover_paths = Citac::Utils::Graphs::DAG.edge_cover_paths(stg) if options[:paths] || options[:pathcount]
+            #edge_cover_paths = Citac::Utils::Graphs::DAG.edge_cover_paths(stg) if options[:paths] || options[:pathcount]
+            edge_cover_paths = nil
 
             opts = {
                 :node_label_getter => lambda{|n| node_label n, options},
@@ -124,7 +125,7 @@ module Citac
             end
 
             if options[:pathcount]
-              $stderr.puts "Edge Cover Path Count: #{edge_cover_paths.size}"
+              #$stderr.puts "Edge Cover Path Count: #{edge_cover_paths.size}"
               $stderr.puts "Path Cover Path Count: #{stg.dag_path_count}"
             end
           end
