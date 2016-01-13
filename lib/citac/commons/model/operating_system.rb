@@ -31,6 +31,7 @@ module Citac
       end
 
       def eql?(other)
+        return false unless other
         @name == other.name && @version == other.version
       end
 

@@ -78,13 +78,13 @@ module Citac
               test_case.add_exec_step executed_resource
 
               if edge_visits[edge] < @edge_limit
-                current_node.label.each do |assertion_resource|
-                  if assertion_resource == executed_resource
-                    property = Citac::Model::Property.new :idempotence, [executed_resource]
-                  else
-                    property = Citac::Model::Property.new :preservation, [executed_resource, assertion_resource]
-                  end
+                property = Citac::Model::Property.new :idempotence, [executed_resource]
+                test_case.add_assert_step executed_resource, property
 
+                current_node.label.each do |assertion_resource|
+                  next if assertion_resource == executed_resource
+
+                  property = Citac::Model::Property.new :preservation, [executed_resource, assertion_resource]
                   test_case.add_assert_step assertion_resource, property
                 end
               end
