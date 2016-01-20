@@ -9,6 +9,7 @@ require_relative 'cli/cache'
 require_relative 'cli/graphs'
 require_relative 'cli/eval'
 require_relative 'cli/stats'
+require_relative 'cli/simple'
 require_relative '../version'
 require_relative 'ioc'
 
@@ -42,6 +43,9 @@ module Citac
 
         desc 'stats <command> <args...>', 'Statistics related commands.'
         subcommand 'stats', Stats
+
+        desc 'simple <command> <args...>', 'Simple commands exposed to users'
+        subcommand 'simple', Simple
 
         desc 'clear [<spec1> <spec2> ...]', 'Clears all saved data for the given configuration specifications.'
         def clear(*specs)

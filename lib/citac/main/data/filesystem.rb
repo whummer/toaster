@@ -113,6 +113,13 @@ module Citac
         result
       end
 
+      def run_output(spec, run)
+        path = File.join run_dir(spec, run.id), 'output.txt'
+        return nil unless File.exists? dir
+
+        IO.read path, :encoding => 'UTF-8'
+      end
+
       def save_run(spec, operating_system, action, result, start_time, end_time)
         base_dir = runs_dir spec
         FileUtils.makedirs base_dir

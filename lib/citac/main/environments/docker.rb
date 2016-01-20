@@ -63,16 +63,6 @@ module Citac
 
           Citac::Integration::Sysctl.set_param 'kernel.yama.ptrace_scope', '0'
         end
-
-        log_debug $prog_name, 'Checking if tracing is allowed within docker dontainers...'
-        env = environments.first
-        result = Citac::Integration::Docker.run env.id, %w(strace true), :raise_on_failure => false
-        unless result.success?
-          puts 'Tracing is currently not allowed within docker containers.'.yellow
-          puts 'Configuring apparmor to allow tracing...'
-
-          Citac::Utils::Exec.run 'aa-complain', :args => ['/etc/apparmor.d/docker']
-        end
       end
 
       def environments
@@ -109,7 +99,8 @@ module Citac
                                    :locale => locale,
                                    :output => options[:output],
                                    :raise_on_failure => options[:raise_on_failure],
-                                   :keep_container => !cleanup_instance
+                                   :keep_container => !cleanup_instance,
+                                   :apparmor_profile => 'docker-ptrace'
 
         FileUtils.chmod '-x', script_path unless executable
 

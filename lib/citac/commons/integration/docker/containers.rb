@@ -46,6 +46,7 @@ module Citac
             parameters += ['-e', "LANG=#{options[:locale]}"] if options[:locale]
             parameters += ['--cidfile', cidfile]
             parameters += mounts_to_parameters options[:mounts] if options[:mounts]
+            parameters += ['--security-opt', "apparmor:#{options[:apparmor_profile]}"] if options[:apparmor_profile]
             parameters << image_id
             parameters += command.respond_to?(:to_a) ? command.to_a : [command] if command
 

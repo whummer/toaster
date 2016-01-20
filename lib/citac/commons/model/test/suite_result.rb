@@ -3,6 +3,18 @@ module Citac
     class TestSuiteResult
       attr_reader :test_suite, :test_case_results
 
+      def pending_test_cases
+        @test_suite.test_cases.map{|c| [c, overall_case_result(c)]}.select{|_, r| r == :unknown}.map{|r, _| r}
+      end
+
+      def aborted_test_cases
+        @test_suite.test_cases.select{|c| (@test_case_results[c.id] || []).all?{|r| r == :aborted}}
+      end
+
+      def failed_test_cases
+        @test_suite.test_cases.map{|c| [c, overall_case_result(c)]}.select{|_, r| r == :failure}.map{|r, _| r}
+      end
+
       def initialize(test_suite)
         @test_suite = test_suite
         @test_case_results = Hash.new { |h, k| h[k] = [] }

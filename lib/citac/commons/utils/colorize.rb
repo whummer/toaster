@@ -5,7 +5,7 @@ class String
   end
 
   def red
-    colorize(31)
+    colorize("31;1")
   end
 
   def green
@@ -17,7 +17,7 @@ class String
   end
 
   def pink
-    colorize(35)
+    colorize("35;1")
   end
 
   # inspired by http://stackoverflow.com/a/16363159/128709
