@@ -1,44 +1,94 @@
+# Introduction
+
+citac is a tool for automatically testing Puppet manifests for *idempotence* and *convergence*, hence that repeated executions do not change the desired state once reached:
+
+- **Idempotence:** Resources do not fail and do not alter the system state on re-execution.
+- **Convergence:** Resources do not conflict with each other but describe a common desired state. Even in case of temporary failures and partial executions, the system eventually reaches the desired state.
+
+> Please not that citac is a research prototype which is still in its early stages.
+
 # Installation
 
-The installation assumes that the source code is checked out to `/opt/citac`.
+citac can be installed by running the following command. Currently, we only support Ubuntu 14.04.
 
-## Ubuntu 14.04
+```sh
+$ curl -sSL https://raw.githubusercontent.com/citac/citac/master/install/install.sh | sudo bash
+```
 
-    # run as root
+The script performs the following changes to your system:
 
-    sudo su
+1. Install Docker
+2. Deploy a custom AppArmor profile for Docker
+3. Install the citac main executable to `/usr/bin/citac`
+4. Build Docker images for running citac tests
 
-    # install prerequisites
+> Please note that the installation process takes approximately 30 minutes to complete.
 
-    apt-get update
-    apt-get install -y build-essential ruby ruby-dev graphviz apparmor-utils
+# Usage
 
-    gem install --no-ri --no-rdoc thor rest-client hashdiff
+In order to test a given Puppet manifest (site.pp) for idempotence and convergence, you need to:
 
-    # install docker
+1. prepare a citac test (directory containing the Puppet manifest as well as all required Puppet modules)
+2. execute the citac test
+3. inspect the test results
 
-    curl -sSL https://get.docker.com/ubuntu/ | sh
+## Step 1 - Test Preparation
 
-    # register citac executable
+Create an empty directory in which your Puppet manifest, all required Puppet modules as well as the test results will reside. The directory name needs to end with `.spec`.
 
-    ln -s /opt/citac/bin/citac /usr/bin/citac
+```sh
+$ mkdir demo.spec
+```
 
-    # build docker images
+Initialize the directory structure.
 
-    citac envs setup
+```sh
+$ cd demo.spec
+$ citac init
+```
 
-# Troubleshooting
+Supply your Puppet manifest.
 
-## docker fails to start containers and commit images
+```sh
+$ echo "exec {'/bin/echo Hello >> /tmp/out.txt': }" > scripts/default
+```
 
-On Ubuntu 14.04 there may be issues with docker's underlying storage engine `devicemapper`.
-Run `docker info` and check whether devicemapper is used as Storage Driver and udev sync support
-is not available. In such a case switch to AUFS as Storage Engine with the following command
-to resolve the problem:
+Add all required Puppet modules. If you do not specify a version, the latest one will be used.
 
-    sudo apt-get -y install linux-image-extra-$(uname -r)
+```sh
+$ citac add puppetlabs/stdlib 3.2.1
+```
 
-GitHub Issue:
+Choose an operating system on which to run the tests (Docker containers are used for running the tests). Run `citac os` to get a list of supported operating systems. Currently, we support Debian 7, Ubuntu 14.04 and CentOS 7.
 
- * [https://github.com/docker/docker/issues/4036](https://github.com/docker/docker/issues/4036)
+```sh
+$ citac os debian-7
+```
 
+## Step 2 - Run Tests
+
+In order to run tests, simple run the following command in the test directory:
+
+```sh
+$ citac test
+```
+
+The test process can be aborted at any time. In order to resume the tests, simply run the command again.
+
+## Step 3 - Inspect Results
+
+Test results as well as the test progress can be shown by running the following command.
+
+```sh
+$ citac results
+```
+
+Our sample script above is obviously not idempotent because on each run Hello is appended to the file `/tmp/out.txt`. citac will therefore report that the resource is not idempotent with an output similar to the following:
+
+```sh
+$ citac results
+```
+
+# Further Resources
+
+Currently there is no documentation. If you have any questions, feel free to contact us.
