@@ -80,8 +80,7 @@ module Citac
         script_dir = File.dirname script_path
 
         mounts = []
-        mounts << [Citac::Config.base_dir, '/opt/citac', false]
-        mounts << [Citac::Utils::Exec.which('docker'), '/usr/bin/docker', false]
+        mounts << [Citac::Config.base_dir, '/opt/citac', false] unless File.exists? '/opt/citac/incontainer'
         mounts << ['/var/run/docker.sock', '/var/run/docker.sock', false]
         mounts << [script_dir, '/tmp/citac', true]
 
@@ -100,7 +99,7 @@ module Citac
                                    :output => options[:output],
                                    :raise_on_failure => options[:raise_on_failure],
                                    :keep_container => !cleanup_instance,
-                                   :apparmor_profile => 'docker-ptrace'
+                                   :apparmor_profile => 'docker-ptrace' # https://github.com/mconcas/docks#allow-docker-container-to-call-ptrace
 
         FileUtils.chmod '-x', script_path unless executable
 
@@ -134,7 +133,7 @@ module Citac
         mounts = [[cache_directory, '/var/citac/cache', true]]
 
         Citac::Utils::Exec.run 'iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to 3128 -w'
-        Citac::Integration::Docker.start_daemon 'citac_services/cache:squid', nil, :network => :host, :mounts => mounts, :name => 'citac-service-cache'
+        Citac::Integration::Docker.start_daemon 'citac/services_cache:squid', nil, :network => :host, :mounts => mounts, :name => 'citac-service-cache'
       rescue StandardError => e
         raise "Setting up caching failed. Root privileges are required.#{$/}#{e}"
       end
@@ -185,11 +184,12 @@ module Citac
       private
 
       def docker_image_to_environment(docker_image)
-        return nil unless docker_image.name.start_with? 'citac_environments/'
-        return nil if docker_image.name == 'citac_environments/base'
+        return nil unless docker_image.name == 'citac/environments'
+        return nil if docker_image.tag.start_with? == 'base_'
+        return nil if docker_image.tag == 'main'
 
-        spec_runner = docker_image.name.split('/', 2).last
-        os = Citac::Model::OperatingSystem.parse docker_image.tag
+        spec_runner = docker_image.tag.split('_', 2).first
+        os = Citac::Model::OperatingSystem.parse docker_image.tag.split('_', 2).last
 
         Citac::Model::Environment.new docker_image.id, os, [spec_runner]
       end

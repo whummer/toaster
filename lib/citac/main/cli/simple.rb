@@ -254,7 +254,7 @@ module Citac
 
         desc 'reset', 'Clears all test results.'
         def reset
-          FileUtils.rm_r %w(graphs runs test-suites)
+          FileUtils.rm_rf %w(graphs runs test-suites)
         end
 
         no_commands do

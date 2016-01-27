@@ -1,12 +1,7 @@
 #!/bin/bash
 
-if [ $(whoami) != "root" ]; then
-    echo "Please run as root."
-    exit 1
-fi
-
 HOST_SPEC_DIR=$PWD
-CONT_SPEC_DIR=/var/citac/specs/$(basename $PWD)
+CONT_SPEC_DIR=/opt/citac/var/specs/$(basename $PWD)
 
 if [ $1 = "adv" ]; then
     shift
@@ -18,9 +13,9 @@ fi
 docker run \
     --rm \
     --privileged \
-    -v /usr/bin/docker:/usr/bin/docker:ro \
+    -v /tmp:/tmp:rw \
     -v /var/run/docker.sock:/var/run/docker.sock:ro \
-    -v /usr/lib/x86_64-linux-gnu/libapparmor.so.1:/usr/lib/x86_64-linux-gnu/libapparmor.so.1:ro \
     -v ${HOST_SPEC_DIR}:${CONT_SPEC_DIR}:rw \
-    citac \
+    -w ${CONT_SPEC_DIR} \
+    citac/environments:main \
     citac ${CITAC_ARGS}
