@@ -11,3 +11,4 @@
 
 var/cache
 citac.tar.gz
+*.log
