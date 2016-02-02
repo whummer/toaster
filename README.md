@@ -9,7 +9,7 @@ citac is a tool for automatically testing Puppet manifests for *idempotence* and
 
 # Installation
 
-citac can be installed by running the following command. Currently, we only support Ubuntu 14.04.
+citac can be installed by running the following command. Please not that we currently support only Ubuntu 14.04.
 
 ```sh
 $ curl -sSL https://raw.githubusercontent.com/citac/citac/master/install/install.sh | sudo bash
@@ -20,9 +20,7 @@ The script performs the following changes to your system:
 1. Install Docker
 2. Deploy a custom AppArmor profile for Docker
 3. Install the citac main executable to `/usr/bin/citac`
-4. Build Docker images for running citac tests
-
-> Please note that the installation process takes approximately 30 minutes to complete.
+4. Download Docker images for running citac tests
 
 # Usage
 
@@ -47,10 +45,14 @@ $ cd demo.spec
 $ citac init
 ```
 
-Supply your Puppet manifest.
+Supply your Puppet manifest in `scripts/default`.
 
 ```sh
-$ echo "exec {'/bin/echo Hello >> /tmp/out.txt': }" > scripts/default
+$ echo "exec {'/bin/echo on >> /etc/setting': }" > scripts/default
+$ echo "exec {'/bin/date >> /tmp/runs.txt': }" >> scripts/default
+$ cat scripts/default
+exec {'/bin/echo on >> /etc/setting': }
+exec {'/bin/date >> /tmp/runs.txt': }
 ```
 
 Add all required Puppet modules. If you do not specify a version, the latest one will be used.
@@ -59,7 +61,8 @@ Add all required Puppet modules. If you do not specify a version, the latest one
 $ citac add puppetlabs/stdlib 3.2.1
 ```
 
-Choose an operating system on which to run the tests (Docker containers are used for running the tests). Run `citac os` to get a list of supported operating systems. Currently, we support Debian 7, Ubuntu 14.04 and CentOS 7.
+Choose an operating system on which to run the tests (Docker containers are used for running the tests).
+Run `citac os` to get a list of supported operating systems. Currently, we support Debian 7, Ubuntu 14.04 and CentOS 7.
 
 ```sh
 $ citac os debian-7
@@ -67,13 +70,37 @@ $ citac os debian-7
 
 ## Step 2 - Run Tests
 
-In order to run tests, simple run the following command in the test directory:
+In order to run tests, simple run the following command in the test directory. The test process can be aborted
+at any time. In order to resume the tests, simply run the command again.
 
 ```sh
 $ citac test
 ```
 
-The test process can be aborted at any time. In order to resume the tests, simply run the command again.
+The test process tracks changes to the Docker container in order decide whether a resource is idempotent or not or
+in conflict with another one. It may happen that some detected change should not be taken into account, i.e.,
+modifications to the temp directory may be allowed. In such a case you can supply regular expression patterns for
+excluded paths in the file `files/excluded_files.yml`:
+
+```sh
+$ cat files/excluded_files.yml
+---
+- ^/tmp/runs\.txt$
+```
+
+Apart from files, citac tracks also changes to network interfaces, route configuration, server sockets,
+mounted file systems and running processes. For instance, one may exclude processes running in the background by
+patterns saved to `files/excluded_states.yml`. Please note that in contrast to the file exclusion list, you need to
+specify two patterns per ignored aspect.
+
+```sh
+$ cat files/excluded_states.yml
+---
+- - process
+  - ping
+```
+
+You can clear the test results by running `citac reset`.
 
 ## Step 3 - Inspect Results
 

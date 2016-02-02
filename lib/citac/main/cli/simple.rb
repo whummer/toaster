@@ -38,9 +38,10 @@ module Citac
           Dir.mktmpdir do |dir|
             script_path = File.join dir, 'download-module.sh'
             File.open script_path, 'w', :encoding => 'UTF-8' do |f|
+              version_flags = version ? "--version #{version}" : ''
               f.puts '#!/bin/sh'
               f.puts 'cd /tmp/citac'
-              f.puts "puppet module install #{module_name} #{version} --modulepath /tmp/citac"
+              f.puts "puppet module install #{module_name} #{version_flags} --modulepath /tmp/citac"
             end
 
             env = Citac::Main::ServiceLocator.environment_manager.find :spec_runner => 'puppet'

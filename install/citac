@@ -3,7 +3,10 @@
 HOST_SPEC_DIR=$PWD
 CONT_SPEC_DIR=/opt/citac/var/specs/$(basename $PWD)
 
-if [ $1 = "adv" ]; then
+if [ $1 = "update" ]; then
+    docker pull -a citac/environments || exit 1
+    exit 0
+elif [ $1 = "adv" ]; then
     shift
     CITAC_ARGS="$@"
 else

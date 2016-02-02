@@ -68,8 +68,8 @@ module Citac
           output = options[:passthrough] ? :passthrough : :redirect
 
           task = TestTask.new 'script', test_case
-          task.file_exclusion_patterns = [] #TODO get file exclusion patterns from somewhere
-          task.state_exclusion_patterns = [] #TODO get state exclusion patterns from somewhere
+          task.file_exclusion_patterns = load_file_exclusion_patterns dir
+          task.state_exclusion_patterns = load_state_exclusion_patterns dir
           test_case_result = task.execute :modulepath => 'modules', :output => output
 
           Citac::Utils::Serialization.write_to_file test_case_result, 'test_case_result.yml'
@@ -81,6 +81,30 @@ module Citac
 
             log_debug 'citac-agent-puppet', "Setting workdir to '#{workdir}'..."
             Dir.chdir workdir
+          end
+
+          def load_file_exclusion_patterns(dir)
+            path = File.join dir, 'excluded_files.yml'
+            return [] unless File.exists? path
+
+            patterns = Citac::Utils::Serialization.load_from_file path
+            patterns.map {|p| Regexp.new p}.to_a
+          end
+
+          def load_state_exclusion_patterns(dir)
+            path = File.join dir, 'excluded_states.yml'
+            return [] unless File.exists? path
+
+            patterns = Citac::Utils::Serialization.load_from_file path
+            processed = patterns.map do |pattern|
+              if pattern.respond_to? :map
+                pattern.map{|p| Regexp.new p}.to_a
+              else
+                Regexp.new pattern
+              end
+            end
+
+            processed.to_a
           end
         end
       end
