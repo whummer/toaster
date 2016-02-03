@@ -22,6 +22,10 @@ class String
 
   # inspired by http://stackoverflow.com/a/16363159/128709
   def no_colors
-    self.gsub /\033\[\d*(;\d+)?m/, ''
+    result = self.dup
+    result.force_encoding 'ASCII-8BIT'
+    result.gsub! /\033\[\d*(;\d+)?m/, ''
+    result.force_encoding self.encoding
+    result
   end
 end
