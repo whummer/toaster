@@ -89,15 +89,15 @@ $ cat files/excluded_files.yml
 ```
 
 Apart from files, citac tracks also changes to network interfaces, route configuration, server sockets,
-mounted file systems and running processes. For instance, one may exclude processes running in the background by
+mounted file systems and running processes. For instance, one may exclude routes on the network interface lo by
 patterns saved to `files/excluded_states.yml`. Please note that in contrast to the file exclusion list, you need to
-specify two patterns per ignored aspect.
+specify two patterns per ignored aspect (first is the state key, second the state value).
 
 ```sh
 $ cat files/excluded_states.yml
 ---
-- - process
-  - ping
+- - routes
+  - iface=>"lo"
 ```
 
 You can clear the test results by running `citac reset`.
@@ -108,14 +108,31 @@ Test results as well as the test progress can be shown by running the following 
 
 ```sh
 $ citac results
+2 out of 2 test cases executed.
+
+Status: Problems detected
+(run "citac results -d" to include error details)
+
+Problems:
+ - Exec[/bin/echo on >> /etc/setting] is not idempotent
 ```
 
-Our sample script above is obviously not idempotent because on each run Hello is appended to the file `/tmp/out.txt`. citac will therefore report that the resource is not idempotent with an output similar to the following:
+Our sample script above is obviously not idempotent because on each run "on" is appended to the file `/etc/setting`.
+citac will therefore report that the resource is not idempotent with an output similar to the following:
 
 ```sh
-$ citac results
+$ citac results -d
+2 out of 2 test cases executed.
+
+Status: Problems detected
+
+Problems:
+ - Exec[/bin/echo on >> /etc/setting] is not idempotent
+   Notice: /Stage[main]/Main/Exec[/bin/echo on >> /etc/setting]/returns: executed successfully
+   1 changes:
+     file/changed: /etc/setting
 ```
 
 # Further Resources
 
-Currently there is no documentation. If you have any questions, feel free to contact us.
+Currently there is no further documentation available. If you have any questions, feel free to contact us.
