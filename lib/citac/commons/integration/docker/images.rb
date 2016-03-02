@@ -22,7 +22,7 @@ module Citac
       end
 
       def self.images
-        expr = /^(?'name'\S+)\s+(?'tag'\S+)\s+(?'id'[a-f0-9]{64})/i
+        expr = /^(?'name'\S+)\s+(?'tag'\S+)\s+(sha256:)?(?'id'[a-f0-9]{64})/i
 
         images = []
 

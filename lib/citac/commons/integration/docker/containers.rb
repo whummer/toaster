@@ -2,6 +2,7 @@ require 'tmpdir'
 require_relative '../../utils/colorize'
 require_relative '../../utils/exec'
 require_relative 'images'
+require_relative 'common'
 require_relative '../../logging'
 
 module Citac
@@ -16,8 +17,17 @@ module Citac
         end
       end
 
-      def self.start_daemon(image, command = nil, options = {})
+      def self.get_image_id(image)
         image_id = image.respond_to?(:id) ? image.id : image.to_s
+        if uses_sha256prefix? && /^[a-f0-9]{64}$/i.match(image_id)
+          image_id = "sha256:#{image_id}"
+        end
+
+        image_id
+      end
+
+      def self.start_daemon(image, command = nil, options = {})
+        image_id = get_image_id image
 
         parameters = ['-d']
         parameters << '-i' if options[:stdin]
@@ -39,7 +49,7 @@ module Citac
             raise_on_failure = options[:raise_on_failure].nil? || options[:raise_on_failure]
             cidfile = File.join dir, 'cid'
 
-            image_id = image.respond_to?(:id) ? image.id : image.to_s
+            image_id = get_image_id image
 
             parameters = ['-i']
             parameters << '--rm' unless options[:keep_container]
