@@ -5,11 +5,11 @@ citac is a tool for automatically testing Puppet manifests for *idempotence* and
 - **Idempotence:** Resources do not fail and do not alter the system state on re-execution.
 - **Convergence:** Resources do not conflict with each other but describe a common desired state. Even in case of temporary failures and partial executions, the system eventually reaches the desired state.
 
-> Please not that citac is a research prototype which is still in its early stages.
+> Please note that citac is a research prototype which is still in its early stages.
 
 # Installation
 
-citac can be installed by running the following command. Please not that we currently support only Ubuntu 14.04.
+citac can be installed by running the following command. Please note that we currently support only Ubuntu 14.04.
 
 ```sh
 $ curl -sSL https://raw.githubusercontent.com/citac/citac/master/install/install.sh | sudo bash
