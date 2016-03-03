@@ -1,8 +1,10 @@
 #!/bin/bash
 
 command_exists() {
-	command -v "$@" > /dev/null 2>&1
+    command -v "$@" > /dev/null 2>&1
 }
+
+BRANCH="master"
 
 if [ $(whoami) != "root" ]; then
     echo "Please run this script as root."
@@ -20,10 +22,12 @@ fi
 
 if [ -e /etc/apparmor.d/docker-ptrace ]; then
     echo "[2 / 4] AppArmor is already configured appropriately."
+elif [ ! -d /etc/apparmor.d ]; then
+    echo "[2 / 4] AppArmor not available on this system."
 else
     echo "[2 / 4] Configuring AppArmor ..."
 
-    curl -sSL https://raw.githubusercontent.com/citac/citac/master/install/docker-ptrace > /etc/apparmor.d/docker-ptrace || exit 1
+    curl -sSL https://raw.githubusercontent.com/citac/citac/$BRANCH/install/docker-ptrace > /etc/apparmor.d/docker-ptrace || exit 1
     apparmor_parser -r /etc/apparmor.d/docker-ptrace || exit 1
 
     echo "[2 / 4] Configured successfully."
@@ -45,7 +49,7 @@ if command_exists citac; then
 else
     echo "[4 / 4] Installing citac command into /usr/bin..."
 
-    curl -sSL https://raw.githubusercontent.com/citac/citac/master/install/citac > /usr/bin/citac || exit 1
+    curl -sSL https://raw.githubusercontent.com/citac/citac/$BRANCH/install/citac > /usr/bin/citac || exit 1
     chmod +x /usr/bin/citac || exit 1
 
     echo "[4 / 4] Installed successfully."
