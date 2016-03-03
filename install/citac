@@ -13,12 +13,18 @@ else
     CITAC_ARGS="simple $@"
 fi
 
+APPARMOR_SWITCH=
+if [ ! -d /etc/apparmor.d/ ]; then
+    APPARMOR_SWITCH="-v /bin/true:/opt/citac/dont_use_apparmor"
+fi
+
 docker run \
     --rm \
     --privileged \
     -v /tmp:/tmp:rw \
     -v /var/run/docker.sock:/var/run/docker.sock:ro \
     -v ${HOST_SPEC_DIR}:${CONT_SPEC_DIR}:rw \
+    ${APPARMOR_SWITCH} \
     -w ${CONT_SPEC_DIR} \
     citac/environments:main \
     citac ${CITAC_ARGS}
