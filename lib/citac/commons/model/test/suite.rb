@@ -60,6 +60,22 @@ module Citac
       def to_s
         "#{id}/#{name}"
       end
+
+      def exec_count
+        result = 0
+        @test_cases.each do |test_case|
+          result += test_case.execs.size
+        end
+        result
+      end
+
+      def assert_count
+        result = 0
+        @test_cases.each do |test_case|
+          result += test_case.asserts.size
+        end
+        result
+      end
     end
   end
 end

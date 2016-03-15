@@ -10,6 +10,10 @@ module Citac
         @steps.select { |s| s.type == :exec }.map { |s| s.resource }.to_a
       end
 
+      def execs
+        @steps.select{|s| s.type == :exec}
+      end
+
       def asserts
         @steps.select{|s| s.type == :assert}
       end

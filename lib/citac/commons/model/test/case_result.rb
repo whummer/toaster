@@ -7,6 +7,10 @@ module Citac
     class TestCaseResult
       attr_reader :test_case, :step_results
 
+      def step_executed?(step_index)
+        @step_results[step_index].result != :skipped
+      end
+
       def result
         last = @step_results.reverse.find{|r| r.result != :skipped}
         return :failure unless last
@@ -56,6 +60,14 @@ module Citac
         end
 
         @success = @step_results.last.result == :success
+      end
+
+      def executed_steps
+        @step_results.reject{|r| r.result == :skipped}.size
+      end
+
+      def execution_time
+        @step_results.reject{|r| r.result == :skipped}.map{|r| r.execution_time || 0}.reduce(0, :+)
       end
 
       def to_s

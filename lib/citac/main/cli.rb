@@ -9,6 +9,7 @@ require_relative 'cli/cache'
 require_relative 'cli/graphs'
 require_relative 'cli/eval'
 require_relative 'cli/stats'
+require_relative 'cli/export'
 require_relative 'cli/simple'
 require_relative '../version'
 require_relative 'ioc'
@@ -43,6 +44,9 @@ module Citac
 
         desc 'stats <command> <args...>', 'Statistics related commands.'
         subcommand 'stats', Stats
+
+        desc 'export <command> <args...>', 'Export related commands.'
+        subcommand 'export', Export
 
         desc 'simple <command> <args...>', 'Simple commands exposed to users'
         subcommand 'simple', Simple
