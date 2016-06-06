@@ -272,6 +272,7 @@ module Citac
 
           def add_default_state_exclusion_patterns(patterns)
             patterns << [/processes/, /\/opt\/citac\/bin\/docker\/citac-changetracker/]
+            patterns << [/routes/, /iface=>"lo"/]
           end
         end
       end
