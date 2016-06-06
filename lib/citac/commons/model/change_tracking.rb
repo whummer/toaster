@@ -17,7 +17,7 @@ module Citac
     end
 
     class ChangeSummary
-      attr_reader :changes, :additional_data
+      attr_accessor :changes, :additional_data
 
       def initialize
         @changes = Array.new

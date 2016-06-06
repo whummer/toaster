@@ -20,8 +20,14 @@ module Citac
         desc 'all', 'Exports all configuration specifications and generates a summary.'
         def all(out_dir = '.')
           @repo.each_spec do |spec|
-            spec spec, out_dir
+            begin
+              spec spec, out_dir
+            rescue StandardError => e
+              FileUtils.rm_rf File.join(out_dir, spec)
+              IO.write File.join(out_dir, 'errors.txt'), "========================================================\n#{spec} failed: #{e}\n\n\n", :mode => 'a'
+            end
           end
+
           list out_dir
         end
 
@@ -63,6 +69,83 @@ module Citac
           write_json result, 'specs.json'
         end
 
+        desc 'consolidate', 'Consolidates multiple run results'
+        def consolidate(out_dir = '.', target_dir = '__consolidated')
+          dirs = Dir.entries(out_dir)
+                    .reject{|d| d == '.' || d == '..' || d == '__consolidated'}
+                    .select{|d| File.directory? File.join(out_dir, d)}
+                    .sort_by {|d| d.downcase}
+
+          specs = Hash.new {|h, k| h[k] = []}
+          dirs.each do |dir|
+            match = /^(?<name>.+)-run[0-9]+$/.match dir
+            if match
+              name = match[:name]
+
+              output = Citac::Utils::Exec.run 'du', :args => ['-b', '-s', File.join(out_dir, dir)]
+              size = /^(?<size>[0-9]+)\s.*$/.match(output.output)[:size].to_i
+
+              specs[name] << [dir, size]
+            else
+              puts "Skipping #{dir}...".red
+            end
+          end
+
+          total_size = 0
+
+          specs.each do |spec, dirs|
+            puts "Consolidating #{spec}...".yellow
+
+            detected_issues = Hash.new {|h, k| h[k] = Hash.new {|h2, k2| h2[k2] = []}}
+
+            dirs.each do |run_dir, _|
+              spec_details = JSON.load IO.read(File.join(out_dir, run_dir, 'spec.json'), :encoding => 'UTF-8')
+              spec_details['operatingSystems'].each do |os|
+                spec_details['detectedIssues'][os].each do |detected_issue|
+                  issue_id = "#{detected_issue['type']}:#{detected_issue['resources'].join('/')}"
+                  detected_issues[os][issue_id] << run_dir
+                end
+              end
+            end
+
+            only_ins = Set.new
+            detected_issues.each do |os, issues|
+              issues.each do |issue, runs|
+                next if runs.size == dirs.size
+
+                puts "#{issue} only in:" if $verbose
+                runs.each do |run|
+                  only_ins << run
+                  puts "  - #{run}" if $verbose
+                end
+              end
+            end
+
+
+            if only_ins.empty?
+              puts "No differences in detected issues found. Choosing smallest run in #{dirs.map{|_, s| s}.join(', ')}"
+              smallest_run = dirs.sort_by{|_, s| s}.first
+
+              total_size += smallest_run[1]
+              puts "Choosing run: #{smallest_run[0]} (#{smallest_run[1]})"
+
+              $stderr.puts "mv #{smallest_run[0]} __consolidated"
+              $stderr.puts "mv __consolidated/#{smallest_run[0]} __consolidated/#{spec}"
+            else
+              puts 'Differences in runs found.'.pink
+              only_ins.each do |run|
+                run_size = dirs.select{|r, _| r == run}.first[1]
+                total_size += run_size
+                puts "Choosing run: #{run} (#{run_size})"
+
+                $stderr.puts "mv #{run} __consolidated"
+              end
+            end
+          end
+
+          puts "Total Size: #{total_size} bytes, #{total_size.to_f / 1024 / 1024} MB"
+        end
+
         no_commands do
           def generate_spec_details(spec)
             data = {
@@ -91,6 +174,7 @@ module Citac
               test_suites.each do |test_suite|
                 test_suite_result = @repo.test_suite_results spec, os, test_suite
                 suite_details = generate_test_suite_details spec, os, test_suite, test_suite_result, detected_issues
+                next unless suite_details
 
                 data['testSuites'] << {
                     'id' => test_suite.id.to_s,
@@ -130,6 +214,10 @@ module Citac
           end
 
           def generate_test_suite_details(spec, os, test_suite, test_suite_result, detected_issues)
+            if test_suite.name != 'base' && test_suite.name != 'stg (expansion = 0, all edges = false, coverage = edge, edge limit = 3)'
+              return nil
+            end
+
             data = {
                 'id' => test_suite.id.to_s,
                 'description' => test_suite.name,
@@ -185,6 +273,18 @@ module Citac
                 next unless test_case_result.step_executed? step_index
 
                 step_result = test_case_result.step_results[step_index]
+
+                if step_result.change_summary
+                  step_result.change_summary.changes.reject!{|c| c.subject == 'kernel.modules.aufs.refcount'}
+                  if step_result.result == :failure && step_result.change_summary.changes.empty?
+                    def step_result.make_success
+                      @result = :success
+                    end
+
+                    step_result.make_success
+                  end
+                end
+
                 status = :failure if step_result.result == :failure
 
                 execution_count += 1
@@ -194,6 +294,8 @@ module Citac
 
                 if test_step.type == :assert
                   last_output = step_result.assertion_output
+                  last_output = 'No changes.' if last_output.strip.size == 0
+
                   if step_result.result == :failure
                     detected_issues[test_step.property] << {
                         'testSuiteId' => test_suite.id.to_s,
@@ -222,6 +324,7 @@ module Citac
               data['totalExecutionTime'] += total_execution_time
             end
 
+            test_case_results = test_case_results[-5..-1] if test_case_results.size > 5
             test_case_results.each_with_index do |test_case_result, index|
               data['runs'] << {
                   'id' => (index + 1).to_s,
