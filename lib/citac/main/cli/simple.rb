@@ -194,7 +194,7 @@ module Citac
             when :failure
               puts 'Problems detected'.red
               puts '(run "citac results -d" to include error details)' unless options[:details]
-            when :succcess
+            when :success
               puts 'No problems detected'.green
             when :unknown
               if finished + aborted < suite.test_cases.size
