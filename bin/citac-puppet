@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+$prog_name = 'citac-puppet'
+
+require_relative '../lib/citac/puppet/cli'
+require_relative '../lib/citac/commons/utils/clirunner'
+
+Citac::Utils::CLIRunner.run Citac::Puppet::CLI

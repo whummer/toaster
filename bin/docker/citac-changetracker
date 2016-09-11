@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+$prog_name = 'citac-changetracker-docker'
+
+require_relative '../../lib/citac/changetrackers/docker/cli'
+require_relative '../../lib/citac/commons/utils/clirunner'
+
+Citac::Utils::CLIRunner.run Citac::ChangeTrackers::Docker::CLI

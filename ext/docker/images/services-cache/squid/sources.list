@@ -1,0 +1,3 @@
+deb http://debian.mur.at/debian wheezy main
+deb http://debian.mur.at/debian wheezy-updates main
+deb http://security.debian.org wheezy/updates main

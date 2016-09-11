@@ -5,3 +5,17 @@ build.tmp
 test_output.txt
 tmp
 Gemfile.lock
+
+# IDE Stuff
+
+.idea
+
+# Generated Graphs
+
+*.dot
+*.graphml
+
+# Data
+
+var/cache
+citac.tar.gz
