@@ -6,10 +6,10 @@
 
 # some global/constant variables
 ROOT_DIR = File.join(File.dirname(File.expand_path(__FILE__)), "..")
+$LOAD_PATH << File.join(ROOT_DIR, "lib")
 REQUIRED_CONFIGS = {
   #"db.host" => "Database host"
 }
-$LOAD_PATH << File.join(ROOT_DIR, "lib")
 
 # load dependencies using Bundler
 require "toaster/util/load_bundler"
@@ -26,6 +26,7 @@ def install_chef()
     system("gem install chef --no-ri --no-rdoc")
   end
 end
+
 def init_config_file()
   require 'json'
   require 'toaster/util/config'
@@ -57,6 +58,7 @@ def init_config_file()
   end
   return configs
 end
+
 def create_chef_config()
   solo_file = Toaster::ToasterApp::CHEF_TMP_SOLO_FILE
   if !File.exist?(solo_file)

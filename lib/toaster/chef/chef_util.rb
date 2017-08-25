@@ -30,6 +30,7 @@ require 'ruby_parser'
 require 'chef/application/solo'
 require 'toaster/markup/markup_util'
 require 'toaster/util/util'
+require 'toaster/chef/resource_inspector'
 require 'rexml/document'
 
 module Toaster
@@ -38,7 +39,8 @@ module Toaster
     @@create_backups = false
 
     #OPSCODE_API_URL = "http://cookbooks.opscode.com/api/v1/"
-    OPSCODE_API_URL = "https://supermarket.getchef.com/api/v1/"
+    #OPSCODE_API_URL = "https://supermarket.getchef.com/api/v1/"
+    OPSCODE_API_URL = "https://supermarket.chef.io/api/v1/"
     OPSCODE_SEARCH_URL = "http://community.opscode.com/search"
 
     @@DEFAULT_CHEF_DIR = "/tmp/toaster_cookbooks/"
@@ -633,6 +635,7 @@ module Toaster
       start = 0
       while start < max
         url = "#{OPSCODE_API_URL}cookbooks?start=#{start}&items=100"
+        puts url
         json = `curl '#{url}' 2> /dev/null`
         books = MarkupUtil.parse_json(json.strip)
         if books["items"].kind_of?(Array)
@@ -825,7 +828,7 @@ module Toaster
           if !code
             puts "WARN: Could not parse code file #{recipe_file} : #{line}"
           else
-            resource_obj = ResourceInspector.get_resource_from_source(code, attributes_source)
+            resource_obj = Chef::ResourceInspector.get_resource_from_source(code, attributes_source)
             result[cookbook][recipe_name]["resources"][line] = code
             result[cookbook][recipe_name]["resource_objs"][line] = resource_obj
             if !code.match(/not_if\s*/) && !code.match(/only_if\s*/)

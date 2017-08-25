@@ -2,9 +2,8 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require 'active_record'
+require "active_record"
 require "toaster/markup/markup_util"
-require "toaster/chef/chef_util"
 require "toaster/model/automation_run"
 require "toaster/model/automation_attribute"
 require "toaster/model/ignore_property"
@@ -82,7 +81,8 @@ module Toaster
     def short_name()
       get_short_name()
     end
-    def get_short_name() 
+    def get_short_name()
+      require "toaster/chef/chef_util"
       return ChefUtil.extract_node_name(name)
     end
 

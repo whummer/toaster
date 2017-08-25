@@ -53,6 +53,7 @@ module Citac
 
         desc 'clear [<spec1> <spec2> ...]', 'Clears all saved data for the given configuration specifications.'
         def clear(*specs)
+
           repo = ServiceLocator.specification_repository
           specs = repo.specs if specs.empty?
 

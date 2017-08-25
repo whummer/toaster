@@ -2,6 +2,9 @@
 
 $prog_name = 'citac-main'
 
+ROOT_DIR = File.join(File.dirname(File.expand_path(__FILE__)), "..")
+$LOAD_PATH << File.join(ROOT_DIR, "lib")
+
 require_relative '../lib/citac/main/cli'
 require_relative '../lib/citac/commons/utils/clirunner'
 

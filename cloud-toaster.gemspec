@@ -33,7 +33,7 @@ Gem::Specification.new do |s|
 	'jquery-rails'	=> '>= 0',
 	'turbolinks'	=> '>= 0',
 	'jbuilder'		=> '>= 0',		#, '~> 1.2'
-	'devise'		=> '>= 0',
+	'devise'		=> '~> 3.5.10',
 	'thin' 			=> '~> 1.6',		# 14-07-08: default version 2.0.0.pre is incompatible
 	                      				# http://stackoverflow.com/questions/19579984/sinatra-server-wont-start-wrong-number-of-arguments
 
@@ -43,8 +43,9 @@ Gem::Specification.new do |s|
 	'aquarium'		=> '>= 0',
 	'jsonpath'		=> '>= 0',
 	'open4'			=> '>= 0',		# open processes with stdin/stdout
-	'chef'			=> '>= 0',
-	'ohai'			=> '>= 0',
+  'chef'      => '~> 12.8.1',
+  'chef-zero' => '= 4.5',
+	'ohai'			=> '= 8.17.1',
 	'rspec'			=> '>= 0',		# tests
 	'ruby_parser'	=> '>= 0',		# parse Ruby code
 	'bson'			=> '>= 0',
@@ -56,8 +57,11 @@ Gem::Specification.new do |s|
 	'mysql2'  		=> '>= 0',		# for DB access
 	'therubyracer'	=> '>= 0',		# required by execjs
 	'railties'		=> '>= 0',
-	'activesupport'	=> '>= 0',
-	'activerecord'	=> '>= 0'
+  'ffi-yajl'    => '~> 2.2.3',
+	'activesupport'	=> '~> 4.2.7',
+	'activerecord'	=> '>= 0',
+  'nokogiri' => '= 1.6.7.2',
+  'rest-client' => '>= 0'
   }
 
   #deps = File.read('Gemfile').scan(/^\s*gem\s*['"]([^'"]+)['"]/).uniq

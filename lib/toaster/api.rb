@@ -3,6 +3,7 @@ require "thor"
 require "xmlrpc/client"
 require "toaster/util/util"
 require "toaster/util/docker"
+require "citac/main/cli"
 
 include Toaster
 
@@ -295,6 +296,13 @@ module Toaster
         Kernel::exec("#{cmd}")
       end
     end
+
+    ####################
+    # CITACT FUNCTIONS #
+    ####################
+    desc "citac", "Access Citac CLI functionality"
+    subcommand 'citac', Citac::Main::CLI::Main
+
 
     #####################
     # NON-CLI FUNCTIONS #

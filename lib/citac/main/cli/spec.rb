@@ -10,7 +10,6 @@ module Citac
       class Spec < Thor
         def initialize(*args)
           super
-
           @repo = ServiceLocator.specification_repository
           @env_mgr = ServiceLocator.environment_manager
           @exec_mgr = ServiceLocator.execution_manager

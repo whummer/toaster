@@ -1,5 +1,6 @@
 require_relative 'config'
 require_relative 'data/filesystem'
+require_relative 'data/database'
 require_relative 'environments/docker'
 require_relative 'tasks/execution_manager'
 require_relative 'services/spec_service'
@@ -12,7 +13,8 @@ module Citac
       end
 
       def self.specification_repository
-        @specification_repository ||= Citac::Data::FileSystemSpecificationRepository.new Citac::Config.spec_dir
+        # @specification_repository ||= Citac::Data::FileSystemSpecificationRepository.new Citac::Config.spec_dir
+        @specification_repository ||= Citac::Data::DatabaseSpecificationRepository.new Citac::Config.spec_dir
       end
 
       def self.execution_manager

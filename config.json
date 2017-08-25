@@ -23,12 +23,12 @@
 	"max_threads" : 8
 },
 "db": {
-	"host": "localhost",
+	"host": "127.0.0.1",
 	"host_from_container": "192.168.100.2",
 	"port": 3306,
 	"database": "toaster",
 	"username": "root",
-	"password": "root"
+	"password": ""
 },
 "service": {
 	"host": "localhost",

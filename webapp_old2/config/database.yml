@@ -21,7 +21,7 @@ development:
   database: <%= Toaster::Config.get("db.database") %>
   username: <%= Toaster::Config.get("db.username") %>
   password: <%= Toaster::Config.get("db.password") %>
-  socket: /var/run/mysqld/mysqld.sock
+#  socket: /var/run/mysqld/mysqld.sock
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -38,5 +38,5 @@ production:
   database: <%= Toaster::Config.get("db.database") %>
   username: <%= Toaster::Config.get("db.username") %>
   password: <%= Toaster::Config.get("db.password") %>
-  socket: /var/run/mysqld/mysqld.sock
+#  socket: /var/run/mysqld/mysqld.sock
   timeout: 5000

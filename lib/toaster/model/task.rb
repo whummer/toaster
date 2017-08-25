@@ -9,7 +9,6 @@ require "toaster/model/task_execution"
 require "toaster/model/task_parameter"
 require "toaster/state/state_transition"
 require "toaster/state/system_state"
-require "toaster/chef/resource_inspector"
 
 module Toaster
   class Task < ActiveRecord::Base
@@ -251,10 +250,12 @@ module Toaster
     # as ohai plugins) for different types of tasks.
     # 
     def get_config_for_potential_state_changes()
+      require "toaster/chef/resource_inspector"
       return ResourceInspector.get_config_for_potential_state_changes(self)
     end
 
     def guess_potential_state_changes()
+      require "toaster/chef/resource_inspector"
       return ResourceInspector.guess_potential_state_changes(self)
     end
 
