@@ -118,32 +118,52 @@ module Toaster
     # the first task of the automation under test
     def self.update_current_automation_info(run, ctx)
       node_name = nil
+
+      # get run_list
+      run_list = []
+      ctx.node.run_list.each do |n|
+        run_list << n.to_s
+      end
+      run_list = ChefUtil.get_reduced_run_list(run_list)
+
+      # try to determine node name (cookbook name)
       chef_cfg = Chef::Config
       if chef_cfg[:json_attribs]
         json_file = chef_cfg[:json_attribs]
         if json_file.match(/.*\/[^\/]+_node\.json/).to_s == json_file
           node_name = json_file.gsub(/.*\/([^\/]+)_node\.json/, '\1')
           node_name = ChefUtil.wrap_node_name(node_name)
-        elsif File.exist?(json_file)
-          attribs = JSON.parse(File.read(json_file))
-          node_name = attribs["toaster_node_name"] if attribs["toaster_node_name"]
         end
       else
         puts "WARN: Chef::Config[:json_attribs] is not available: '#{chef_cfg[:json_attribs]}'"
         node_name = chef_cfg[:node_name]
       end
+
+      if !node_name
+        node_name = ChefUtil.guess_cookbook_from_runlist(run_list)
+      end
       node_name = ctx.node.to_s if !node_name
-      actual_node_name = node_name
-      actual_node_name = node_name.gsub(/.*node\[(.+)\]/, '\1') if node_name.include?("node[")
+      node_name = node_name.gsub(/.*node\[(.+)\]/, '\1') if node_name.include?("node[")
 
       # try to retrieve automation from DB, if it exists..
-      run_list = []
-      ctx.node.run_list.each do |n|
-        run_list << n.to_s
+      if File.exist?(json_file)
+        attribs = JSON.parse(File.read(json_file))
+        if attribs["automation_uuid"]
+          autos = Toaster::Automation.find(
+            :uuid => attribs["automation_uuid"]).to_a
+          if !autos.empty?
+            run.automation = autos[0]
+            return
+          end
+        end
       end
-      run.automation = Automation.find_by_name_and_runlist(node_name, run_list)[0]
+      if !run.automation
+        run.automation = Automation.find_by_cookbook_and_runlist(node_name, run_list)[0]
+      end
+
       puts "TRACE: automation run #{run.uuid}, automation #{run.automation ? run.automation.uuid : 'nil'}"
 
+      # create new automation if we cannot find existing one...
       if !run.automation
 
         config_dir = File.join(File.dirname(__FILE__),"..")
@@ -170,13 +190,13 @@ module Toaster
         recipe = ChefUtil.guess_recipe_from_runlist(run_list)
         params = {}
         begin
-          params = insp.get_defaults(actual_node_name, recipe)
+          params = insp.get_defaults(node_name, recipe)
           puts "params: #{params}"
           # make sure we make the hash MongoDB-compatible 
           # (i.e., remove special characters in keys):
           MarkupUtil.rectify_keys(params)
         rescue Object => exc
-          puts "WARN: Unable to get default parameters for recipe '#{actual_node_name}'-'#{recipe}': #{exc} - #{exc.backtrace}"
+          puts "WARN: Unable to get default parameters for recipe '#{node_name}'-'#{recipe}': #{exc} - #{exc.backtrace}"
         end
 
         task_list = ChefListener.get_task_list(ctx.resource_collection.all_resources)

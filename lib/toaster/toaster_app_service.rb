@@ -1,7 +1,10 @@
 
 $LOAD_PATH << File.join(File.expand_path(File.dirname(__FILE__)), "..")
 
-require 'rubygems'
+# load dependencies using bundler
+require "toaster/util/load_bundler"
+
+# requires
 require 'toaster/util/config'
 require 'toaster/util/docker'
 
@@ -44,7 +47,7 @@ end
 $stdout = MyThreadOut.new
 
 ## capture stdout using thread-local variable
-require 'stringio'
+#require 'stringio'
 module Kernel
   def capture_stdout(&block)
     out = StringIO.new
@@ -134,6 +137,7 @@ if ARGV.include?("do_start_service")
   puts "Starting service on port #{$service_port}"
   Toaster::Config.init_db_connection()
   server = ToasterAppService.new($service_port, "0.0.0.0")
+
 #  client = ToasterApp.new()
 # client.runtest("2285f8539f6c48873")
 #  client.runtests("88056bebc7e384cac")

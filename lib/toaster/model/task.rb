@@ -4,7 +4,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require "active_record"
 require "toaster/util/util"
 require "toaster/model/task_execution"
 require "toaster/model/task_parameter"

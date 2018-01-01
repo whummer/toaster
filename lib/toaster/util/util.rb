@@ -114,7 +114,6 @@ module Toaster
       ensure
         Socket.do_not_reverse_lookup = orig
       end
-      puts "IP: #{ip}"
       if !is_ip_address(ip)
         # TODO: IP lookup using ifconfig...
       end

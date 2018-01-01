@@ -4,7 +4,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require "active_record"
 require "toaster/model/automation"
 require "toaster/model/task_execution"
 require "toaster/model/run_attribute"

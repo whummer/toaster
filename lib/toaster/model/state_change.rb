@@ -3,8 +3,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require "active_record"
-
 module Toaster
 
   class StateChange < ActiveRecord::Base

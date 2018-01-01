@@ -45,20 +45,21 @@ module Toaster
 
     def self.init_db_connection(config=nil)
       require "toaster/util/util"
-      if !config
+      if !config || !config["mysql"]
         config = {
           "db_type" => "mysql", 
           'mysql' => Config.get('db')
         }
       end
       if config["db_type"] == "mysql" && config["mysql"]
+
         require "active_record"
         ActiveRecord::Base.establish_connection(
           :adapter => 'mysql2',
-          :host => config["mysql"]["host"],
-          :database => config["mysql"]["database"],
-          :username => config["mysql"]["username"],
-          :password => config["mysql"]["password"]
+          :host => "#{config["mysql"]["host"]}".empty? ? get("db.host") : config["mysql"]["host"],
+          :database => "#{config["mysql"]["database"]}".empty? ? get("db.database") : config["mysql"]["database"],
+          :username => "#{config["mysql"]["username"]}".empty? ? get("db.username") : config["mysql"]["username"],
+          :password => "#{config["mysql"]["password"]}".empty? ? get("db.password") : config["mysql"]["password"]
         )
       else
         puts "WARN: Incorrect database connection configuration"

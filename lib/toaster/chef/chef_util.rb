@@ -4,7 +4,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require 'rubygems'
 require 'chef/log'
 require 'chef/run_context'
 require 'chef/client'
@@ -45,17 +44,28 @@ module Toaster
     @@DEFAULT_CHEF_DIR = "/tmp/toaster_cookbooks/"
     @@DEFAULT_COOKBOOKS_DIR = "#{@@DEFAULT_CHEF_DIR}/cookbooks/"
 
+    def self.guess_cookbook_from_runlist(runlist)
+      guess_cookbook_or_recipe_from_runlist(runlist, "cookbook")
+    end
     def self.guess_recipe_from_runlist(runlist)
+      guess_cookbook_or_recipe_from_runlist(runlist, "recipe")
+    end
+
+    def self.guess_cookbook_or_recipe_from_runlist(runlist, type)
       candidates = []
       runlist.each do |i|
         if !i.match(/toaster::testing/)
           if i.include?("recipe[")
-            candidates << i.gsub(/recipe\[(.*::)*([^\]]+)\]/, '\2')
+            if type == "cookbook"
+              candidates << i.gsub(/recipe\[(.*::)*([^\]]+)\]/, '\1').gsub(/::/, '')
+            elsif type == "recipe"
+              candidates << i.gsub(/recipe\[(.*::)*([^\]]+)\]/, '\2')
+            end
           end
         end
       end
       return "default" if candidates.empty?
-      puts "WARN: Multiple recipes found in runlist #{runlist}: #{candidates}" if candidates.size > 1
+      puts "WARN: Multiple #{type}s found in runlist #{runlist}: #{candidates}" if candidates.size > 1
       return candidates[0]
     end
 
@@ -97,6 +107,14 @@ module Toaster
 
     def self.wrap_node_name(node_name)
       node_name = "node[#{node_name}]" if !node_name.include?("node[")
+    end
+
+    def self.get_reduced_run_list(run_list)
+      reduced_run_list = run_list.select{ |i| 
+        !"#{i}".match(/toaster::testing/) && 
+        !"#{i}".match(/chef-solo-search::default/)
+      }
+      return reduced_run_list
     end
 
     def self.prepare_run_list(chef_node, run_list_hash_OR_chef_node_file)
@@ -219,52 +237,111 @@ module Toaster
 
     def self.download_cookbook_version(name, version="latest", 
           target_dir=@@DEFAULT_COOKBOOKS_DIR, quiet=false, num_attempts=2)
-
       link = get_cookbook_download_link(name, version)
+      download_cookbook_url(link, target_dir, quiet, num_attempts)
+    end
 
-      `mkdir -p '#{target_dir}'` if !File.exist?(target_dir)
-      tgz_file = File.join(target_dir, "#{name}.tgz")
-      tar_file = File.join(target_dir, "#{name}.tar")
-      File.delete(tar_file) if File.exist?(tar_file)
-      cookbook_dir = File.join(target_dir, name)
-      if @@create_backups
-        if File.exist?(cookbook_dir) && !File.exist?("#{cookbook_dir}.bak")
-          `mv #{cookbook_dir} #{cookbook_dir}.bak`
-        end
+    # TODO remove?
+#    def self.download_cookbook_version1(name, version="latest", 
+#          target_dir=@@DEFAULT_COOKBOOKS_DIR, quiet=false, num_attempts=2)
+#
+#      link = get_cookbook_download_link(name, version)
+#
+#      `mkdir -p '#{target_dir}'` if !File.exist?(target_dir)
+#      tgz_file = File.join(target_dir, "#{name}.tgz")
+#      tar_file = File.join(target_dir, "#{name}.tar")
+#      File.delete(tar_file) if File.exist?(tar_file)
+#      cookbook_dir = File.join(target_dir, name)
+#      if @@create_backups
+#        if File.exist?(cookbook_dir) && !File.exist?("#{cookbook_dir}.bak")
+#          `mv #{cookbook_dir} #{cookbook_dir}.bak`
+#        end
+#      end
+#      while num_attempts > 0
+#        `rm -rf #{cookbook_dir}`
+#        if !quiet
+#          puts "DEBUG: Downloading '#{link}' to #{target_dir}"
+#        end
+#        error = false
+#        `wget #{link} -O #{tgz_file} > /dev/null 2>&1`
+#        error ||= $?.exitstatus != 0
+#        out = `cd #{target_dir} && tar zxf #{name}.tgz`
+#        # tar reports status code 2 in case of error...
+#        if $?.exitstatus > 1
+#          # sometimes, the files are in tar format, 
+#          # not in tgz format - let's give it a try!
+#          puts "DEBUG: 'cd #{target_dir} && tar zxf #{name}.tgz' returned exit code #{$?.exitstatus}, trying to extract as tar file..."
+#          full_file = "#{target_dir}/#{name}.tgz"
+#          puts "DEBUG: File #{full_file} exists: #{File.exist?(full_file)}}"
+#          out += `cd #{target_dir} && cp #{name}.tgz #{name}.tar`
+#          out += `cd #{target_dir} && tar xf #{name}.tar`
+#        end
+#        error ||= $?.exitstatus > 1
+#        break if !error
+#        puts "WARN: Could not download/extract #{link} to #{target_dir} . Remaining attempts: #{num_attempts}"
+#        num_attempts -= 1
+#        sleep 2
+#      end
+#
+#      return out   
+#    end
+
+    def self.download_cookbook_url(link, target_dir=@@DEFAULT_COOKBOOKS_DIR, 
+        quiet=false, num_attempts=2)
+      out = ""
+      if !File.exist?(target_dir)
+        FileUtils.mkpath(target_dir)
       end
-      while num_attempts > 0
-        `rm -rf #{cookbook_dir}`
-        if !quiet
-          puts "DEBUG: Downloading '#{link}' to #{target_dir}"
+      cookbooks_before = Dir.entries(target_dir)
+      Toaster::Util.mktmpfile() { |tgz_file|
+        while num_attempts > 0
+          if !quiet
+            puts "DEBUG: Downloading '#{link}' to #{target_dir}"
+          end
+          error = false
+          `wget #{link} -O #{tgz_file} > /dev/null 2>&1`
+          error ||= $?.exitstatus != 0
+          cmd = "cd #{target_dir} && tar -z -x -f #{tgz_file}"
+          out = `#{cmd}`
+          # tar reports status code 2 in case of error...
+          if $?.exitstatus > 1
+            # sometimes, the files are in tar format, 
+            # not in tgz format - let's give it a try!
+            puts "DEBUG: '#{cmd}' returned exit code #{$?.exitstatus}, trying to extract as tar file..."
+            #full_file = "#{target_dir}/#{name}.tgz"
+            #puts "DEBUG: File #{full_file} exists: #{File.exist?(full_file)}}"
+            #out += `cd #{target_dir} && cp #{name}.tgz #{name}.tar`
+            out += `cd #{target_dir} && tar -x -f #{tgz_file}`
+          end
+          error ||= $?.exitstatus > 1
+          break if !error
+          puts "WARN: Could not download/extract #{link} to #{target_dir} . Remaining attempts: #{num_attempts}"
+          num_attempts -= 1
+          sleep 2
         end
-        error = false
-        `wget #{link} -O #{tgz_file} > /dev/null 2>&1`
-        error ||= $?.exitstatus != 0
-        out = `cd #{target_dir} && tar zxf #{name}.tgz`
-        # tar reports status code 2 in case of error...
-        if $?.exitstatus > 1
-          # sometimes, the files are in tar format, 
-          # not in tgz format - let's give it a try!
-          puts "DEBUG: 'cd #{target_dir} && tar zxf #{name}.tgz' returned exit code #{$?.exitstatus}, trying to extract as tar file..."
-          full_file = "#{target_dir}/#{name}.tgz"
-          puts "DEBUG: File #{full_file} exists: #{File.exist?(full_file)}}"
-          out += `cd #{target_dir} && cp #{name}.tgz #{name}.tar`
-          out += `cd #{target_dir} && tar xf #{name}.tar`
-        end
-        error ||= $?.exitstatus > 1
-        break if !error
-        puts "WARN: Could not download/extract #{link} to #{target_dir} . Remaining attempts: #{num_attempts}"
-        num_attempts -= 1
-        sleep 2
+      }
+
+      cookbooks_after = Dir.entries(target_dir)
+      new_cb = cookbooks_after - cookbooks_before
+      puts "INFO: Downloaded and installed new cookbooks: #{new_cb}"
+
+      # download dependencies
+      new_cb.each do |cb|
+        download_dependencies(cb, nil, target_dir, true)
       end
 
-      return out
+      return new_cb
     end
 
     def self.fix_encodings(target_dir=@@DEFAULT_COOKBOOKS_DIR)
       # add 'encoding' headers to avoid "invalid multibyte char" errors
       out1 = `cd  #{target_dir} && magic_encoding`
       puts "DEBUG: magic_encoding: #{out1}"
+    end
+
+    def self.download_cookbook_url_in_lxc(lxc, link, target_dir=@@DEFAULT_COOKBOOKS_DIR)
+      cookbook_dir = "#{lxc['rootdir']}/#{target_dir}"
+      download_cookbook_url(link, cookbook_dir)
     end
 
     def self.download_cookbook_version_in_lxc(lxc, name, version="latest", target_dir=@@DEFAULT_COOKBOOKS_DIR)

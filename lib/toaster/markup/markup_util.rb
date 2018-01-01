@@ -4,7 +4,6 @@
 # Author: Waldemar Hummer (hummer@dsg.tuwien.ac.at)
 #
 
-require 'rubygems'
 require 'json'
 require 'rexml/document'
 require 'hashdiff'
